@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ArcherLab Edge - New Session</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#00626e",
+                        "primary-container": "#00e5ff",
+                        "background": "#0b1326",
+                        "surface-bright": "#31394d",
+                        "outline-variant": "#3b494c",
+                        "inverse-surface": "#dae2fd",
+                        "primary-fixed": "#9cf0ff",
+                        "inverse-on-surface": "#283044",
+                        "on-tertiary-fixed": "#111c2d",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-tint": "#00daf3",
+                        "primary": "#c3f5ff",
+                        "surface-variant": "#2d3449",
+                        "on-surface-variant": "#bac9cc",
+                        "on-error": "#690005",
+                        "inverse-primary": "#006875",
+                        "outline": "#849396",
+                        "tertiary": "#e6edff",
+                        "on-surface": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#3c475a",
+                        "surface-dim": "#0b1326",
+                        "secondary": "#b7c8e1",
+                        "on-tertiary": "#263143",
+                        "surface-container": "#171f33",
+                        "tertiary-fixed": "#d8e3fb",
+                        "tertiary-container": "#c6d1e9",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary": "#213145",
+                        "on-primary-fixed-variant": "#004f58",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-container-high": "#222a3d",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-background": "#dae2fd",
+                        "on-primary-fixed": "#001f24",
+                        "tertiary-fixed-dim": "#bcc7de",
+                        "on-tertiary-container": "#4f5a6e",
+                        "error-container": "#93000a",
+                        "secondary-container": "#3a4a5f",
+                        "on-primary": "#00363d",
+                        "surface": "#0b1326",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed-dim": "#00daf3",
+                        "on-secondary-container": "#a9bad3",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "container-padding": "24px",
+                        "section-gap": "48px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "data-mono": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-md-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .input-ring:focus-within {
+            box-shadow: 0 0 0 2px theme('colors.primary-fixed-dim');
+            border-color: transparent;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pt-16 pb-20 md:pb-0 font-body-md text-body-md">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-dim/80 dark:bg-surface-dim/80 backdrop-blur-md border-b border-white/10 flex justify-between items-center px-gutter h-16 transition-all duration-100 ease-in-out">
+<button aria-label="Back" class="text-on-surface-variant hover:text-on-surface transition-colors p-2">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm-mobile md:text-headline-sm text-primary-fixed-dim tracking-tight">New Session</h1>
+<div class="w-10"></div> <!-- Spacer to balance back button -->
+</header>
+<main class="flex-grow flex flex-col items-center justify-start p-container-padding max-w-3xl mx-auto w-full">
+<div class="w-full space-y-section-gap">
+<!-- Setup Form -->
+<form class="space-y-stack-md w-full bg-surface-container rounded-xl p-container-padding border border-white/5 shadow-2xl">
+<!-- Session Name -->
+<div class="space-y-stack-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block">Session Name</label>
+<div class="input-ring bg-surface-container-high border border-white/10 rounded-lg p-3 transition-shadow duration-200">
+<input class="w-full bg-transparent text-on-surface focus:outline-none font-body-md text-body-md placeholder:text-on-surface-variant/50" placeholder="e.g., Morning Practice - 70m" type="text"/>
+</div>
+</div>
+<!-- Archer Profile -->
+<div class="space-y-stack-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block">Archer Profile</label>
+<div class="relative input-ring bg-surface-container-high border border-white/10 rounded-lg transition-shadow duration-200">
+<select class="w-full bg-transparent text-on-surface appearance-none p-3 focus:outline-none font-body-md text-body-md cursor-pointer">
+<option value="elite_archer">Elite Archer (VNT-9200)</option>
+<option value="guest">Guest</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<!-- Handedness Segmented Control -->
+<div class="space-y-stack-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block">Handedness</label>
+<div class="flex bg-surface-container-highest p-1 rounded-lg">
+<label class="flex-1 text-center cursor-pointer">
+<input checked="" class="peer sr-only" name="handedness" type="radio" value="right"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors font-body-md text-body-md font-medium">Right Hand</div>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input class="peer sr-only" name="handedness" type="radio" value="left"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors font-body-md text-body-md font-medium">Left Hand</div>
+</label>
+</div>
+</div>
+<!-- Bow Type Segmented Control -->
+<div class="space-y-stack-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block">Bow Type</label>
+<div class="flex bg-surface-container-highest p-1 rounded-lg">
+<label class="flex-1 text-center cursor-pointer">
+<input checked="" class="peer sr-only" name="bow_type" type="radio" value="recurve"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors font-body-md text-body-md font-medium truncate px-1">Recurve</div>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input class="peer sr-only" name="bow_type" type="radio" value="compound"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors font-body-md text-body-md font-medium truncate px-1">Compound</div>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input class="peer sr-only" name="bow_type" type="radio" value="barebow"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors font-body-md text-body-md font-medium truncate px-1">Barebow</div>
+</label>
+</div>
+</div>
+<!-- Environment & Orientation Toggles -->
+<div class="grid grid-cols-2 gap-gutter">
+<div class="space-y-stack-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block">Environment</label>
+<div class="flex bg-surface-container-highest p-1 rounded-lg">
+<label class="flex-1 text-center cursor-pointer">
+<input class="peer sr-only" name="environment" type="radio" value="indoor"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg align-middle">home</span>
+</div>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input checked="" class="peer sr-only" name="environment" type="radio" value="outdoor"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg align-middle">park</span>
+</div>
+</label>
+</div>
+</div>
+<div class="space-y-stack-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block">Orientation</label>
+<div class="flex bg-surface-container-highest p-1 rounded-lg">
+<label class="flex-1 text-center cursor-pointer">
+<input checked="" class="peer sr-only" name="orientation" type="radio" value="portrait"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg align-middle">stay_current_portrait</span>
+</div>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input class="peer sr-only" name="orientation" type="radio" value="landscape"/>
+<div class="py-2 rounded-md peer-checked:bg-primary peer-checked:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg align-middle">stay_current_landscape</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</form>
+</div>
+<!-- Primary Action -->
+<div class="w-full mt-section-gap">
+<button class="w-full bg-primary-fixed-dim text-on-primary font-headline-sm text-headline-sm-mobile md:text-headline-sm py-4 rounded-xl shadow-lg hover:bg-primary transition-colors active:scale-95 duration-100 ease-in-out font-bold" type="button">
+                START SESSION
+            </button>
+</div>
+</main>
+</body></html>

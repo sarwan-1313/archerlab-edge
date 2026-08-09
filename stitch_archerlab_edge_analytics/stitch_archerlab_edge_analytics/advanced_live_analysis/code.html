@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ArcherLab Edge - Camera Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#283044",
+                        "surface-tint": "#00daf3",
+                        "primary-fixed-dim": "#00daf3",
+                        "tertiary": "#e6edff",
+                        "outline": "#849396",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-primary": "#006875",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a9bad3",
+                        "surface-container-highest": "#2d3449",
+                        "outline-variant": "#3b494c",
+                        "on-tertiary-container": "#4f5a6e",
+                        "primary": "#c3f5ff",
+                        "surface-dim": "#0b1326",
+                        "on-surface-variant": "#bac9cc",
+                        "on-primary-container": "#00626e",
+                        "tertiary-container": "#c6d1e9",
+                        "on-secondary": "#213145",
+                        "primary-container": "#00e5ff",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-high": "#222a3d",
+                        "on-primary": "#00363d",
+                        "on-background": "#dae2fd",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-primary-fixed-variant": "#004f58",
+                        "surface-container-lowest": "#060e20",
+                        "on-tertiary-fixed-variant": "#3c475a",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-variant": "#2d3449",
+                        "surface-bright": "#31394d",
+                        "primary-fixed": "#9cf0ff",
+                        "on-tertiary": "#263143",
+                        "inverse-surface": "#dae2fd",
+                        "secondary-container": "#3a4a5f",
+                        "background": "#0b1326",
+                        "on-primary-fixed": "#001f24",
+                        "surface-container": "#171f33",
+                        "surface-container-low": "#131b2e",
+                        "on-error": "#690005",
+                        "secondary": "#b7c8e1",
+                        "on-surface": "#dae2fd",
+                        "tertiary-fixed": "#d8e3fb",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#bcc7de",
+                        "surface": "#0b1326",
+                        "on-tertiary-fixed": "#111c2d"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "container-padding": "24px",
+                        "stack-sm": "8px",
+                        "section-gap": "48px",
+                        "unit": "4px"
+                    },
+                    fontFamily: {
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    fontSize: {
+                        "headline-md-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+                        "headline-md": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "headline-sm": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "data-mono": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .hud-border {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .active-border {
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+        
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #00e5ff;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #00e5ff;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface h-screen w-screen overflow-hidden font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container flex flex-col md:flex-row">
+<!-- Sidebar Navigation (Desktop) -->
+<aside class="hidden md:flex flex-col w-20 lg:w-64 h-full bg-surface-container-low border-r border-white/10 z-[60]">
+<div class="h-16 flex items-center justify-center lg:justify-start lg:px-container-padding border-b border-white/10">
+<span class="material-symbols-outlined text-primary-container text-2xl lg:hidden">precision_manufacturing</span>
+<span class="font-headline-sm text-headline-sm text-primary-container hidden lg:block tracking-tight">ArcherLab Edge</span>
+</div>
+<nav class="flex-1 py-stack-md flex flex-col gap-unit px-unit">
+<a class="flex items-center gap-stack-md px-stack-md py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-caps text-label-caps hidden lg:block">Dashboard</span>
+</a>
+<a class="flex items-center gap-stack-md px-stack-md py-3 rounded-lg bg-secondary-container text-on-secondary-container font-bold active-border transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">videocam</span>
+<span class="font-label-caps text-label-caps hidden lg:block">Analysis</span>
+</a>
+<a class="flex items-center gap-stack-md px-stack-md py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps hidden lg:block">Insights</span>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<div class="flex items-center gap-stack-md px-stack-md py-3 text-on-surface-variant border-t border-white/10">
+<span class="material-symbols-outlined text-outline">shield_person</span>
+<div class="hidden lg:flex flex-col">
+<span class="font-label-caps text-[10px] text-outline">PRIVACY VAULT</span>
+<span class="font-label-caps text-[10px] text-primary-container">Local Processing</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 relative h-full w-full flex flex-col">
+<!-- Top App Bar (Mobile Only) -->
+<header class="md:hidden fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-white/10 flex justify-between items-center px-gutter py-unit h-16">
+<button class="text-on-surface-variant active:scale-95 duration-150 p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-sm text-headline-sm text-primary-container tracking-tight">Analysis</span>
+<button class="text-primary-container active:scale-95 duration-150 p-2">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<!-- Camera Viewport Canvas -->
+<div class="flex-1 relative bg-black overflow-hidden mt-16 md:mt-0 pb-20 md:pb-0">
+<!-- Simulated Camera Feed / Image -->
+<div class="absolute inset-0 bg-surface-dim">
+<img class="w-full h-full object-cover opacity-80" data-alt="A professional archer at full draw, viewed from the side in a modern indoor training facility. The lighting is low and focused on the athlete, creating a dramatic, high-contrast scene. Subtle, glowing cyan lines and wireframe nodes are superimposed over the archer's body joints (shoulders, elbows, wrists, hips, head) simulating a real-time biomechanical motion tracking HUD. The aesthetic is technical, sleek, and precision-focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDukK-MG03ZcGv3jJSbDUiMPxnsVjoBrR0hxcZ4XjRNt8kBRtxZBxhL2_fbCP0efMkh3uviNVDEBEaly7W9WYJfR9s2VCYwWWdlkf1hu95IgtgfOvkNPrFwitwp8c4BN7a7RiYBvHHRtCrCRDmTeLXDSb0OAxAvETZ9LAFAef2RvkNrHju4EujvBhGhVOGYk3zNlkmgUnY2s8yGRD_-W07KIc38DlavdMRLXdnN5DCcXMlke7ekBd4j"/>
+<!-- HUD Overlay Gradient -->
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"></div>
+</div>
+<!-- Top HUD Elements -->
+<div class="absolute top-4 left-4 right-4 flex justify-between items-start z-10 pointer-events-none flex-wrap gap-2">
+<div class="flex gap-2 flex-wrap">
+<div class="flex items-center gap-2 bg-surface-container/60 backdrop-blur-md px-3 py-1.5 rounded hud-border">
+<div class="w-2 h-2 rounded-full bg-primary-container pulse-dot"></div>
+<span class="font-label-caps text-label-caps text-primary-container">ARCHER DETECTED</span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container/60 backdrop-blur-md px-3 py-1.5 rounded hud-border">
+<span class="material-symbols-outlined text-outline text-sm">memory</span>
+<span class="font-label-caps text-label-caps text-primary-container">LOCAL AI</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<div class="bg-surface-container/60 backdrop-blur-md px-4 py-2 rounded hud-border flex items-center gap-3">
+<span class="material-symbols-outlined text-outline text-sm">timer</span>
+<span class="font-data-mono text-data-mono text-on-surface" id="session-timer">00:02:45</span>
+</div>
+</div>
+</div>
+<!-- Right Sidebar Overlay (Live Metrics) -->
+<div class="absolute right-4 top-20 bottom-32 w-64 flex flex-col gap-unit overflow-y-auto pointer-events-none pb-4 z-20">
+<div class="bg-surface-container-low/80 backdrop-blur-md p-stack-md rounded-lg hud-border">
+<div class="flex justify-between items-center mb-stack-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant">SHOULDER ALIGNMENT</span>
+<span class="font-data-mono text-xs text-primary-container">91%</span>
+</div>
+<div class="w-full h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[91%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-low/80 backdrop-blur-md p-stack-md rounded-lg hud-border">
+<div class="flex justify-between items-center mb-stack-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant">BOW ARM STABILITY</span>
+<span class="font-data-mono text-xs text-secondary-fixed-dim">87%</span>
+</div>
+<div class="w-full h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-secondary-fixed-dim w-[87%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-low/80 backdrop-blur-md p-stack-md rounded-lg hud-border">
+<div class="flex justify-between items-center mb-stack-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant">HEAD STABILITY</span>
+<span class="font-data-mono text-xs text-primary-container">94%</span>
+</div>
+<div class="w-full h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[94%]"></div>
+</div>
+</div>
+</div>
+<!-- Professional Bottom Sheet Controls -->
+<div class="absolute bottom-0 left-0 w-full z-30 bg-surface-container-low/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl flex flex-col pointer-events-auto pb-24 md:pb-6 transition-transform duration-300 transform translate-y-0 shadow-2xl">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center py-4 cursor-pointer">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full"></div>
+</div>
+<!-- Controls Content (Scrollable Area) -->
+<div class="px-container-padding pb-6 overflow-y-auto flex flex-col gap-6 max-h-[45vh]">
+<!-- Selection Toggles -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Camera Selection -->
+<div>
+<span class="font-label-caps text-label-caps text-outline block mb-2">CAMERA</span>
+<div class="flex bg-surface-variant rounded-lg p-1">
+<button class="flex-1 py-1.5 text-xs font-label-caps rounded-md bg-surface-container-highest text-on-surface shadow-sm">FRONT</button>
+<button class="flex-1 py-1.5 text-xs font-label-caps rounded-md text-on-surface-variant">REAR</button>
+</div>
+</div>
+<!-- Angle Selector -->
+<div>
+<span class="font-label-caps text-label-caps text-outline block mb-2">ANGLE</span>
+<div class="flex bg-surface-variant rounded-lg p-1">
+<button class="flex-1 py-1.5 text-xs font-label-caps rounded-md bg-surface-container-highest text-on-surface shadow-sm">SIDE</button>
+<button class="flex-1 py-1.5 text-xs font-label-caps rounded-md text-on-surface-variant">FRONT</button>
+<button class="flex-1 py-1.5 text-xs font-label-caps rounded-md text-on-surface-variant">REAR</button>
+</div>
+</div>
+</div>
+<!-- Overlays Toggles -->
+<div>
+<span class="font-label-caps text-label-caps text-outline block mb-3">OVERLAYS</span>
+<div class="grid grid-cols-2 gap-y-4 gap-x-6">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm text-on-surface">Skeleton</span>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10" id="toggle1" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="toggle1"></label>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm text-on-surface">Joint Angles</span>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10" id="toggle2" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="toggle2"></label>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm text-on-surface">Movement Trails</span>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10" id="toggle3" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="toggle3"></label>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm text-on-surface">Metrics</span>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10" id="toggle4" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="toggle4"></label>
+</div>
+</label>
+</div>
+</div>
+<!-- Sliders -->
+<div class="space-y-5">
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-caps text-label-caps text-outline">RELEASE SENSITIVITY</span>
+<span class="text-xs text-on-surface-variant font-data-mono">HIGH</span>
+</div>
+<input class="w-full" max="100" min="1" type="range" value="80"/>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-caps text-label-caps text-outline">MOVEMENT SMOOTHING</span>
+<span class="text-xs text-on-surface-variant font-data-mono">MED</span>
+</div>
+<input class="w-full" max="100" min="1" type="range" value="50"/>
+</div>
+</div>
+</div>
+<!-- Persistent Bottom Action Bar -->
+<div class="px-gutter pt-2 bg-gradient-to-t from-surface-container-low to-transparent flex justify-center items-center gap-4">
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-white/10 text-on-surface hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">pause</span>
+</button>
+<button class="flex-1 max-w-[220px] h-14 bg-error text-on-error hover:bg-error/90 transition-colors font-label-caps text-label-caps rounded-full shadow-[0_0_20px_rgba(255,180,171,0.25)] flex items-center justify-center gap-2">
+<span class="text-[18px]">●</span>
+            MARK RELEASE
+        </button>
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container border border-white/10 text-on-surface hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">camera</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-primary-container/20 border border-primary-container/30 text-primary-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Nav Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-20 bg-surface/90 backdrop-blur-md border-t border-white/10">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-stack-md py-1 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-caps text-[10px] mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container/20 text-primary-container rounded-xl px-stack-md py-1 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">videocam</span>
+<span class="font-label-caps text-[10px] mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-stack-md py-1 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-[10px] mt-1">Insights</span>
+</a>
+</nav>
+</main>
+<script>
+        // Simple timer logic for demonstration
+        let seconds = 165; // Start at 00:02:45
+        const timerElement = document.getElementById('session-timer');
+        
+        setInterval(() => {
+            seconds++;
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            timerElement.textContent = `${h}:${m}:${s}`;
+        }, 1000);
+    </script>
+</body></html>

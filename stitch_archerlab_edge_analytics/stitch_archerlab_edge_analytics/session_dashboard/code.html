@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ArcherLab Edge - Session Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#00626e",
+                    "primary-container": "#00e5ff",
+                    "background": "#0b1326",
+                    "surface-bright": "#31394d",
+                    "outline-variant": "#3b494c",
+                    "inverse-surface": "#dae2fd",
+                    "primary-fixed": "#9cf0ff",
+                    "inverse-on-surface": "#283044",
+                    "on-tertiary-fixed": "#111c2d",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-tint": "#00daf3",
+                    "primary": "#c3f5ff",
+                    "surface-variant": "#2d3449",
+                    "on-surface-variant": "#bac9cc",
+                    "on-error": "#690005",
+                    "inverse-primary": "#006875",
+                    "outline": "#849396",
+                    "tertiary": "#e6edff",
+                    "on-surface": "#dae2fd",
+                    "on-tertiary-fixed-variant": "#3c475a",
+                    "surface-dim": "#0b1326",
+                    "secondary": "#b7c8e1",
+                    "on-tertiary": "#263143",
+                    "surface-container": "#171f33",
+                    "tertiary-fixed": "#d8e3fb",
+                    "tertiary-container": "#c6d1e9",
+                    "on-secondary-fixed": "#0b1c30",
+                    "surface-container-low": "#131b2e",
+                    "on-secondary": "#213145",
+                    "on-primary-fixed-variant": "#004f58",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-container-high": "#222a3d",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-background": "#dae2fd",
+                    "on-primary-fixed": "#001f24",
+                    "tertiary-fixed-dim": "#bcc7de",
+                    "on-tertiary-container": "#4f5a6e",
+                    "error-container": "#93000a",
+                    "secondary-container": "#3a4a5f",
+                    "on-primary": "#00363d",
+                    "surface": "#0b1326",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#060e20",
+                    "primary-fixed-dim": "#00daf3",
+                    "on-secondary-container": "#a9bad3",
+                    "surface-container-highest": "#2d3449"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "gutter": "16px",
+                    "container-padding": "24px",
+                    "section-gap": "48px",
+                    "stack-sm": "8px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": [
+                            "Hanken Grotesk"
+                    ],
+                    "display-lg": [
+                            "Hanken Grotesk"
+                    ],
+                    "data-mono": [
+                            "JetBrains Mono"
+                    ],
+                    "label-caps": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-md-mobile": [
+                            "Hanken Grotesk"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Hanken Grotesk"
+                    ]
+            },
+            "fontSize": {
+                    "headline-md": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "data-mono": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-sm": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0b1326; /* background */
+            color: #dae2fd; /* on-background */
+        }
+        
+        .card-bg {
+            background: linear-gradient(145deg, rgba(23, 31, 51, 0.9), rgba(19, 27, 46, 0.9)); /* surface-container to surface-container-low */
+        }
+        
+        .glass-panel {
+            background: rgba(34, 42, 61, 0.6); /* surface-container-high */
+            backdrop-filter: blur(12px);
+        }
+        
+        .metric-gradient {
+            background: linear-gradient(180deg, rgba(0, 218, 243, 0.1) 0%, rgba(0, 218, 243, 0) 100%);
+        }
+        
+        /* Custom scrollbar for shot list */
+        .shot-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .shot-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .shot-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 218, 243, 0.3);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row">
+<!-- Mobile TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-dim/80 dark:bg-surface-dim/80 backdrop-blur-md border-b border-white/10 md:hidden flex justify-between items-center px-gutter h-16 transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">devices_fold_2</span>
+<span class="font-headline-sm text-headline-sm-mobile text-primary-fixed-dim tracking-tight">ArcherLab Edge</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright/50 transition-colors scale-95 duration-100 p-2 rounded-full cursor-pointer">sensors</span>
+</header>
+<!-- Desktop Navigation Drawer -->
+<nav class="hidden md:flex flex-col p-container-padding space-y-stack-md bg-surface-container-high dark:bg-surface-container-high h-full w-80 rounded-r-xl border-r border-white/10 shadow-2xl fixed left-0 top-0 bottom-0 z-40">
+<div class="flex items-center gap-3 mb-8">
+<img alt="Archer Profile" class="w-12 h-12 rounded-full object-cover border border-primary/30" data-alt="A close-up profile portrait of an elite archer in high-tech, futuristic competitive gear. Dark moody lighting with striking cyan rim light highlighting focused eyes. Modern corporate athletic aesthetic. Deep blacks and cool blues dominating the scene." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQolUrwbaXkOCixo2vBssH7yXOeYwGegvMgbofrGYpr0l-Rv-VUxfH5RjdTCivQ4hJAjZMZhuW_EL3x_cA1y-mQuHULBjrcdhg48b7Rqv6oRQvvTjT7RG6-U51r6f7xMOZTIBcg4oA6ohmaWCUf8Jt6kMt4cJcUfwMtUTl_gSsN8Aml1W_8zbNWwlvaFyjbpjtfv3FJNjNiaOWFv2aaJuQ066m6MXlN9GVF-dQ9WxMLA628beSYgD7"/>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary">Elite Archer</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">VNT-9200</p>
+<p class="font-data-mono text-[10px] text-primary-fixed-dim mt-1">Status: Calibrated</p>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-md text-body-md">Session History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span class="font-body-md text-body-md">Sensor Calibration</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-body-md text-body-md">Athlete Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Lab Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full md:ml-80 pt-20 pb-24 md:pt-container-padding md:pb-container-padding px-gutter md:px-section-gap overflow-y-auto">
+<!-- Header -->
+<div class="mb-section-gap flex justify-between items-end">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-background mb-2">Training Block Alpha</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Session Summary • 14:30 - 16:15</p>
+</div>
+<div class="hidden md:flex items-center gap-2 bg-surface-container py-2 px-4 rounded-full border border-white/10">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-data-mono text-data-mono text-primary">Live Telemetry Sync</span>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-stack-md md:gap-stack-md">
+<!-- Key Metrics - Top Row -->
+<div class="col-span-1 md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-stack-md">
+<!-- Total Shots -->
+<div class="card-bg border border-white/5 rounded-xl p-container-padding flex flex-col justify-between">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-4">Total Shots</span>
+<div>
+<span class="font-headline-md text-headline-md-mobile md:text-headline-md text-on-background">142</span>
+<p class="font-data-mono text-[10px] text-primary mt-1">+12 from target</p>
+</div>
+</div>
+<!-- Avg Score -->
+<div class="card-bg border border-white/5 rounded-xl p-container-padding flex flex-col justify-between">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-4">Avg Score</span>
+<div>
+<span class="font-headline-md text-headline-md-mobile md:text-headline-md text-on-background">9.6</span>
+<p class="font-data-mono text-[10px] text-primary mt-1">Target: 9.5</p>
+</div>
+</div>
+<!-- Release Consistency -->
+<div class="card-bg border border-white/5 rounded-xl p-container-padding flex flex-col justify-between col-span-2 md:col-span-2 relative overflow-hidden">
+<div class="absolute inset-0 metric-gradient pointer-events-none"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Release Consistency</span>
+<span class="bg-[#0b292c] text-primary px-2 py-0.5 rounded text-[10px] font-label-caps border border-primary/20">Optimal</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-end gap-2">
+<span class="font-headline-md text-headline-md-mobile md:text-headline-md text-on-background">94</span>
+<span class="font-data-mono text-data-mono text-on-surface-variant pb-1">%</span>
+</div>
+<!-- Simple visual bar -->
+<div class="w-full h-1 bg-surface-bright rounded-full mt-3 overflow-hidden">
+<div class="h-full bg-primary w-[94%] rounded-full shadow-[0_0_8px_rgba(0,218,243,0.6)]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Highlights Panel -->
+<div class="col-span-1 md:col-span-4 glass-panel border border-primary/20 rounded-xl p-container-padding flex flex-col gap-stack-md">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">insights</span>
+<h3 class="font-headline-sm text-body-lg text-on-background">Session Insights</h3>
+</div>
+<div class="bg-surface-dim/50 rounded-lg p-4 border border-white/5">
+<p class="font-label-caps text-label-caps text-primary mb-1">Strongest Metric</p>
+<p class="font-body-md text-body-md text-on-background">Head Stability</p>
+<p class="font-data-mono text-[10px] text-on-surface-variant mt-2 opacity-80">Deviation &lt; 0.2mm post-draw</p>
+</div>
+<div class="bg-surface-dim/50 rounded-lg p-4 border border-white/5">
+<p class="font-label-caps text-label-caps text-error mb-1">Focus Area</p>
+<p class="font-body-md text-body-md text-on-background">Shoulder Alignment</p>
+<p class="font-data-mono text-[10px] text-on-surface-variant mt-2 opacity-80">Fatigue noted in sets 4-6</p>
+</div>
+</div>
+<!-- Stability Trend (Chart Area) -->
+<div class="col-span-1 md:col-span-8 card-bg border border-white/5 rounded-xl p-container-padding min-h-[300px] flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant">Stability Trend</h3>
+<div class="flex gap-2">
+<button class="font-label-caps text-[10px] px-3 py-1 rounded bg-surface-variant text-on-background border border-white/10 hover:border-primary/50 transition-colors">YAW</button>
+<button class="font-label-caps text-[10px] px-3 py-1 rounded bg-primary/10 text-primary border border-primary/30">PITCH</button>
+</div>
+</div>
+<!-- Chart Visualization Placeholder -->
+<div class="flex-1 w-full relative flex items-end justify-between px-2 pb-4">
+<!-- Grid lines -->
+<div class="absolute inset-0 border-b border-l border-white/10">
+<div class="absolute w-full h-[1px] bg-white/5 top-1/4"></div>
+<div class="absolute w-full h-[1px] bg-white/5 top-2/4"></div>
+<div class="absolute w-full h-[1px] bg-white/5 top-3/4"></div>
+</div>
+<!-- Sparkline Mockup (CSS driven for layout, logic would be JS) -->
+<svg class="absolute inset-0 h-full w-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<defs>
+<lineargradient id="chartGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#00daf3" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#00daf3" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 Q10,70 20,75 T40,60 T60,65 T80,40 T100,50 L100,100 L0,100 Z" fill="url(#chartGrad)"></path>
+<path d="M0,80 Q10,70 20,75 T40,60 T60,65 T80,40 T100,50" fill="none" stroke="#00daf3" stroke-linejoin="round" stroke-width="2"></path>
+<!-- Data points -->
+<circle cx="20" cy="75" fill="#0b1326" r="3" stroke="#00daf3" stroke-width="1.5"></circle>
+<circle cx="40" cy="60" fill="#0b1326" r="3" stroke="#00daf3" stroke-width="1.5"></circle>
+<circle cx="60" cy="65" fill="#0b1326" r="3" stroke="#00daf3" stroke-width="1.5"></circle>
+<circle cx="80" cy="40" fill="#00daf3" r="4" stroke="#fff" stroke-width="1"></circle>
+</svg>
+<!-- X-Axis Labels -->
+<div class="absolute bottom-[-20px] left-0 w-full flex justify-between font-data-mono text-[10px] text-on-surface-variant">
+<span>Set 1</span>
+<span>Set 2</span>
+<span>Set 3</span>
+<span>Set 4</span>
+<span>Set 5</span>
+</div>
+</div>
+</div>
+<!-- Scrollable Shot List -->
+<div class="col-span-1 md:col-span-4 card-bg border border-white/5 rounded-xl flex flex-col h-[400px] overflow-hidden">
+<div class="p-4 border-b border-white/5 flex justify-between items-center bg-surface-container-high/50 z-10">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant">Individual Shots</h3>
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer hover:text-primary-fixed">filter_list</span>
+</div>
+<div class="flex-1 overflow-y-auto shot-scroll p-4 space-y-2">
+<!-- Shot Items -->
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-white/5 rounded hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-primary transition-colors">#142</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-primary font-bold">10.2</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#00daf3]"></span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-white/5 rounded hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-primary transition-colors">#141</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-on-background">9.8</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#bac9cc]"></span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-white/5 rounded hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-primary transition-colors">#140</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-on-background">9.4</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#bac9cc]"></span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-error/20 rounded hover:border-error/50 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-error transition-colors">#139</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-error">8.1</span>
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-white/5 rounded hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-primary transition-colors">#138</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-on-background">9.9</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#bac9cc]"></span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-white/5 rounded hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-primary transition-colors">#137</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-on-background">9.7</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#bac9cc]"></span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 bg-surface-dim/30 border border-white/5 rounded hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-data-mono text-on-surface-variant group-hover:text-primary transition-colors">#136</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-data-mono text-data-mono text-primary font-bold">10.5</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#00daf3]"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container-low/90 dark:bg-surface-container-low/90 backdrop-blur-xl border-t border-white/5 flex justify-around items-center h-20 pb-safe px-4">
+<a class="flex flex-col items-center justify-center bg-primary-container/20 text-primary-fixed-dim rounded-full px-4 py-1 hover:text-primary transition-all active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-caps text-label-caps mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-caps text-label-caps mt-1">Insights</span>
+</a>
+</nav>
+</body></html>
