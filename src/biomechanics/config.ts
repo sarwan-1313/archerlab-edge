@@ -1,0 +1,16 @@
+export const BIOMECHANICS_CONFIG = {
+  minLandmarkVisibility: 0.55,
+  minShoulderWidth: 0.025,
+  windowDurationMs: 2000,
+  minMotionHistoryMs: 500,
+  minMotionSamples: 4,
+  maxSampleGapMs: 350,
+  trackingLossResetMs: 750,
+  smoothingTimeConstantMs: 180,
+  smoothingResetGapMs: 750,
+  uiUpdateIntervalMs: 90,
+  referenceCaptureDurationMs: 900,
+  referenceCaptureTimeoutMs: 1600,
+  referenceMinHistoryMs: 750,
+  referenceMinSamples: 6,
+} as const;

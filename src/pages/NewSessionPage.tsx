@@ -1,12 +1,17 @@
+import { useState } from 'react';
 import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
 import { SegmentedControl } from '../components/SegmentedControl';
+import type { SessionConfiguration } from '../types';
+import type { ArcherHandedness, CameraView } from '../types/biomechanics';
 
 type NewSessionPageProps = {
-  onStart?: () => void;
+  onStart?: (configuration: SessionConfiguration) => void;
 };
 
 export function NewSessionPage({ onStart }: NewSessionPageProps) {
+  const [handedness, setHandedness] = useState<ArcherHandedness>('right');
+  const [cameraView, setCameraView] = useState<CameraView>('side');
   return (
     <div className="session-setup-page">
       <PageHeader
@@ -15,13 +20,13 @@ export function NewSessionPage({ onStart }: NewSessionPageProps) {
         compact
       />
 
-      <form className="session-setup" onSubmit={(event) => { event.preventDefault(); onStart?.(); }}>
+      <form className="session-setup" onSubmit={(event) => { event.preventDefault(); onStart?.({ handedness, cameraView }); }}>
         <div className="session-setup__intro">
           <div>
             <span className="eyebrow">Session setup</span>
             <h2>Build your analysis profile</h2>
           </div>
-          <span className="session-setup__count">4 settings</span>
+          <span className="session-setup__count">6 settings</span>
         </div>
 
         <div className="session-setup__fields">
@@ -63,9 +68,24 @@ export function NewSessionPage({ onStart }: NewSessionPageProps) {
             <SegmentedControl
               name="handedness"
               columns={2}
+              onChange={(value) => setHandedness(value as ArcherHandedness)}
               options={[
                 { label: 'Right hand', value: 'right', checked: true, description: 'Bow held left' },
                 { label: 'Left hand', value: 'left', description: 'Bow held right' },
+              ]}
+            />
+          </fieldset>
+
+          <fieldset className="field-group field-group--wide">
+            <legend className="field-label">Camera view</legend>
+            <SegmentedControl
+              name="cameraView"
+              columns={3}
+              onChange={(value) => setCameraView(value as CameraView)}
+              options={[
+                { label: 'Side view', value: 'side', checked: true, description: 'Recommended for draw form' },
+                { label: 'Front view', value: 'front', description: 'Shoulder alignment' },
+                { label: 'Rear view', value: 'rear', description: 'Torso symmetry' },
               ]}
             />
           </fieldset>

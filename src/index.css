@@ -403,6 +403,37 @@ select { color-scheme: dark; }
 .calibration-primary:hover { background: var(--primary); box-shadow: 0 10px 28px rgba(0,218,243,.2); }
 .calibration-primary:disabled { background: #293649; color: #71818d; box-shadow: none; cursor: not-allowed; }
 
+/* Real-time biomechanics */
+.biomechanics-notice { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 12px; padding: 11px; border: 1px solid rgba(0,229,255,.12); border-radius: 9px; background: rgba(0,229,255,.035); color: #8fa7b1; font-size: 10px; line-height: 15px; }
+.biomechanics-notice svg { flex: 0 0 auto; color: var(--primary-fixed-dim); }
+.biomechanics-card { position: relative; min-height: 135px; padding: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; background: linear-gradient(145deg, rgba(34,42,61,.86), rgba(18,27,45,.72)); }
+.biomechanics-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--primary-container); box-shadow: 0 0 12px rgba(0,229,255,.35); }
+.biomechanics-card--unavailable { opacity: .72; }
+.biomechanics-card--unavailable::before { background: #60727d; box-shadow: none; }
+.biomechanics-card__heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.biomechanics-card__heading > span:first-child { color: #b6c7cf; font: 700 9px/13px 'JetBrains Mono', monospace; letter-spacing: .07em; text-transform: uppercase; }
+.biomechanics-card__quality { color: #718792; font: 600 8px/12px 'JetBrains Mono', monospace; text-transform: uppercase; }
+.biomechanics-card__quality.is-good { color: #69cfbd; }
+.biomechanics-card__reading { display: flex; align-items: baseline; gap: 5px; margin-top: 8px; }
+.biomechanics-card__reading strong { color: #edf9ff; font: 700 30px/34px 'Hanken Grotesk', sans-serif; letter-spacing: -.025em; }
+.biomechanics-card__reading span { color: var(--primary-fixed-dim); font: 600 9px/13px 'JetBrains Mono', monospace; }
+.biomechanics-card p { min-height: 15px; margin-top: 6px; color: #8499a4; font-size: 9px; line-height: 14px; }
+.biomechanics-card__delta, .biomechanics-card__window { display: block; margin-top: 6px; color: #85b8c2; font: 600 8px/12px 'JetBrains Mono', monospace; }
+.biomechanics-card__window { color: #657d89; }
+.biomechanics-debug { margin-top: 12px; border: 1px solid rgba(255,255,255,.07); border-radius: 10px; background: rgba(5,12,27,.35); }
+.biomechanics-debug summary { padding: 11px 13px; color: #9bb0ba; cursor: pointer; font: 700 9px/13px 'JetBrains Mono', monospace; letter-spacing: .06em; text-transform: uppercase; }
+.biomechanics-debug dl { display: grid; gap: 5px; margin: 0; padding: 0 13px 13px; }
+.biomechanics-debug dl div { display: flex; justify-content: space-between; gap: 12px; color: #718792; font: 500 9px/13px 'JetBrains Mono', monospace; }
+.biomechanics-debug dd { color: #b4c7cf; text-align: right; }
+.reference-capture { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 8px; margin-top: 14px; padding: 12px; border: 1px solid rgba(0,229,255,.12); border-radius: 10px; background: rgba(0,229,255,.035); }
+.reference-capture > div { display: flex; min-width: 0; flex-direction: column; }
+.reference-capture strong { color: #c7dce3; font-size: 11px; }
+.reference-capture span { margin-top: 2px; color: #7e949f; font-size: 9px; }
+.reference-capture button { min-height: 34px; padding: 0 10px; border-radius: 7px; background: var(--primary-fixed-dim); color: #00363d; font-size: 9px; font-weight: 700; }
+.reference-capture button:disabled { background: #293649; color: #71818d; cursor: not-allowed; }
+.reference-capture .reference-capture__reset { border: 1px solid rgba(255,255,255,.1); background: transparent; color: #91a5af; }
+.reference-capture p { grid-column: 1 / -1; color: #ffc1bd; font-size: 9px; }
+
 @media (max-width: 1100px) {
   .analysis-layout, .calibration-layout { grid-template-columns: 1fr; }
   .analytics-panel__grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -463,6 +494,9 @@ select { color-scheme: dark; }
   .calibration-step__state { display: block; }
   .pose-debug dl { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .calibration-pose-status .pose-status { max-width: calc(100% - 90px); }
+  .reference-capture { grid-template-columns: 1fr 1fr; }
+  .reference-capture > div { grid-column: 1 / -1; }
+  .reference-capture button { width: 100%; }
 }
 
 @media (max-width: 420px) {

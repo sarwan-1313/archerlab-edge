@@ -1,4 +1,5 @@
 import type { AppIconName } from './components/AppIcon';
+import type { ArcherHandedness, CameraView } from './types/biomechanics';
 
 export type PageKey =
   | 'home'
@@ -22,3 +23,5 @@ export type Metric = {
   detail?: string;
   tone?: 'primary' | 'secondary' | 'warning' | 'neutral';
 };
+
+export type SessionConfiguration = { handedness: ArcherHandedness; cameraView: CameraView };

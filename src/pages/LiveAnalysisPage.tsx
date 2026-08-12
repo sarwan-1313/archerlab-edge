@@ -1,23 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppIcon } from '../components/AppIcon';
+import { BiomechanicsDebugPanel } from '../components/biomechanics/BiomechanicsDebugPanel';
+import { BiomechanicsMetricCard } from '../components/biomechanics/BiomechanicsMetricCard';
 import { CameraPreview } from '../components/CameraPreview';
-import { MetricCard } from '../components/MetricCard';
 import { PageHeader } from '../components/PageHeader';
 import { PoseDebugPanel } from '../components/pose/PoseDebugPanel';
 import { PoseOverlay } from '../components/pose/PoseOverlay';
 import { PoseStatus } from '../components/pose/PoseStatus';
 import { useLocalCamera } from '../hooks/useLocalCamera';
+import { useBiomechanics } from '../hooks/useBiomechanics';
 import { usePoseLandmarker } from '../hooks/usePoseLandmarker';
+import type { ArcherHandedness, BiomechanicsReference, CameraView } from '../types/biomechanics';
 import { getPoseDetectionState } from '../utils/poseAnalysis';
 
 const CAMERA_OPTIONS = { autoStart: true } as const;
-
-const analysisMetrics = [
-  { title: 'Shoulder Alignment', value: 91, unit: '%', progress: 91, status: 'Prototype metric', tone: 'primary' as const, icon: 'calibration' as const },
-  { title: 'Bow Arm Stability', value: 87, unit: '%', progress: 87, status: 'Prototype metric', tone: 'secondary' as const, icon: 'accessibility' as const },
-  { title: 'Release Consistency', value: 84, unit: '%', progress: 84, status: 'Prototype metric', tone: 'warning' as const, icon: 'target' as const },
-  { title: 'Brace Height', value: 6.2, unit: 'cm', progress: 78, status: 'Prototype metric', tone: 'neutral' as const, icon: 'scan' as const },
-];
 
 function formatDuration(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -27,14 +23,18 @@ function formatDuration(totalSeconds: number) {
 
 type LiveAnalysisPageProps = {
   onRecalibrate?: () => void;
+  handedness: ArcherHandedness;
+  cameraView: CameraView;
+  onCameraViewChange?: (view: CameraView) => void;
+  reference?: BiomechanicsReference;
 };
 
-export function LiveAnalysisPage({ onRecalibrate }: LiveAnalysisPageProps) {
+export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCameraViewChange, reference }: LiveAnalysisPageProps) {
   const { devices, selectedDeviceId, setSelectedDeviceId, stream, error, isLoading, startCamera, stopCamera } = useLocalCamera(CAMERA_OPTIONS);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pose = usePoseLandmarker({ videoRef, active: Boolean(stream) });
+  const biomechanics = useBiomechanics({ poseResult: pose.result, handedness, active: Boolean(stream), resetKey: `${selectedDeviceId ?? 'default-camera'}:${cameraView}`, reference });
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [angle, setAngle] = useState('side');
   const [quality, setQuality] = useState('720p');
   const detectionState = getPoseDetectionState(pose.result);
 
@@ -98,7 +98,7 @@ export function LiveAnalysisPage({ onRecalibrate }: LiveAnalysisPageProps) {
 
               <div className="camera-hero__footer">
                 <span><AppIcon name="camera" size={16} />{deviceLabel}</span>
-                <span>{quality} · {angle === 'side' ? 'Side view' : angle === 'front' ? 'Front view' : 'Rear view'}</span>
+                <span>{quality} · {cameraView === 'side' ? 'Side view' : cameraView === 'front' ? 'Front view' : 'Rear view'}</span>
               </div>
             </CameraPreview>
           </div>
@@ -119,7 +119,7 @@ export function LiveAnalysisPage({ onRecalibrate }: LiveAnalysisPageProps) {
               </label>
               <label>
                 <span>Angle</span>
-                <select value={angle} onChange={(event) => setAngle(event.target.value)}>
+                <select value={cameraView} onChange={(event) => onCameraViewChange?.(event.target.value as CameraView)}>
                   <option value="side">Side View</option>
                   <option value="front">Front View</option>
                   <option value="rear">Rear View</option>
@@ -143,29 +143,24 @@ export function LiveAnalysisPage({ onRecalibrate }: LiveAnalysisPageProps) {
           </div>
         </section>
 
-        <aside className="analytics-panel" aria-label="Prototype performance metrics">
+        <aside className="analytics-panel" aria-label="Real-time biomechanics metrics">
           <div className="analytics-panel__header">
-            <div><span className="eyebrow">Prototype only</span><h2>Form metrics</h2></div>
-            <span>Mock values</span>
+            <div><span className="eyebrow">Live landmarks</span><h2>Biomechanics</h2></div>
+            <span>{handedness}-handed · {biomechanics.snapshot.debug.bowSide} bow arm</span>
           </div>
-          <div className="prototype-notice">
+          <div className="biomechanics-notice">
             <AppIcon name="sensors" size={17} />
-            <span>These values are interface prototypes and are not calculated from pose landmarks yet.</span>
+            <span>Measured on this device from MediaPipe landmarks. Values pause when visibility is insufficient. {reference ? 'Personal reference deltas are active.' : 'No personal reference.'}</span>
           </div>
           <div className="analytics-panel__grid">
-            {analysisMetrics.map((metric) => (
-              <MetricCard
-                key={metric.title}
-                title={metric.title}
-                value={metric.value}
-                unit={metric.unit}
-                progress={metric.progress}
-                status={metric.status}
-                tone={metric.tone}
-                icon={<AppIcon name={metric.icon} size={18} />}
-              />
-            ))}
+            <BiomechanicsMetricCard title="Shoulder line" metric={biomechanics.snapshot.shoulderLineAngle} signed referenceDelta={biomechanics.snapshot.reference?.shoulderDeltaDeg} detail="Signed from image horizontal" />
+            <BiomechanicsMetricCard title="Bow-arm elbow" metric={biomechanics.snapshot.bowArmElbowAngle} referenceDelta={biomechanics.snapshot.reference?.bowArmDeltaDeg} detail={`${biomechanics.snapshot.bowArmElbowAngle.coordinateSpace === 'world' ? '3D world-landmark angle' : '2D image fallback'} · Recommended view: Side`} />
+            <BiomechanicsMetricCard title="Torso lean" metric={biomechanics.snapshot.torsoLean} signed referenceDelta={biomechanics.snapshot.reference?.torsoDeltaDeg} detail="Positive values lean screen-right" />
+            <BiomechanicsMetricCard title="Head motion" metric={biomechanics.snapshot.headMotion} detail="RMS movement normalized by shoulder width" />
+            <BiomechanicsMetricCard title="Bow-hand motion" metric={biomechanics.snapshot.bowHandMotion} detail="RMS movement over the rolling window" />
+            <BiomechanicsMetricCard title="Shoulder variation" metric={biomechanics.snapshot.shoulderVariation} detail="Shoulder-line angular standard deviation" />
           </div>
+          <BiomechanicsDebugPanel snapshot={biomechanics.snapshot} />
           <div className="privacy-note">
             <AppIcon name="shield" size={20} />
             <div><strong>Private by design</strong><span>Camera frames are processed locally and are never uploaded.</span></div>
@@ -175,4 +170,3 @@ export function LiveAnalysisPage({ onRecalibrate }: LiveAnalysisPageProps) {
     </div>
   );
 }
-

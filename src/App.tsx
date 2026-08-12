@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { AppIcon } from './components/AppIcon';
 import { BottomNav } from './components/BottomNav';
 import { PrivacyBadge } from './components/PrivacyBadge';
@@ -12,23 +12,26 @@ import { ManualShotEntryPage } from './pages/ManualShotEntryPage';
 import { ReplayAnalysisPage } from './pages/ReplayAnalysisPage';
 import { SessionDashboardPage } from './pages/SessionDashboardPage';
 import { MultiCameraPage } from './pages/MultiCameraPage';
-import type { PageKey } from './types';
-
-const pageMap: Record<PageKey, (navigate: (page: PageKey) => void) => ReactNode> = {
-  home: () => <HomePage />,
-  'new-session': (navigate) => <NewSessionPage onStart={() => navigate('calibration')} />,
-  calibration: (navigate) => <CalibrationPage onComplete={() => navigate('live-analysis')} />,
-  'live-analysis': (navigate) => <LiveAnalysisPage onRecalibrate={() => navigate('calibration')} />,
-  'manual-shot-entry': () => <ManualShotEntryPage />,
-  'replay-analysis': () => <ReplayAnalysisPage />,
-  dashboard: () => <SessionDashboardPage />,
-  'multi-camera': () => <MultiCameraPage />,
-};
+import type { PageKey, SessionConfiguration } from './types';
+import type { BiomechanicsReference, CameraView } from './types/biomechanics';
 
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('home');
+  const [sessionConfiguration, setSessionConfiguration] = useState<SessionConfiguration>({ handedness: 'right', cameraView: 'side' });
+  const [reference, setReference] = useState<BiomechanicsReference>();
 
-  const currentPage = useMemo(() => pageMap[activePage](setActivePage), [activePage]);
+  const currentPage = useMemo(() => {
+    switch (activePage) {
+      case 'home': return <HomePage />;
+      case 'new-session': return <NewSessionPage onStart={(configuration) => { setSessionConfiguration(configuration); setReference(undefined); setActivePage('calibration'); }} />;
+      case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => setActivePage('live-analysis')} />;
+      case 'live-analysis': return <LiveAnalysisPage handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onRecalibrate={() => setActivePage('calibration')} />;
+      case 'manual-shot-entry': return <ManualShotEntryPage />;
+      case 'replay-analysis': return <ReplayAnalysisPage />;
+      case 'dashboard': return <SessionDashboardPage />;
+      case 'multi-camera': return <MultiCameraPage />;
+    }
+  }, [activePage, reference, sessionConfiguration]);
 
   return (
     <div className="app-shell">

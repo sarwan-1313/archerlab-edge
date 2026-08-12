@@ -1,0 +1,33 @@
+export const POSE_LANDMARK = {
+  NOSE: 0,
+  LEFT_EAR: 7,
+  RIGHT_EAR: 8,
+  LEFT_SHOULDER: 11,
+  RIGHT_SHOULDER: 12,
+  LEFT_ELBOW: 13,
+  RIGHT_ELBOW: 14,
+  LEFT_WRIST: 15,
+  RIGHT_WRIST: 16,
+  LEFT_HIP: 23,
+  RIGHT_HIP: 24,
+  LEFT_KNEE: 25,
+  RIGHT_KNEE: 26,
+  LEFT_ANKLE: 27,
+  RIGHT_ANKLE: 28,
+} as const;
+
+export type PoseLandmarkName = keyof typeof POSE_LANDMARK;
+
+export const LANDMARK = {
+  nose: POSE_LANDMARK.NOSE,
+  leftEar: POSE_LANDMARK.LEFT_EAR,
+  rightEar: POSE_LANDMARK.RIGHT_EAR,
+  leftShoulder: POSE_LANDMARK.LEFT_SHOULDER,
+  rightShoulder: POSE_LANDMARK.RIGHT_SHOULDER,
+  leftElbow: POSE_LANDMARK.LEFT_ELBOW,
+  rightElbow: POSE_LANDMARK.RIGHT_ELBOW,
+  leftWrist: POSE_LANDMARK.LEFT_WRIST,
+  rightWrist: POSE_LANDMARK.RIGHT_WRIST,
+  leftHip: POSE_LANDMARK.LEFT_HIP,
+  rightHip: POSE_LANDMARK.RIGHT_HIP,
+} as const;

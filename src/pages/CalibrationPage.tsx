@@ -7,19 +7,25 @@ import { PoseDebugPanel } from '../components/pose/PoseDebugPanel';
 import { PoseOverlay } from '../components/pose/PoseOverlay';
 import { PoseStatus } from '../components/pose/PoseStatus';
 import { useLocalCamera } from '../hooks/useLocalCamera';
+import { useBiomechanics } from '../hooks/useBiomechanics';
 import { usePoseLandmarker } from '../hooks/usePoseLandmarker';
+import type { ArcherHandedness, BiomechanicsReference } from '../types/biomechanics';
 import { getCalibrationReadiness, getPoseDetectionState } from '../utils/poseAnalysis';
 
 const CAMERA_OPTIONS = { autoStart: true } as const;
 
 type CalibrationPageProps = {
   onComplete?: () => void;
+  handedness: ArcherHandedness;
+  reference?: BiomechanicsReference;
+  onReferenceChange?: (reference: BiomechanicsReference | undefined) => void;
 };
 
-export function CalibrationPage({ onComplete }: CalibrationPageProps) {
+export function CalibrationPage({ onComplete, handedness, reference, onReferenceChange }: CalibrationPageProps) {
   const { devices, selectedDeviceId, setSelectedDeviceId, stream, error, isLoading, startCamera } = useLocalCamera(CAMERA_OPTIONS);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pose = usePoseLandmarker({ videoRef, active: Boolean(stream) });
+  const biomechanics = useBiomechanics({ poseResult: pose.result, handedness, active: Boolean(stream), resetKey: selectedDeviceId ?? 'default-camera', reference, onReferenceChange });
 
   const deviceLabel = useMemo(
     () => devices.find((device) => device.deviceId === selectedDeviceId)?.label ?? 'Local Camera',
@@ -133,6 +139,18 @@ export function CalibrationPage({ onComplete }: CalibrationPageProps) {
 
           <PoseDebugPanel status={pose.status} stats={pose.debugStats} />
 
+          <div className="reference-capture">
+            <div>
+              <strong>{reference ? 'Reference captured' : 'Reference pose'}</strong>
+              <span>{reference ? `Median of ${reference.sampleCount} valid frames` : 'Hold your anchor posture while ArcherLab samples it.'}</span>
+            </div>
+            <button type="button" onClick={biomechanics.captureReference} disabled={!readiness.ready || biomechanics.isCapturingReference}>
+              {biomechanics.isCapturingReference ? 'Capturing…' : reference ? 'Recapture' : 'Capture reference'}
+            </button>
+            {reference ? <button type="button" className="reference-capture__reset" onClick={biomechanics.resetReference}>Clear</button> : null}
+            {biomechanics.captureError ? <p>{biomechanics.captureError}</p> : null}
+          </div>
+
           <div className="calibration-workflow__actions">
             <button type="button" className="calibration-primary" onClick={onComplete} disabled={!readiness.ready}>
               {readiness.ready ? 'Confirm calibration' : 'Complete visibility checks'}
@@ -144,4 +162,3 @@ export function CalibrationPage({ onComplete }: CalibrationPageProps) {
     </div>
   );
 }
-

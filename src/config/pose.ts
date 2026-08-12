@@ -11,6 +11,5 @@ export const POSE_CONFIG = {
   landmarkVisibilityThreshold: 0.55,
   lowVisibilityThreshold: 0.62,
   targetInferenceFps: 20,
-  uiUpdateIntervalMs: 160,
+  uiUpdateIntervalMs: 90,
 } as const;
-
