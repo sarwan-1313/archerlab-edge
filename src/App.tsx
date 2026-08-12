@@ -1,122 +1,65 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useMemo, useState, type ReactNode } from 'react';
+import { AppIcon } from './components/AppIcon';
+import { BottomNav } from './components/BottomNav';
+import { PrivacyBadge } from './components/PrivacyBadge';
+import { SidebarNav } from './components/SidebarNav';
+import { desktopNavItems, mobileNavItems } from './data/mockData';
+import { HomePage } from './pages/HomePage';
+import { NewSessionPage } from './pages/NewSessionPage';
+import { CalibrationPage } from './pages/CalibrationPage';
+import { LiveAnalysisPage } from './pages/LiveAnalysisPage';
+import { ManualShotEntryPage } from './pages/ManualShotEntryPage';
+import { ReplayAnalysisPage } from './pages/ReplayAnalysisPage';
+import { SessionDashboardPage } from './pages/SessionDashboardPage';
+import { MultiCameraPage } from './pages/MultiCameraPage';
+import type { PageKey } from './types';
+
+const pageMap: Record<PageKey, (navigate: (page: PageKey) => void) => ReactNode> = {
+  home: () => <HomePage />,
+  'new-session': (navigate) => <NewSessionPage onStart={() => navigate('calibration')} />,
+  calibration: (navigate) => <CalibrationPage onComplete={() => navigate('live-analysis')} />,
+  'live-analysis': (navigate) => <LiveAnalysisPage onRecalibrate={() => navigate('calibration')} />,
+  'manual-shot-entry': () => <ManualShotEntryPage />,
+  'replay-analysis': () => <ReplayAnalysisPage />,
+  dashboard: () => <SessionDashboardPage />,
+  'multi-camera': () => <MultiCameraPage />,
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activePage, setActivePage] = useState<PageKey>('home');
+
+  const currentPage = useMemo(() => pageMap[activePage](setActivePage), [activePage]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-shell">
+      <div className="app-frame">
+        <SidebarNav items={desktopNavItems} active={activePage} onSelect={setActivePage} />
 
-      <div className="ticks"></div>
+        <div className="app-content">
+          <header className="app-topbar">
+            <div className="app-topbar__inner">
+              <div className="app-brand">
+                <AppIcon name="devices" size={20} className="text-primary" />
+                <span className="font-headline-sm text-headline-sm-mobile text-primary-fixed-dim tracking-tight md:text-headline-sm">
+                  ArcherLab Edge
+                </span>
+              </div>
+              <div className="app-topbar__privacy">
+                <PrivacyBadge />
+              </div>
+              <button type="button" className="app-topbar__profile" aria-label="Open profile">
+                <AppIcon name="sensors" size={18} />
+              </button>
+            </div>
+          </header>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          <main className="app-main">{currentPage}</main>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <BottomNav items={mobileNavItems} active={activePage} onSelect={setActivePage} />
+    </div>
+  );
 }
 
-export default App
+export default App;
