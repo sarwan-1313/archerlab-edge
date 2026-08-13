@@ -1,5 +1,6 @@
 import type { AppIconName } from './components/AppIcon';
 import type { ArcherHandedness, CameraView } from './types/biomechanics';
+import type { ScoreEntryMethod } from './types/gestureScore';
 
 export type PageKey =
   | 'home'
@@ -9,7 +10,8 @@ export type PageKey =
   | 'manual-shot-entry'
   | 'replay-analysis'
   | 'dashboard'
-  | 'multi-camera';
+  | 'multi-camera'
+  | 'gesture-guide';
 
 export type NavItem = {
   key: PageKey;
@@ -24,4 +26,4 @@ export type Metric = {
   tone?: 'primary' | 'secondary' | 'warning' | 'neutral';
 };
 
-export type SessionConfiguration = { handedness: ArcherHandedness; cameraView: CameraView };
+export type SessionConfiguration = { handedness: ArcherHandedness; cameraView: CameraView; scoreEntryMethod: ScoreEntryMethod; shotCaptureMethod: 'manual' | 'experimental-auto-confirm'; };

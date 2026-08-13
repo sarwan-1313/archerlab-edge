@@ -4,14 +4,18 @@ import { PageHeader } from '../components/PageHeader';
 import { SegmentedControl } from '../components/SegmentedControl';
 import type { SessionConfiguration } from '../types';
 import type { ArcherHandedness, CameraView } from '../types/biomechanics';
+import type { ScoreEntryMethod } from '../types/gestureScore';
 
 type NewSessionPageProps = {
   onStart?: (configuration: SessionConfiguration) => void;
+  onGestureGuide?: () => void;
 };
 
-export function NewSessionPage({ onStart }: NewSessionPageProps) {
+export function NewSessionPage({ onStart, onGestureGuide }: NewSessionPageProps) {
   const [handedness, setHandedness] = useState<ArcherHandedness>('right');
   const [cameraView, setCameraView] = useState<CameraView>('side');
+  const [scoreEntryMethod, setScoreEntryMethod] = useState<ScoreEntryMethod>('gesture-manual');
+  const [shotCaptureMethod, setShotCaptureMethod] = useState<'manual' | 'experimental-auto-confirm'>('manual');
   return (
     <div className="session-setup-page">
       <PageHeader
@@ -20,13 +24,13 @@ export function NewSessionPage({ onStart }: NewSessionPageProps) {
         compact
       />
 
-      <form className="session-setup" onSubmit={(event) => { event.preventDefault(); onStart?.({ handedness, cameraView }); }}>
+      <form className="session-setup" onSubmit={(event) => { event.preventDefault(); onStart?.({ handedness, cameraView, scoreEntryMethod, shotCaptureMethod }); }}>
         <div className="session-setup__intro">
           <div>
             <span className="eyebrow">Session setup</span>
             <h2>Build your analysis profile</h2>
           </div>
-          <span className="session-setup__count">6 settings</span>
+          <span className="session-setup__count">8 settings</span>
         </div>
 
         <div className="session-setup__fields">
@@ -88,6 +92,24 @@ export function NewSessionPage({ onStart }: NewSessionPageProps) {
                 { label: 'Rear view', value: 'rear', description: 'Torso symmetry' },
               ]}
             />
+          </fieldset>
+
+          <fieldset className="field-group field-group--wide">
+            <legend className="field-label">Shot Capture</legend>
+            <SegmentedControl name="shotCaptureMethod" columns={2} onChange={(value) => setShotCaptureMethod(value as 'manual' | 'experimental-auto-confirm')} options={[
+              { label: 'Manual Release', value: 'manual', checked: true, description: 'Use MARK RELEASE' },
+              { label: 'Experimental Auto + Confirm', value: 'experimental-auto-confirm', description: 'Confirm likely releases' },
+            ]} />
+          </fieldset>
+
+          <fieldset className="field-group field-group--wide">
+            <legend className="field-label">Score Entry Method</legend>
+            <SegmentedControl name="scoreEntryMethod" columns={3} onChange={(value) => setScoreEntryMethod(value as ScoreEntryMethod)} options={[
+              { label: 'Gesture + Manual', value: 'gesture-manual', checked: true, description: 'Hands-free scoring with fallback' },
+              { label: 'Manual Only', value: 'manual-only', description: 'Touchscreen result entry' },
+              { label: 'No Score Entry', value: 'none', description: 'Biomechanics only' },
+            ]} />
+            <button type="button" className="gesture-guide-link" onClick={onGestureGuide}>? Gesture Guide</button>
           </fieldset>
 
           <fieldset className="field-group">

@@ -33,6 +33,9 @@ export interface BiomechanicsFrame {
   headPosition?: Point2D;
   headReference?: 'ears' | 'nose';
   bowHandPosition?: Point2D;
+  drawHandPosition?: Point2D;
+  drawElbowPosition?: Point2D;
+  shoulderMidpoint?: Point2D;
   shoulderWidth?: number;
   confidence: number;
   shoulderLineConfidence: number;
@@ -77,6 +80,7 @@ export interface BiomechanicsSnapshot {
   headMotion: BiomechanicsMetric;
   bowHandMotion: BiomechanicsMetric;
   shoulderVariation: BiomechanicsMetric;
+  currentFrame?: BiomechanicsFrame;
   reference?: BiomechanicsReferenceDeltas;
   debug: BiomechanicsDebugData;
 }

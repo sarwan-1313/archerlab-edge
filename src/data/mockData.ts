@@ -9,6 +9,7 @@ export const navItems: NavItem[] = [
   { key: 'replay-analysis', label: 'Replay', icon: 'play-circle' },
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { key: 'multi-camera', label: 'Multi-Camera', icon: 'devices' },
+  { key: 'gesture-guide', label: 'Gesture Guide', icon: 'accessibility' },
 ];
 
 export const desktopNavItems: NavItem[] = [
@@ -63,4 +64,5 @@ export const pageTitles: Record<PageKey, string> = {
   'replay-analysis': 'Replay',
   dashboard: 'Dashboard',
   'multi-camera': 'Multi-Camera',
+  'gesture-guide': 'Gesture Guide',
 };

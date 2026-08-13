@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppIcon } from '../components/AppIcon';
 import { BiomechanicsDebugPanel } from '../components/biomechanics/BiomechanicsDebugPanel';
 import { BiomechanicsMetricCard } from '../components/biomechanics/BiomechanicsMetricCard';
+import { GestureScoreOverlay } from '../components/gestures/GestureScoreOverlay';
+import { GestureDebugPanel } from '../components/gestures/GestureDebugPanel';
+import { ShotCaptureDebugPanel } from '../components/shot/ShotCaptureDebugPanel';
 import { CameraPreview } from '../components/CameraPreview';
 import { PageHeader } from '../components/PageHeader';
 import { PoseDebugPanel } from '../components/pose/PoseDebugPanel';
@@ -9,8 +12,12 @@ import { PoseOverlay } from '../components/pose/PoseOverlay';
 import { PoseStatus } from '../components/pose/PoseStatus';
 import { useLocalCamera } from '../hooks/useLocalCamera';
 import { useBiomechanics } from '../hooks/useBiomechanics';
+import { useGestureScoreEntry } from '../hooks/useGestureScoreEntry';
 import { usePoseLandmarker } from '../hooks/usePoseLandmarker';
+import { useShotAnalyzer } from '../hooks/useShotAnalyzer';
 import type { ArcherHandedness, BiomechanicsReference, CameraView } from '../types/biomechanics';
+import type { ReportedShotResult, ScoreEntryMethod } from '../types/gestureScore';
+import type { ShotAnalysis } from '../types/shotAnalysis';
 import { getPoseDetectionState } from '../utils/poseAnalysis';
 
 const CAMERA_OPTIONS = { autoStart: true } as const;
@@ -27,16 +34,39 @@ type LiveAnalysisPageProps = {
   cameraView: CameraView;
   onCameraViewChange?: (view: CameraView) => void;
   reference?: BiomechanicsReference;
+  scoreEntryMethod: ScoreEntryMethod;
+  autoReleaseDefault: boolean;
+  shots: ShotAnalysis[];
+  onShotCaptured: (shot: ShotAnalysis) => void;
+  onAttachResult: (shotId: string, result: ReportedShotResult) => void;
+  onClearResult: (shotId: string) => void;
+  onUndoLastShot: () => void;
+  onGestureGuide: () => void;
+  onManualEntry: (shotId: string) => void;
+  onReplay: (shotId: string) => void;
 };
 
-export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCameraViewChange, reference }: LiveAnalysisPageProps) {
+export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCameraViewChange, reference, scoreEntryMethod, autoReleaseDefault, shots, onShotCaptured, onAttachResult, onClearResult, onUndoLastShot, onGestureGuide, onManualEntry, onReplay }: LiveAnalysisPageProps) {
   const { devices, selectedDeviceId, setSelectedDeviceId, stream, error, isLoading, startCamera, stopCamera } = useLocalCamera(CAMERA_OPTIONS);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pose = usePoseLandmarker({ videoRef, active: Boolean(stream) });
   const biomechanics = useBiomechanics({ poseResult: pose.result, handedness, active: Boolean(stream), resetKey: `${selectedDeviceId ?? 'default-camera'}:${cameraView}`, reference });
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [quality, setQuality] = useState('720p');
+  const [awaitingScoreShotId, setAwaitingScoreShotId] = useState<string>();
+  const [recentScore, setRecentScore] = useState<{ shotId: string; result: ReportedShotResult }>();
+  const scoreEntryBusy = Boolean(awaitingScoreShotId || recentScore);
   const detectionState = getPoseDetectionState(pose.result);
+  const handleShotCaptured = useCallback((shot: ShotAnalysis) => { onShotCaptured(shot); if (scoreEntryMethod !== 'none') setAwaitingScoreShotId(shot.id); }, [onShotCaptured, scoreEntryMethod]);
+  const shotAnalyzer = useShotAnalyzer({ snapshot: biomechanics.snapshot, active: Boolean(stream) && !scoreEntryBusy, handedness, onShotCaptured: handleShotCaptured });
+  const setAutoReleaseEnabled = shotAnalyzer.setAutoReleaseEnabled;
+  useEffect(() => { setAutoReleaseEnabled(autoReleaseDefault); }, [autoReleaseDefault, setAutoReleaseEnabled]);
+  const handleGestureResult = useCallback((shotId: string, result: ReportedShotResult) => {
+    onAttachResult(shotId, result); setAwaitingScoreShotId(undefined); setRecentScore({ shotId, result });
+  }, [onAttachResult]);
+  const finishScoreWindow = useCallback(() => setAwaitingScoreShotId(undefined), []);
+  const gesture = useGestureScoreEntry({ videoRef, active: Boolean(stream) && scoreEntryMethod === 'gesture-manual' && Boolean(awaitingScoreShotId), shotId: awaitingScoreShotId, onResult: handleGestureResult, onTimeout: finishScoreWindow });
+  useEffect(() => { if (!recentScore) return; const timeout = window.setTimeout(() => setRecentScore(undefined), 1500); return () => window.clearTimeout(timeout); }, [recentScore]);
 
   useEffect(() => {
     if (!stream) return;
@@ -139,7 +169,19 @@ export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCame
               <button type="button" onClick={onRecalibrate}><AppIcon name="calibration" size={17} />Recalibrate</button>
               <button type="button" className="camera-panel__stop" onClick={stopCamera} disabled={!stream}><AppIcon name="stop" size={16} />Stop camera</button>
             </div>
+            <div className="shot-capture-controls">
+              <div><span className="eyebrow">Shot Capture</span><strong>{scoreEntryBusy ? 'Score entry active' : shotAnalyzer.captureState === 'capturing-post-release' ? 'Capturing follow-through' : shotAnalyzer.captureState === 'complete' ? 'Shot captured' : shotAnalyzer.captureState === 'armed' ? 'Ready' : 'Preparing'}</strong></div>
+              <button type="button" className="mark-release-button" onClick={() => shotAnalyzer.markRelease()} disabled={!stream || scoreEntryBusy || shotAnalyzer.captureState !== 'armed'}>MARK RELEASE</button>
+              <label className="auto-release-toggle"><input type="checkbox" checked={shotAnalyzer.autoReleaseEnabled} onChange={(event) => shotAnalyzer.setAutoReleaseEnabled(event.target.checked)} />Experimental Auto Release</label>
+              {shotAnalyzer.captureError ? <p>{shotAnalyzer.captureError}</p> : null}
+              {shotAnalyzer.pendingCandidate ? <div className="release-candidate"><strong>Likely release detected</strong><span>Experimental candidate · strength {shotAnalyzer.pendingCandidate.releaseCandidateStrength.toFixed(2)}</span><button type="button" onClick={shotAnalyzer.confirmCandidate}>Confirm</button><button type="button" onClick={shotAnalyzer.ignoreCandidate}>Ignore</button></div> : null}
+              <small className="auto-release-note">Experimental — detected releases must be manually confirmed.</small>
+              <button type="button" className="gesture-guide-link" onClick={onGestureGuide}>? Gesture Guide</button>
+              {shots.length ? <div className="shot-history-actions"><button type="button" onClick={() => onReplay(shots.at(-1)!.id)}>Replay latest</button><button type="button" onClick={() => { setAwaitingScoreShotId(undefined); shotAnalyzer.clearLatestShot(); onUndoLastShot(); }}>Undo last release</button></div> : null}
+            </div>
             <PoseDebugPanel status={pose.status} stats={pose.debugStats} />
+            <ShotCaptureDebugPanel debug={shotAnalyzer.debug} />
+            <GestureDebugPanel debug={gesture.debug} />
           </div>
         </section>
 
@@ -167,6 +209,8 @@ export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCame
           </div>
         </aside>
       </div>
+      {awaitingScoreShotId ? <GestureScoreOverlay state={scoreEntryMethod === 'gesture-manual' ? gesture.state : 'waiting-for-score'} candidate={gesture.candidate} stableDurationMs={gesture.debug.stableDurationMs} shotNumber={shots.findIndex((shot) => shot.id === awaitingScoreShotId) + 1} onSkip={gesture.skip} onGuide={onGestureGuide} onManual={() => onManualEntry(awaitingScoreShotId)} onUndo={() => undefined} /> : null}
+      {recentScore ? <GestureScoreOverlay state="recorded" candidate={{ gestureId: recentScore.result.gestureId ?? 'manual', score: recentScore.result.score, isX: recentScore.result.isX, confidence: recentScore.result.gestureConfidence ?? 1, leftFingerCount: null, rightFingerCount: null, handsDetected: 0, wristsCrossed: recentScore.result.isX }} stableDurationMs={800} shotNumber={shots.findIndex((shot) => shot.id === recentScore.shotId) + 1} onSkip={() => undefined} onGuide={onGestureGuide} onManual={() => undefined} onUndo={() => { onClearResult(recentScore.shotId); setRecentScore(undefined); setAwaitingScoreShotId(recentScore.shotId); }} /> : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { AppIcon } from './components/AppIcon';
 import { BottomNav } from './components/BottomNav';
 import { PrivacyBadge } from './components/PrivacyBadge';
@@ -12,26 +12,37 @@ import { ManualShotEntryPage } from './pages/ManualShotEntryPage';
 import { ReplayAnalysisPage } from './pages/ReplayAnalysisPage';
 import { SessionDashboardPage } from './pages/SessionDashboardPage';
 import { MultiCameraPage } from './pages/MultiCameraPage';
+import { GestureGuidePage } from './pages/GestureGuidePage';
+import { attachReportedResult, clearReportedResult } from './gesture-entry/shotAssociation';
 import type { PageKey, SessionConfiguration } from './types';
 import type { BiomechanicsReference, CameraView } from './types/biomechanics';
+import type { ReportedShotResult } from './types/gestureScore';
+import type { ShotAnalysis } from './types/shotAnalysis';
 
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('home');
-  const [sessionConfiguration, setSessionConfiguration] = useState<SessionConfiguration>({ handedness: 'right', cameraView: 'side' });
+  const [sessionConfiguration, setSessionConfiguration] = useState<SessionConfiguration>({ handedness: 'right', cameraView: 'side', scoreEntryMethod: 'gesture-manual', shotCaptureMethod: 'manual' });
   const [reference, setReference] = useState<BiomechanicsReference>();
+  const [shots, setShots] = useState<ShotAnalysis[]>([]);
+  const [selectedShotId, setSelectedShotId] = useState<string>();
+  const selectedShot = shots.find((shot) => shot.id === selectedShotId) ?? shots.at(-1);
+  const addShot = (shot: ShotAnalysis) => { setShots((current) => [...current, shot]); setSelectedShotId(shot.id); };
+  const attachResult = (shotId: string, result: ReportedShotResult) => setShots((current) => attachReportedResult(current, shotId, result));
+  const clearResult = (shotId: string) => setShots((current) => clearReportedResult(current, shotId));
 
-  const currentPage = useMemo(() => {
+  const currentPage = (() => {
     switch (activePage) {
       case 'home': return <HomePage />;
-      case 'new-session': return <NewSessionPage onStart={(configuration) => { setSessionConfiguration(configuration); setReference(undefined); setActivePage('calibration'); }} />;
+      case 'new-session': return <NewSessionPage onGestureGuide={() => setActivePage('gesture-guide')} onStart={(configuration) => { setSessionConfiguration(configuration); setReference(undefined); setShots([]); setSelectedShotId(undefined); setActivePage('calibration'); }} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => setActivePage('live-analysis')} />;
-      case 'live-analysis': return <LiveAnalysisPage handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onRecalibrate={() => setActivePage('calibration')} />;
-      case 'manual-shot-entry': return <ManualShotEntryPage />;
-      case 'replay-analysis': return <ReplayAnalysisPage />;
-      case 'dashboard': return <SessionDashboardPage />;
+      case 'live-analysis': return <LiveAnalysisPage handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onClearResult={clearResult} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => setActivePage('gesture-guide')} onManualEntry={(shotId) => { setSelectedShotId(shotId); setActivePage('manual-shot-entry'); }} onReplay={(shotId) => { setSelectedShotId(shotId); setActivePage('replay-analysis'); }} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onRecalibrate={() => setActivePage('calibration')} />;
+      case 'manual-shot-entry': return <ManualShotEntryPage shot={selectedShot} onSave={(result) => { if (selectedShot) attachResult(selectedShot.id, result); setActivePage('replay-analysis'); }} />;
+      case 'replay-analysis': return <ReplayAnalysisPage shot={selectedShot} shotNumber={selectedShot ? shots.findIndex((shot) => shot.id === selectedShot.id) + 1 : 0} onManualEntry={() => setActivePage('manual-shot-entry')} onUndoScore={() => selectedShot && clearResult(selectedShot.id)} />;
+      case 'dashboard': return <SessionDashboardPage shots={shots} onSelectShot={(shotId) => { setSelectedShotId(shotId); setActivePage('replay-analysis'); }} />;
       case 'multi-camera': return <MultiCameraPage />;
+      case 'gesture-guide': return <GestureGuidePage onBack={() => setActivePage('live-analysis')} />;
     }
-  }, [activePage, reference, sessionConfiguration]);
+  })();
 
   return (
     <div className="app-shell">

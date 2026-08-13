@@ -2,7 +2,7 @@ import type { ArcherHandedness, BiomechanicsMetric, InstantaneousBiomechanics, P
 import type { PoseLandmark, PoseResult } from '../types/pose';
 import { BIOMECHANICS_CONFIG } from './config';
 import { angleAtJoint, distance2D, midpoint, signedAngleFromHorizontal, signedAngleFromVertical, vector2D } from './geometry';
-import { getBowSide } from './handedness';
+import { getBowSide, getDrawSide } from './handedness';
 import { validateLandmarks } from './landmarkQuality';
 import { LANDMARK } from './landmarks';
 
@@ -108,6 +108,14 @@ export function createInstantaneousBiomechanics(pose: PoseResult, handedness: Ar
   const shoulderWidth = getShoulderWidth(pose.landmarks);
   const head = getHeadReference(pose.landmarks);
   const bowHand = getBowHandPosition(pose.landmarks, handedness);
+  const drawSide = getDrawSide(handedness);
+  const drawWristIndex = drawSide === 'left' ? LANDMARK.leftWrist : LANDMARK.rightWrist;
+  const drawElbowIndex = drawSide === 'left' ? LANDMARK.leftElbow : LANDMARK.rightElbow;
+  const drawQuality = validateLandmarks(pose.landmarks, [
+    { index: drawWristIndex, label: 'Draw wrist' },
+    { index: drawElbowIndex, label: 'Draw elbow' },
+  ]);
+  const shouldersUsable = shoulderWidth.value !== null;
   return {
     shoulderLine,
     bowArmElbow,
@@ -121,6 +129,9 @@ export function createInstantaneousBiomechanics(pose: PoseResult, handedness: Ar
       headPosition: head.position,
       headReference: head.source,
       bowHandPosition: bowHand.position,
+      drawHandPosition: drawQuality.usable ? pose.landmarks[drawWristIndex] : undefined,
+      drawElbowPosition: drawQuality.usable ? pose.landmarks[drawElbowIndex] : undefined,
+      shoulderMidpoint: shouldersUsable ? midpoint(pose.landmarks[LANDMARK.leftShoulder], pose.landmarks[LANDMARK.rightShoulder]) : undefined,
       shoulderWidth: shoulderWidth.value ?? undefined,
       confidence: Math.min(shoulderLine.confidence, bowArmElbow.confidence, torsoLean.confidence, head.confidence, bowHand.confidence, shoulderWidth.confidence),
       shoulderLineConfidence: shoulderLine.confidence,

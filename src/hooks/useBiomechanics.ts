@@ -116,6 +116,7 @@ export function useBiomechanics({ poseResult, handedness, active, resetKey, refe
     const next: BiomechanicsSnapshot = {
       timestampMs: poseResult.timestamp, athleteDetected: true, poseConfidence: poseResult.averageVisibility,
       shoulderLineAngle, bowArmElbowAngle, torsoLean, headMotion, bowHandMotion, shoulderVariation,
+      currentFrame: instant.frame,
       debug: {
         handedness, bowSide: getBowSide(handedness), timestampMs: poseResult.timestamp,
         historySamples: frames.length, historyDurationMs: historyRef.current.durationMs,
