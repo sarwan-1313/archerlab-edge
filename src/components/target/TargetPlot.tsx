@@ -1,0 +1,9 @@
+import { useEffect, useRef } from 'react';
+import type { AnalysisShot } from '../../analytics/analysisDataset';
+import type { SimulatedImpact } from '../../simulation/shotSimulator';
+
+export function TargetPlot({ shots, simulated = [], selectedShotId }: { shots: readonly AnalysisShot[]; simulated?: readonly SimulatedImpact[]; selectedShotId?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => { const canvas = canvasRef.current; if (!canvas) return; const ratio = window.devicePixelRatio || 1; const size = canvas.clientWidth; canvas.width = size * ratio; canvas.height = size * ratio; const context = canvas.getContext('2d'); if (!context) return; context.scale(ratio, ratio); const center = size / 2; const colors = ['#f7f7f2','#202734','#2774b8','#d94a45','#f0c928']; for (let ring = 10; ring >= 1; ring--) { context.beginPath(); context.arc(center, center, center * ring / 10, 0, Math.PI * 2); context.fillStyle = colors[Math.min(4, Math.floor((10 - ring) / 2))]; context.fill(); context.strokeStyle = 'rgba(8,18,34,.38)'; context.stroke(); } simulated.forEach((point) => { context.fillStyle = 'rgba(0,218,243,.12)'; context.fillRect(center + point.x * center - 1, center + point.y * center - 1, 2, 2); }); shots.forEach((shot) => { if (shot.targetX === null || shot.targetY === null) return; context.beginPath(); context.arc(center + shot.targetX * center, center + shot.targetY * center, shot.shotId === selectedShotId ? 6 : 4, 0, Math.PI * 2); context.fillStyle = shot.shotId === selectedShotId ? '#ffbc5d' : '#071225'; context.fill(); context.strokeStyle = '#fff'; context.lineWidth = 1.5; context.stroke(); }); }, [selectedShotId, shots, simulated]);
+  return <div className="target-plot"><canvas ref={canvasRef} aria-label="Target group visualization" /><div className="target-legend"><span>● Actual</span>{simulated.length ? <span>· Simulation</span> : null}</div></div>;
+}

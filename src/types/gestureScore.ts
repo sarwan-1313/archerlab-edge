@@ -6,15 +6,26 @@ export interface ScoreGestureDefinition { id: string; label: string; score: numb
 export interface HandLandmarkPoint { x: number; y: number; z: number; }
 export interface DetectedHand { handedness: 'Left' | 'Right' | 'Unknown'; confidence: number; landmarks: HandLandmarkPoint[]; fingerCount: number; }
 export interface GestureClassification { gestureId: string; score: number; isX: boolean; confidence: number; leftFingerCount: number | null; rightFingerCount: number | null; handsDetected: number; wristsCrossed: boolean; }
+export interface TargetResult {
+  score: number | null;
+  isX: boolean;
+  targetX: number | null;
+  targetY: number | null;
+  normalizedRadius: number | null;
+  source: 'gesture' | 'manual-score' | 'manual-target';
+  enteredAt: number;
+}
 export interface ReportedShotResult {
   score: number;
   isX: boolean;
-  source: 'gesture' | 'manual';
+  source: 'gesture' | 'manual' | 'manual-score' | 'manual-target';
   capturedAt: number;
   gestureConfidence?: number;
   gestureId?: string;
-  targetX?: number;
-  targetY?: number;
+  targetX?: number | null;
+  targetY?: number | null;
+  targetResult?: TargetResult;
+  alternateScore?: { score: number; isX: boolean; source: 'gesture' | 'manual-score' | 'manual-target' };
   notes?: string;
 }
 export interface GestureDebugData {
