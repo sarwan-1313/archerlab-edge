@@ -6,6 +6,8 @@ import { GestureScoreOverlay } from '../components/gestures/GestureScoreOverlay'
 import { GestureDebugPanel } from '../components/gestures/GestureDebugPanel';
 import { ShotCaptureDebugPanel } from '../components/shot/ShotCaptureDebugPanel';
 import { CameraPreview } from '../components/CameraPreview';
+import { RecordingControls } from '../components/recording/RecordingControls';
+import { useSessionRecorder } from '../hooks/useSessionRecorder';
 import { PageHeader } from '../components/PageHeader';
 import { PoseDebugPanel } from '../components/pose/PoseDebugPanel';
 import { PoseOverlay } from '../components/pose/PoseOverlay';
@@ -108,6 +110,8 @@ export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCame
             <CameraPreview stream={stream} isLoading={isLoading} error={error} videoRef={videoRef} className="camera-hero__preview">
               <PoseOverlay videoRef={videoRef} resultRef={pose.latestResultRef} active={Boolean(stream)} />
               <div className="camera-hero__topbar">
+                {/* Recording controls (local MediaRecorder) */}
+                <div class='camera-recording-placeholder'></div>
                 <div className="camera-badges">
                   <span className={`camera-badge ${stream ? 'camera-badge--active' : ''}`}>
                     <span className="camera-badge__dot" />{stream ? 'Camera active' : 'Camera paused'}
