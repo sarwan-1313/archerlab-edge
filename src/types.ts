@@ -11,7 +11,9 @@ export type PageKey =
   | 'replay-analysis'
   | 'dashboard'
   | 'multi-camera'
-  | 'gesture-guide';
+  | 'gesture-guide'
+  | 'saved-recordings'
+  | 'profile';
 
 export type NavItem = {
   key: PageKey;

@@ -5,6 +5,7 @@ import { SegmentedControl } from '../components/SegmentedControl';
 import type { SessionConfiguration } from '../types';
 import type { ArcherHandedness, CameraView } from '../types/biomechanics';
 import type { ScoreEntryMethod } from '../types/gestureScore';
+import { useAthleteProfile } from '../hooks/useAthleteProfile';
 
 type NewSessionPageProps = {
   onStart?: (configuration: SessionConfiguration) => void;
@@ -12,8 +13,9 @@ type NewSessionPageProps = {
 };
 
 export function NewSessionPage({ onStart, onGestureGuide }: NewSessionPageProps) {
-  const [handedness, setHandedness] = useState<ArcherHandedness>('right');
-  const [cameraView, setCameraView] = useState<CameraView>('side');
+  const { profile } = useAthleteProfile();
+  const [handedness, setHandedness] = useState<ArcherHandedness>(profile?.handedness ?? 'right');
+  const [cameraView, setCameraView] = useState<CameraView>(profile?.defaultCameraAngle ?? 'side');
   const [scoreEntryMethod, setScoreEntryMethod] = useState<ScoreEntryMethod>('gesture-manual');
   const [shotCaptureMethod, setShotCaptureMethod] = useState<'manual' | 'experimental-auto-confirm'>('manual');
   return (

@@ -59,16 +59,46 @@ export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCame
   const [recentScore, setRecentScore] = useState<{ shotId: string; result: ReportedShotResult }>();
   const scoreEntryBusy = Boolean(awaitingScoreShotId || recentScore);
   const detectionState = getPoseDetectionState(pose.result);
-  const handleShotCaptured = useCallback((shot: ShotAnalysis) => { onShotCaptured(shot); if (scoreEntryMethod !== 'none') setAwaitingScoreShotId(shot.id); }, [onShotCaptured, scoreEntryMethod]);
-  const shotAnalyzer = useShotAnalyzer({ snapshot: biomechanics.snapshot, active: Boolean(stream) && !scoreEntryBusy, handedness, onShotCaptured: handleShotCaptured });
+  const handleShotCaptured = useCallback((shot: ShotAnalysis) => { onShotCaptured(shot); if (scoreEntryMethod !== 'none') setAwaitingScoreShotId(shot.id); // record event in session recording if active
+    try { sessionRecorder?.recordEvent?.({ type: 'shot', shotId: shot.id }); } catch (e) { /* ignore */ }
+  }, [onShotCaptured, scoreEntryMethod]);
+  const shotAnalyzer = useShotAnalyzer({ snapshot: biomechanics.snapshot, active: Boolean(stream) && !scoreEntryBusy, handedness, onShotCaptured: handleShotCaptured, onRecordEvent: (event) => { try { sessionRecorder?.recordEvent?.(event); } catch (e) { /* ignore */ } } });
   const setAutoReleaseEnabled = shotAnalyzer.setAutoReleaseEnabled;
   useEffect(() => { setAutoReleaseEnabled(autoReleaseDefault); }, [autoReleaseDefault, setAutoReleaseEnabled]);
   const handleGestureResult = useCallback((shotId: string, result: ReportedShotResult) => {
+    // record gesture score on the recording timeline
+    try { sessionRecorder?.recordEvent?.({ type: 'score', shotId, source: result.source ?? 'gesture', score: result.score, isX: result.isX, tMs: sessionRecorder.durationMs }); } catch (e) { /* ignore */ }
     onAttachResult(shotId, result); setAwaitingScoreShotId(undefined); setRecentScore({ shotId, result });
   }, [onAttachResult]);
   const finishScoreWindow = useCallback(() => setAwaitingScoreShotId(undefined), []);
   const gesture = useGestureScoreEntry({ videoRef, active: Boolean(stream) && scoreEntryMethod === 'gesture-manual' && Boolean(awaitingScoreShotId), shotId: awaitingScoreShotId, onResult: handleGestureResult, onTimeout: finishScoreWindow });
+  // session recorder tied to the existing MediaStream; records chunks and telemetry locally
+  const sessionRecorder = useSessionRecorder(stream, { sessionId: undefined, athleteId: undefined });
   useEffect(() => { if (!recentScore) return; const timeout = window.setTimeout(() => setRecentScore(undefined), 1500); return () => window.clearTimeout(timeout); }, [recentScore]);
+
+  // telemetry sampling while recording (target ~10Hz)
+  useEffect(() => {
+    let telemetryInterval: number | null = null;
+    if (sessionRecorder.state === 'recording') {
+      const hz = 10; const ms = Math.round(1000 / hz);
+      telemetryInterval = window.setInterval(() => {
+        const snap = biomechanics.snapshot;
+        if (!snap) return;
+        const frame = {
+          tMs: sessionRecorder.durationMs ?? Math.round(performance.now()),
+          athleteDetected: Boolean(snap.athleteDetected),
+          shoulderLineAngleDeg: snap.shoulderLineAngle.smoothedValue ?? snap.shoulderLineAngle.rawValue ?? null,
+          bowArmAngleDeg: snap.bowArmElbowAngle.smoothedValue ?? snap.bowArmElbowAngle.rawValue ?? null,
+          torsoLeanDeg: snap.torsoLean.smoothedValue ?? snap.torsoLean.rawValue ?? null,
+          headMotion: snap.headMotion.smoothedValue ?? snap.headMotion.rawValue ?? null,
+          bowHandMotion: snap.bowHandMotion.smoothedValue ?? snap.bowHandMotion.rawValue ?? null,
+          poseConfidence: snap.poseConfidence ?? snap.debug.metricConfidence ?? null,
+        };
+        try { sessionRecorder.recordTelemetryFrame(frame); } catch (e) { /* ignore */ }
+      }, ms) as unknown as number;
+    }
+    return () => { if (telemetryInterval) window.clearInterval(telemetryInterval); };
+  }, [sessionRecorder.state, biomechanics.snapshot]);
 
   useEffect(() => {
     if (!stream) return;
@@ -111,7 +141,7 @@ export function LiveAnalysisPage({ onRecalibrate, handedness, cameraView, onCame
               <PoseOverlay videoRef={videoRef} resultRef={pose.latestResultRef} active={Boolean(stream)} />
               <div className="camera-hero__topbar">
                 {/* Recording controls (local MediaRecorder) */}
-                <div class='camera-recording-placeholder'></div>
+                <RecordingControls state={sessionRecorder.state} durationMs={sessionRecorder.durationMs} onStart={() => void sessionRecorder.start()} onPause={() => sessionRecorder.pause()} onResume={() => sessionRecorder.resume()} onStop={() => sessionRecorder.stop()} />
                 <div className="camera-badges">
                   <span className={`camera-badge ${stream ? 'camera-badge--active' : ''}`}>
                     <span className="camera-badge__dot" />{stream ? 'Camera active' : 'Camera paused'}

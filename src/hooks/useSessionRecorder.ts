@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { addChunk, addTelemetry, saveRecordingManifest, finalizeRecording } from '../recording/recordingStorage';
+import { addChunk, addTelemetry, finalizeRecording } from '../recording/recordingStorage';
 
 function chooseMimeType(): string | null {
   const candidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];

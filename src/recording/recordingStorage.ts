@@ -85,3 +85,53 @@ export async function getChunksForRecording(recordingId: string): Promise<{index
     req.onerror = () => reject(req.error);
   });
 }
+
+export async function getTelemetryForRecording(recordingId: string): Promise<any[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_TELEMETRY, 'readonly');
+    const idx = tx.objectStore(STORE_TELEMETRY).index('recordingId');
+    const req = idx.getAll(IDBKeyRange.only(recordingId));
+    req.onsuccess = () => resolve(req.result.map((r: any) => r.frame));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function deleteRecording(recordingId: string) {
+  const db = await openDb();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction([STORE_RECORDINGS, STORE_CHUNKS, STORE_TELEMETRY], 'readwrite');
+    tx.objectStore(STORE_RECORDINGS).delete(recordingId);
+    // delete chunks by scanning index
+    const idx = tx.objectStore(STORE_CHUNKS).index('recordingId');
+    const req = idx.openCursor(IDBKeyRange.only(recordingId));
+    req.onsuccess = () => {
+      const cur = req.result as IDBCursorWithValue | null;
+      if (!cur) return; cur.delete(); cur.continue();
+    };
+    req.onerror = () => { /* ignore */ };
+    // telemetry
+    const tIdx = tx.objectStore(STORE_TELEMETRY).index('recordingId');
+    const tReq = tIdx.openCursor(IDBKeyRange.only(recordingId));
+    tReq.onsuccess = () => {
+      const cur = tReq.result as IDBCursorWithValue | null;
+      if (!cur) return; cur.delete(); cur.continue();
+    };
+    tReq.onerror = () => { /* ignore */ };
+    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function exportRecordingData(recordingId: string): Promise<{manifest:any, telemetry:any[], sizeEstimate:number}> {
+  const db = await openDb();
+  const manifest = await new Promise<any>((resolve, reject) => {
+    const tx = db.transaction(STORE_RECORDINGS, 'readonly');
+    const req = tx.objectStore(STORE_RECORDINGS).get(recordingId);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  const telemetry = await getTelemetryForRecording(recordingId);
+  const chunks = await getChunksForRecording(recordingId);
+  const sizeEstimate = chunks.reduce((s, c) => s + (c.blob?.size ?? 0), 0);
+  return { manifest, telemetry, sizeEstimate };
+}

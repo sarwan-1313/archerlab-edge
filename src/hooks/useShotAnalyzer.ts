@@ -12,9 +12,11 @@ type Options = {
   active: boolean;
   handedness: ArcherHandedness;
   onShotCaptured: (shot: ShotAnalysis) => void;
+  // optional hook to record events to a session recorder
+  onRecordEvent?: (event: { type: string; tMs?: number; [k: string]: any }) => void;
 };
 
-export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured }: Options) {
+export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured, onRecordEvent }: Options) {
   const engineRef = useRef(new ShotCaptureEngine(handedness));
   const previousFrameRef = useRef<ShotFrame | undefined>(undefined);
   const candidateStateRef = useRef<CandidateDetectorState>({ lastCandidateMs: -Infinity });
@@ -67,9 +69,11 @@ export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured }
   const publishShot = useCallback((shot: ShotAnalysis) => {
     setLatestShot(shot);
     onShotCaptured(shot);
+    // record shot event if recorder supplied
+    try { onRecordEvent?.({ type: 'shot', shotId: shot.id, tMs: shot.releaseTimestampMs ?? shot.frames?.[0]?.timestampMs ?? Date.now() }); } catch (e) { /* ignore */ }
     setCaptureError(null);
     setCaptureState(engineRef.current.state);
-  }, [onShotCaptured]);
+  }, [onShotCaptured, onRecordEvent]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -135,6 +139,7 @@ export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured }
     setCaptureError(null);
     setCaptureState(engineRef.current.state);
     setPendingCandidate(null);
+    try { onRecordEvent?.({ type: 'release', source, tMs: timestampMs ?? snapshot.timestampMs }); } catch (e) { /* ignore */ }
     if (candidateExpiryRef.current !== null) window.clearTimeout(candidateExpiryRef.current);
     candidateExpiryRef.current = null;
     if (captureTimerRef.current !== null) window.clearTimeout(captureTimerRef.current);

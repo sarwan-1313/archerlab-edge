@@ -10,7 +10,10 @@ export const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { key: 'multi-camera', label: 'Multi-Camera', icon: 'devices' },
   { key: 'gesture-guide', label: 'Gesture Guide', icon: 'accessibility' },
+  { key: 'saved-recordings', label: 'Recordings', icon: 'play-circle' },
+  { key: 'profile', label: 'Profile', icon: 'accessibility' },
 ];
+
 
 export const desktopNavItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
@@ -65,4 +68,6 @@ export const pageTitles: Record<PageKey, string> = {
   dashboard: 'Dashboard',
   'multi-camera': 'Multi-Camera',
   'gesture-guide': 'Gesture Guide',
+  'saved-recordings': 'Recordings',
+  profile: 'Profile',
 };

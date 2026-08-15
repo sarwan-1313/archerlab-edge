@@ -13,6 +13,8 @@ import { ReplayAnalysisPage } from './pages/ReplayAnalysisPage';
 import { SessionDashboardPage } from './pages/SessionDashboardPage';
 import { MultiCameraPage } from './pages/MultiCameraPage';
 import { GestureGuidePage } from './pages/GestureGuidePage';
+import { SavedRecordingsPage } from './pages/SavedRecordingsPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { attachReportedResult, clearReportedResult } from './gesture-entry/shotAssociation';
 import type { PageKey, SessionConfiguration } from './types';
 import type { BiomechanicsReference, CameraView } from './types/biomechanics';
@@ -41,6 +43,8 @@ function App() {
       case 'dashboard': return <SessionDashboardPage shots={shots} onSelectShot={(shotId) => { setSelectedShotId(shotId); setActivePage('replay-analysis'); }} />;
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={() => setActivePage('live-analysis')} />;
+    case 'saved-recordings': return <SavedRecordingsPage />;
+    case 'profile': return <ProfilePage />;
     }
   })();
 
