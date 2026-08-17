@@ -42,3 +42,5 @@ stitch_archerlab_edge_analytics/
 ui-desktop.png
 ui-mobile-500.png
 ui-mobile-full.png
+# Temporary build/debug output
+build-output*.txt
