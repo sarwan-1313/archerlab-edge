@@ -34,3 +34,11 @@ Thumbs.db
 recordings/
 session-data/
 private-data/
+# Local design/reference artifacts
+design-reference/
+stitch_archerlab_edge_analytics/
+
+# Temporary UI reference screenshots
+ui-desktop.png
+ui-mobile-500.png
+ui-mobile-full.png
