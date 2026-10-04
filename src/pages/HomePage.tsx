@@ -59,7 +59,7 @@ export function HomePage({ onStart, onGuide, onProfile, hasProfile = false, hasT
                 <li key={item.label} className={item.complete ? 'is-complete' : ''}>
                   <span aria-hidden="true">{item.complete ? '✓' : index + 1}</span>
                   <strong>{item.label}</strong>
-                  {item.complete ? <small>Complete</small> : <button type="button" onClick={index === 0 ? onProfile : index === 1 ? onGuide : onStart}>{item.action}</button>}
+                  {item.complete ? <small>Complete</small> : <button type="button" aria-label={index === 2 ? 'Start first analysis' : undefined} onClick={index === 0 ? onProfile : index === 1 ? onGuide : onStart}>{item.action}</button>}
                 </li>
               ))}
             </ol>
