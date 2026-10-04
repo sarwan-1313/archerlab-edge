@@ -10,9 +10,12 @@ type SidebarNavProps = {
 
 export function SidebarNav({ items, active, onSelect }: SidebarNavProps) {
   return (
-    <nav className="sidebar-nav">
+    <nav className="sidebar-nav" aria-label="Primary navigation">
+      <button type="button" className="sidebar-nav__brand" onClick={() => onSelect('home')} aria-label="Go to Home from sidebar">
+        <span className="sidebar-nav__brand-mark"><AppIcon name="target" size={18} /></span>
+        <span>ArcherLab <strong>Edge</strong></span>
+      </button>
       <div className="sidebar-nav__profile">
-        {/* replaced by local athlete profile when available */}
         <ProfilePreview />
       </div>
 
@@ -28,6 +31,7 @@ export function SidebarNav({ items, active, onSelect }: SidebarNavProps) {
                 ? 'sidebar-nav__item--active'
                 : '',
             ].join(' ')}
+            aria-current={active === item.key ? 'page' : undefined}
           >
             <AppIcon name={item.icon} size={18} strokeWidth={1.8} />
             <span className="font-body-md text-body-md">{item.label}</span>

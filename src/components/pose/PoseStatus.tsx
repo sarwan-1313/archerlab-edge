@@ -7,7 +7,7 @@ type PoseStatusProps = {
 
 const engineLabels: Record<PoseEngineStatus, string> = {
   idle: 'Pose AI idle',
-  loading: 'Loading pose engine…',
+  loading: 'Loading pose analysis...',
   ready: 'AI ready',
   running: 'On-device pose AI',
   error: 'Pose model unavailable',
@@ -33,4 +33,3 @@ export function PoseStatus({ engineStatus, detectionState }: PoseStatusProps) {
     </div>
   );
 }
-

@@ -34,8 +34,10 @@ export function CameraPreview({
     void internalVideoRef.current.play().catch(() => undefined);
   }, [stream]);
 
+  const previewState = error ? 'error' : isLoading ? 'loading' : stream ? 'active' : 'idle';
+
   return (
-    <div className={['camera-preview', className].join(' ')}>
+    <div className={['camera-preview', `camera-preview--${previewState}`, className].join(' ')} aria-busy={isLoading}>
       {stream ? (
         <video
           ref={setVideoRef}
@@ -54,12 +56,27 @@ export function CameraPreview({
         </div>
       )}
 
-      {isLoading ? <div className="camera-preview__loading"><span>Starting camera…</span></div> : null}
+      {isLoading ? (
+        <div className="camera-preview__state camera-preview__state--loading" role="status">
+          <span className="camera-preview__spinner" />
+          <strong>Preparing camera</strong>
+          <p>Connecting to the local video feed.</p>
+        </div>
+      ) : null}
 
       {error ? (
-        <div className="camera-preview__error">
-          <span>Camera access error</span>
-          <p>{error}</p>
+        <div className="camera-preview__state camera-preview__state--error" role="alert">
+          <span className="camera-preview__state-icon"><AppIcon name="camera" size={22} /></span>
+          <strong>Camera unavailable</strong>
+          <p>{error || 'Check camera permission and make sure another application is not using the camera.'}</p>
+          <small>Update browser permissions, close other camera apps, then restart the camera below.</small>
+        </div>
+      ) : null}
+
+      {!stream && !isLoading && !error ? (
+        <div className="camera-preview__idle-copy">
+          <strong>Camera paused</strong>
+          <span>Use the controls below to reconnect the local feed.</span>
         </div>
       ) : null}
 

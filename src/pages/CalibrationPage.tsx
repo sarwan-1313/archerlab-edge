@@ -152,6 +152,7 @@ export function CalibrationPage({ onComplete, handedness, reference, onReference
           </div>
 
           <div className="calibration-workflow__actions">
+            {error || pose.status === 'error' ? <button type="button" className="button button--secondary" disabled={isLoading} onClick={() => void startCamera(selectedDeviceId ?? undefined)}>Retry camera and analysis</button> : null}
             <button type="button" className="calibration-primary" onClick={onComplete} disabled={!readiness.ready}>
               {readiness.ready ? 'Confirm calibration' : 'Complete visibility checks'}
               <AppIcon name={readiness.ready ? 'check' : 'arrow-right'} size={18} />

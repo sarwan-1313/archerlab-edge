@@ -368,12 +368,35 @@ Designing around privacy and browser capabilities.
 Creating a complete athlete workflow rather than a single technical demonstration.
 
 ---
+# Screenshots
+
+## Live Analysis
+
+The primary analysis workflow combines local camera processing, biomechanics visualization, and performance metrics.
+
+![Live Analysis](docs/images/hero-live-analysis.png)
+
+---
+
+## Session Dashboard
+
+Session analytics provide an overview of training performance and measured indicators.
+
+![Session Dashboard](docs/images/session-dashboard.png)
 
 # Current Status
 
 ## ArcherLab Edge v0.1.0
 
 Experimental engineering prototype.
+
+## Guide deep links
+
+The interactive manual uses browser-history routes such as `/guide/camera-setup`,
+`/guide/review-shots`, and `/guide/analytics`. Development and Vite preview
+serve these routes through the single-page application automatically. A static
+production host must rewrite unknown application paths to `index.html` so a
+refresh or direct visit to a guide detail URL can load the app.
 
 Current focus:
 

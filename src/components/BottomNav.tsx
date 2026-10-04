@@ -9,7 +9,7 @@ type BottomNavProps = {
 
 export function BottomNav({ items, active, onSelect }: BottomNavProps) {
   return (
-    <nav className="bottom-nav">
+    <nav className="bottom-nav" aria-label="Primary navigation">
       <div className="bottom-nav__inner">
         {items.map((item) => (
           <button
@@ -20,6 +20,7 @@ export function BottomNav({ items, active, onSelect }: BottomNavProps) {
               'bottom-nav__item',
               active === item.key ? 'bottom-nav__item--active' : '',
             ].join(' ')}
+            aria-current={active === item.key ? 'page' : undefined}
           >
             <AppIcon name={item.icon} size={18} strokeWidth={1.8} />
             <span className="block text-center leading-none">{item.label}</span>

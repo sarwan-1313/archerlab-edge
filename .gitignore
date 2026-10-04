@@ -43,4 +43,4 @@ ui-desktop.png
 ui-mobile-500.png
 ui-mobile-full.png
 # Temporary build/debug output
-build-output*.txt
+build-output*.txtgit status --short

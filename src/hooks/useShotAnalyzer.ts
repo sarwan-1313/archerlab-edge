@@ -70,7 +70,7 @@ export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured, 
     setLatestShot(shot);
     onShotCaptured(shot);
     // record shot event if recorder supplied
-    try { onRecordEvent?.({ type: 'shot', shotId: shot.id, tMs: shot.releaseTimestampMs ?? shot.frames?.[0]?.timestampMs ?? Date.now() }); } catch (e) { /* ignore */ }
+    try { onRecordEvent?.({ type: 'shot', shotId: shot.id, tMs: shot.releaseTimestampMs ?? shot.frames?.[0]?.timestampMs ?? Date.now() }); } catch { /* Event recording is optional and must not discard a completed shot. */ }
     setCaptureError(null);
     setCaptureState(engineRef.current.state);
   }, [onShotCaptured, onRecordEvent]);
@@ -139,7 +139,7 @@ export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured, 
     setCaptureError(null);
     setCaptureState(engineRef.current.state);
     setPendingCandidate(null);
-    try { onRecordEvent?.({ type: 'release', source, tMs: timestampMs ?? snapshot.timestampMs }); } catch (e) { /* ignore */ }
+    try { onRecordEvent?.({ type: 'release', source, tMs: timestampMs ?? snapshot.timestampMs }); } catch { /* Event recording is optional and must not interrupt capture. */ }
     if (candidateExpiryRef.current !== null) window.clearTimeout(candidateExpiryRef.current);
     candidateExpiryRef.current = null;
     if (captureTimerRef.current !== null) window.clearTimeout(captureTimerRef.current);
@@ -153,7 +153,7 @@ export function useShotAnalyzer({ snapshot, active, handedness, onShotCaptured, 
     }, delay);
     syncDebug();
     return true;
-  }, [active, publishShot, snapshot.athleteDetected, snapshot.timestampMs, syncDebug]);
+  }, [active, onRecordEvent, publishShot, snapshot.athleteDetected, snapshot.timestampMs, syncDebug]);
 
   const confirmCandidate = useCallback(() => {
     if (!pendingCandidate) return;

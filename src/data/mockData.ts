@@ -10,23 +10,26 @@ export const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { key: 'multi-camera', label: 'Multi-Camera', icon: 'devices' },
   { key: 'gesture-guide', label: 'Gesture Guide', icon: 'accessibility' },
+  { key: 'user-guide', label: 'User Guide', icon: 'accessibility' },
   { key: 'saved-recordings', label: 'Recordings', icon: 'play-circle' },
   { key: 'profile', label: 'Profile', icon: 'accessibility' },
 ];
 
 
 export const desktopNavItems: NavItem[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
-  { key: 'live-analysis', label: 'Analysis', icon: 'camera' },
-  { key: 'home', label: 'Sessions', icon: 'home' },
-  { key: 'new-session', label: 'New Session', icon: 'plus' },
+  { key: 'home', label: 'Home', icon: 'home' },
+  { key: 'live-analysis', label: 'Live Analysis', icon: 'camera' },
+  { key: 'saved-recordings', label: 'Sessions', icon: 'history' },
+  { key: 'dashboard', label: 'Analytics', icon: 'grid' },
+  { key: 'user-guide', label: 'Guide', icon: 'accessibility' },
 ];
 
 export const mobileNavItems: NavItem[] = [
   { key: 'home', label: 'Home', icon: 'home' },
-  { key: 'new-session', label: 'New Session', icon: 'plus' },
-  { key: 'live-analysis', label: 'Analysis', icon: 'camera' },
-  { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  { key: 'live-analysis', label: 'Live', icon: 'camera' },
+  { key: 'saved-recordings', label: 'Sessions', icon: 'history' },
+  { key: 'dashboard', label: 'Analytics', icon: 'grid' },
+  { key: 'user-guide', label: 'Guide', icon: 'accessibility' },
 ];
 
 export const topMetrics: Metric[] = [
@@ -68,6 +71,17 @@ export const pageTitles: Record<PageKey, string> = {
   dashboard: 'Dashboard',
   'multi-camera': 'Multi-Camera',
   'gesture-guide': 'Gesture Guide',
+  'user-guide': 'User Guide',
+  'guide-start-analysis': 'Start Analysis Guide',
+  'guide-camera-setup': 'Camera Setup Guide',
+  'guide-readiness': 'Readiness Guide',
+  'guide-start-session': 'Start Session Guide',
+  'guide-perform-shots': 'Perform Shots Guide',
+  'guide-record-scores': 'Record Scores Guide',
+  'guide-review-shots': 'Review Shots Guide',
+  'guide-end-session': 'End Session Guide',
+  'guide-session-summary': 'Session Summary Guide',
+  'guide-analytics': 'Analytics Guide',
   'saved-recordings': 'Recordings',
   profile: 'Profile',
 };

@@ -31,8 +31,8 @@ export async function saveRecordingManifest(manifest: any) {
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_RECORDINGS, 'readwrite');
     tx.objectStore(STORE_RECORDINGS).put(manifest);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
   });
 }
 
@@ -42,8 +42,8 @@ export async function addChunk(recordingId: string, index: number, blob: Blob, t
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_CHUNKS, 'readwrite');
     tx.objectStore(STORE_CHUNKS).put(rec);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
   });
 }
 
@@ -54,8 +54,8 @@ export async function addTelemetry(recordingId: string, frame: any) {
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_TELEMETRY, 'readwrite');
     tx.objectStore(STORE_TELEMETRY).put(rec);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
   });
 }
 
@@ -70,8 +70,8 @@ export async function listRecordings(): Promise<any[]> {
     const tx = db.transaction(STORE_RECORDINGS, 'readonly');
     const store = tx.objectStore(STORE_RECORDINGS);
     const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { db.close(); resolve(req.result); };
+    req.onerror = () => { db.close(); reject(req.error); };
   });
 }
 
@@ -81,8 +81,8 @@ export async function getChunksForRecording(recordingId: string): Promise<{index
     const tx = db.transaction(STORE_CHUNKS, 'readonly');
     const idx = tx.objectStore(STORE_CHUNKS).index('recordingId');
     const req = idx.getAll(IDBKeyRange.only(recordingId));
-    req.onsuccess = () => resolve(req.result.map((r:any) => ({ index: r.index, blob: r.blob })));
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { db.close(); resolve(req.result.map((r:any) => ({ index: r.index, blob: r.blob }))); };
+    req.onerror = () => { db.close(); reject(req.error); };
   });
 }
 
@@ -92,8 +92,8 @@ export async function getTelemetryForRecording(recordingId: string): Promise<any
     const tx = db.transaction(STORE_TELEMETRY, 'readonly');
     const idx = tx.objectStore(STORE_TELEMETRY).index('recordingId');
     const req = idx.getAll(IDBKeyRange.only(recordingId));
-    req.onsuccess = () => resolve(req.result.map((r: any) => r.frame));
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { db.close(); resolve(req.result.map((r: any) => r.frame)); };
+    req.onerror = () => { db.close(); reject(req.error); };
   });
 }
 
@@ -109,7 +109,7 @@ export async function deleteRecording(recordingId: string) {
       const cur = req.result as IDBCursorWithValue | null;
       if (!cur) return; cur.delete(); cur.continue();
     };
-    req.onerror = () => { /* ignore */ };
+    req.onerror = () => { tx.abort(); db.close(); reject(req.error); };
     // telemetry
     const tIdx = tx.objectStore(STORE_TELEMETRY).index('recordingId');
     const tReq = tIdx.openCursor(IDBKeyRange.only(recordingId));
@@ -117,8 +117,9 @@ export async function deleteRecording(recordingId: string) {
       const cur = tReq.result as IDBCursorWithValue | null;
       if (!cur) return; cur.delete(); cur.continue();
     };
-    tReq.onerror = () => { /* ignore */ };
-    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
+    tReq.onerror = () => { tx.abort(); db.close(); reject(tReq.error); };
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
   });
 }
 
@@ -127,8 +128,8 @@ export async function exportRecordingData(recordingId: string): Promise<{manifes
   const manifest = await new Promise<any>((resolve, reject) => {
     const tx = db.transaction(STORE_RECORDINGS, 'readonly');
     const req = tx.objectStore(STORE_RECORDINGS).get(recordingId);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { db.close(); resolve(req.result); };
+    req.onerror = () => { db.close(); reject(req.error); };
   });
   const telemetry = await getTelemetryForRecording(recordingId);
   const chunks = await getChunksForRecording(recordingId);
