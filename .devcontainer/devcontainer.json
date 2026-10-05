@@ -12,5 +12,16 @@
       "onAutoForward": "silent"
     }
   },
-  "postCreateCommand": "npm ci"
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "openai.chatgpt",
+        "Continue.continue"
+      ]
+    }
+  },
+  "postCreateCommand": "npm ci && .devcontainer/bootstrap-ai-tools.sh",
+  "postStartCommand": ".devcontainer/start-omniroute.sh"
 }
