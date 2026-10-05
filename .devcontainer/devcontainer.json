@@ -1,0 +1,21 @@
+{
+  "name": "ArcherLab Edge",
+  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "ArcherLab Edge Vite",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "GitHub.copilot"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
