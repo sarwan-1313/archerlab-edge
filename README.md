@@ -390,6 +390,22 @@ Session analytics provide an overview of training performance and measured indic
 
 Experimental engineering prototype.
 
+## Cloud Development with GitHub Codespaces
+
+GitHub remains the source of truth for development, and Vercel deploys
+production from `main`. To create a cloud development environment:
+
+1. Open the [ArcherLab Edge repository](https://github.com/sarwan-1313/archerlab-edge).
+2. Click **Code**, choose **Codespaces**, and select **Create codespace on main**.
+3. Wait for the devcontainer and automatic `npm ci` installation to finish.
+4. Run `npm run dev`, then open the forwarded port **5173**.
+5. Run `npm test` during development and `npm run build` before major commits.
+6. Commit and push changes from the Codespace.
+
+Real webcam testing still uses the browser or device accessing the app. A local
+Windows checkout may remain available as a backup, but it is not required for
+normal development.
+
 ## Guide deep links
 
 The interactive manual uses browser-history routes such as `/guide/camera-setup`,
