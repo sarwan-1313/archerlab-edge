@@ -1,21 +1,16 @@
 {
-  "name": "ArcherLab Edge",
-  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:1-22-bookworm",
-  "forwardPorts": [5173],
+  "name": "ArcherLab Edge Cloud",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22-bookworm",
+  "forwardPorts": [5173, 20128],
   "portsAttributes": {
     "5173": {
-      "label": "ArcherLab Edge Vite",
+      "label": "ArcherLab Edge",
       "onAutoForward": "openBrowser"
+    },
+    "20128": {
+      "label": "OmniRoute",
+      "onAutoForward": "silent"
     }
   },
-  "postCreateCommand": "npm ci",
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "GitHub.copilot"
-      ]
-    }
-  },
-  "remoteUser": "vscode"
+  "postCreateCommand": "npm ci"
 }
