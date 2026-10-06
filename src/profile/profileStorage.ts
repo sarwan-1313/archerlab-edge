@@ -2,7 +2,12 @@ const DB = 'archerlab-edge-profiles';
 const VERSION = 1;
 const STORE = 'profiles';
 
-function open() {
+export type StoredProfile = {
+  id: string;
+  [key: string]: unknown;
+};
+
+function open(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB, VERSION);
     req.onupgradeneeded = () => {
@@ -14,32 +19,37 @@ function open() {
   });
 }
 
-export async function saveProfile(profile: any) {
+export async function saveProfile(profile: StoredProfile): Promise<void> {
   const db = await open();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(profile);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Profile transaction was aborted.')); };
   });
 }
 
-export async function loadProfile(id: string = 'default') {
+export async function loadProfile(id = 'default'): Promise<StoredProfile | null> {
   const db = await open();
-  return new Promise<any>((resolve, reject) => {
+  return new Promise<StoredProfile | null>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readonly');
     const req = tx.objectStore(STORE).get(id);
-    req.onsuccess = () => resolve(req.result ?? null);
+    req.onsuccess = () => resolve((req.result as StoredProfile | undefined) ?? null);
     req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => { db.close(); reject(tx.error); };
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Profile transaction was aborted.')); };
   });
 }
 
-export async function deleteProfile(id: string = 'default') {
+export async function deleteProfile(id = 'default'): Promise<void> {
   const db = await open();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+    tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Profile transaction was aborted.')); };
   });
 }

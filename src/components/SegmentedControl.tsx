@@ -3,9 +3,10 @@ type SegmentedControlProps = {
   name: string;
   onChange?: (value: string) => void;
   columns?: 2 | 3;
+  selectedValue?: string;
 };
 
-export function SegmentedControl({ options, name, onChange, columns }: SegmentedControlProps) {
+export function SegmentedControl({ options, name, onChange, columns, selectedValue }: SegmentedControlProps) {
   return (
     <div className={`selection-cards selection-cards--${columns ?? Math.min(options.length, 3)}`}>
       {options.map((option) => (
@@ -14,7 +15,9 @@ export function SegmentedControl({ options, name, onChange, columns }: Segmented
             type="radio"
             name={name}
             value={option.value}
-            defaultChecked={option.checked}
+            {...(selectedValue === undefined
+              ? { defaultChecked: option.checked }
+              : { checked: option.value === selectedValue })}
             className="selection-card__input"
             onChange={() => onChange?.(option.value)}
           />

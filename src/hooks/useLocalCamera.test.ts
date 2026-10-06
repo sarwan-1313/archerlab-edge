@@ -47,6 +47,19 @@ describe('useLocalCamera', () => {
     expect(result.current.devices.map((device) => device.deviceId)).toEqual(['cam-1', 'cam-2']);
   });
 
+  it('does not restart an active camera when an inline options object is recreated', async () => {
+    const stream = { getTracks: () => [{ stop }] } as unknown as MediaStream;
+    getUserMedia.mockResolvedValue(stream);
+
+    const { result, rerender } = renderHook(() => useLocalCamera({ autoStart: true }));
+    await act(async () => { await Promise.resolve(); });
+    rerender();
+    await act(async () => { await Promise.resolve(); });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(result.current.stream).toBe(stream);
+  });
+
   it('stops active device tracks and clears the stream', async () => {
     const stream = { getTracks: () => [{ stop }] } as unknown as MediaStream;
     getUserMedia.mockResolvedValue(stream);

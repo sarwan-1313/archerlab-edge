@@ -17,7 +17,11 @@ const defaultOptions: Required<UseLocalCameraOptions> = {
 };
 
 export function useLocalCamera(options: UseLocalCameraOptions = {}) {
-  const config = useMemo(() => ({ ...defaultOptions, ...options }), [options]);
+  const { autoStart, facingMode } = options;
+  const config = useMemo(
+    () => ({ autoStart: autoStart ?? defaultOptions.autoStart, facingMode: facingMode ?? defaultOptions.facingMode }),
+    [autoStart, facingMode],
+  );
   const [devices, setDevices] = useState<CameraDevice[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);

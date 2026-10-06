@@ -65,7 +65,7 @@ export function useAthleteProfile() {
   const save = async (data: Profile) => {
     const toSave: Profile = { id: 'default', ...data, updatedAt: Date.now(), createdAt: data.createdAt ?? Date.now() };
     delete toSave.profilePhotoUrl;
-    await saveProfile(toSave);
+    await saveProfile({ ...toSave, id: 'default' });
     setSnapshot({ profile: profileWithPhoto(toSave), loading: false, loadError: null });
     window.dispatchEvent(new Event('archerlab:profile-updated'));
   };

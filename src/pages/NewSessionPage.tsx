@@ -51,6 +51,7 @@ export function NewSessionPage({ initialConfiguration, onStart, onGestureGuide }
             <SegmentedControl
               name="handedness"
               columns={2}
+              selectedValue={handedness}
               onChange={(value) => { changedRef.current = true; setHandedness(value as ArcherHandedness); }}
               options={[
                 { label: 'Right hand', value: 'right', checked: true, description: 'Bow held left' },
@@ -64,6 +65,7 @@ export function NewSessionPage({ initialConfiguration, onStart, onGestureGuide }
             <SegmentedControl
               name="cameraView"
               columns={3}
+              selectedValue={cameraView}
               onChange={(value) => { changedRef.current = true; setCameraView(value as CameraView); }}
               options={[
                 { label: 'Side view', value: 'side', checked: true, description: 'Recommended for draw form' },
@@ -75,7 +77,7 @@ export function NewSessionPage({ initialConfiguration, onStart, onGestureGuide }
 
           <fieldset className="field-group field-group--wide">
             <legend className="field-label">Shot Capture</legend>
-            <SegmentedControl name="shotCaptureMethod" columns={2} onChange={(value) => setShotCaptureMethod(value as 'manual' | 'experimental-auto-confirm')} options={[
+            <SegmentedControl name="shotCaptureMethod" columns={2} selectedValue={shotCaptureMethod} onChange={(value) => setShotCaptureMethod(value as 'manual' | 'experimental-auto-confirm')} options={[
               { label: 'Manual Release', value: 'manual', checked: true, description: 'Use MARK RELEASE' },
               { label: 'Experimental Auto + Confirm', value: 'experimental-auto-confirm', description: 'Confirm likely releases' },
             ]} />
@@ -83,7 +85,7 @@ export function NewSessionPage({ initialConfiguration, onStart, onGestureGuide }
 
           <fieldset className="field-group field-group--wide">
             <legend className="field-label">Score Entry Method</legend>
-            <SegmentedControl name="scoreEntryMethod" columns={3} onChange={(value) => setScoreEntryMethod(value as ScoreEntryMethod)} options={[
+            <SegmentedControl name="scoreEntryMethod" columns={3} selectedValue={scoreEntryMethod} onChange={(value) => setScoreEntryMethod(value as ScoreEntryMethod)} options={[
               { label: 'Gesture + Manual', value: 'gesture-manual', checked: true, description: 'Hands-free scoring with fallback' },
               { label: 'Manual Only', value: 'manual-only', description: 'Touchscreen result entry' },
               { label: 'No Score Entry', value: 'none', description: 'Biomechanics only' },
