@@ -29,6 +29,7 @@ type RecordingLifecycle = {
   pendingChunks: Set<Promise<void>>;
   pendingTelemetry: Set<Promise<void>>;
   chunkError: unknown;
+  telemetryError: unknown;
   failed: boolean;
   closed: boolean;
 };
@@ -75,6 +76,7 @@ export function useSessionRecorder(stream: MediaStream | null, options?: { sessi
         pendingChunks: new Set(),
         pendingTelemetry: new Set(),
         chunkError: null,
+        telemetryError: null,
         failed: false,
         closed: false,
         metadata: { id: manifestId, sessionId: sessionId ?? null, athleteId: athleteId ?? null, startedAt, endedAt: null, durationMs: 0, mimeType: mime, width: stream.getVideoTracks()?.[0]?.getSettings()?.width ?? null, height: stream.getVideoTracks()?.[0]?.getSettings()?.height ?? null, chunkCount: 0, approximateBytes: 0, ...metaOverrides },
@@ -115,7 +117,10 @@ export function useSessionRecorder(stream: MediaStream | null, options?: { sessi
           if (lifecycle.chunkError || results.some((result) => result.status === 'rejected')) {
             throw lifecycle.chunkError ?? new Error('A recording chunk could not be persisted');
           }
-          await Promise.allSettled([...lifecycle.pendingTelemetry]);
+          const telemetryResults = await Promise.allSettled([...lifecycle.pendingTelemetry]);
+          if (lifecycle.telemetryError || telemetryResults.some((result) => result.status === 'rejected')) {
+            throw lifecycle.telemetryError ?? new Error('Recording telemetry could not be persisted');
+          }
           await finalizeRecording(lifecycle.metadata);
           if (lifecycleRef.current === lifecycle) {
             metadataRef.current = null;
@@ -187,7 +192,9 @@ export function useSessionRecorder(stream: MediaStream | null, options?: { sessi
     const lifecycle = lifecycleRef.current;
     if (!lifecycle || lifecycle.closed || metadataRef.current !== lifecycle.metadata) return;
     const write = addTelemetry(lifecycle.id, frame).catch((error) => {
+      lifecycle.telemetryError = error;
       console.error('Unable to save recording telemetry frame', error);
+      throw error;
     });
     lifecycle.pendingTelemetry.add(write);
     await write;
@@ -198,7 +205,11 @@ export function useSessionRecorder(stream: MediaStream | null, options?: { sessi
     const lifecycle = lifecycleRef.current;
     if (!lifecycle || lifecycle.closed || metadataRef.current !== lifecycle.metadata) return;
     const frame = { ...event, tMs: typeof event.tMs === 'number' ? event.tMs : Date.now() - lifecycle.startedAt };
-    const write = addTelemetry(lifecycle.id, frame).catch((error) => { console.error('Unable to save recording event', error); });
+    const write = addTelemetry(lifecycle.id, frame).catch((error) => {
+      lifecycle.telemetryError = error;
+      console.error('Unable to save recording event', error);
+      throw error;
+    });
     lifecycle.pendingTelemetry.add(write);
     await write;
     lifecycle.pendingTelemetry.delete(write);

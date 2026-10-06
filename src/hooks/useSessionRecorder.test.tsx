@@ -112,6 +112,21 @@ it('waits for accepted telemetry writes before finalizing', async () => {
   expect(storage.finalizeRecording).toHaveBeenCalled();
 });
 
+it('does not finalize when telemetry persistence fails', async () => {
+  storage.addTelemetry.mockRejectedValueOnce(new Error('Storage full'));
+  const { result } = renderHook(() => useSessionRecorder(stream));
+  await act(async () => { await result.current.start(); });
+  const recorder = TestRecorder.instances[0];
+
+  await act(async () => {
+    await expect(result.current.recordEvent({ type: 'release' })).rejects.toThrow('Storage full');
+  });
+  await act(async () => { await recorder.onstop!(); });
+
+  expect(storage.finalizeRecording).not.toHaveBeenCalled();
+  expect(result.current.state).toBe('error');
+});
+
 it('does not replace an active recording when start is called again', async () => {
   const { result } = renderHook(() => useSessionRecorder(stream));
   await act(async () => { expect((await result.current.start()).ok).toBe(true); });
