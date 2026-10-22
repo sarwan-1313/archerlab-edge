@@ -56,7 +56,7 @@ export function ProfilePage() {
           <label>Discipline<input value={form.discipline} onChange={(e) => onChange('discipline', e.target.value)} /></label>
           <label>Experience level<select value={form.experienceLevel} onChange={(e) => onChange('experienceLevel', e.target.value)}><option value="">(unspecified)</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="competitive">Competitive</option></select></label>
           <label>Default camera view<select value={form.defaultCameraAngle} onChange={(e) => onChange('defaultCameraAngle', e.target.value)}><option value="side">Side</option><option value="front">Front</option><option value="rear">Rear</option><option value="custom">Custom</option></select></label>
-          <div style={{ marginTop: 12 }}><button className="analysis-cta" type="submit" disabled={saving}><strong>{saving ? 'Saving?' : 'Save Profile'}</strong></button></div>
+          <div style={{ marginTop: 12 }}><button className="analysis-cta" type="submit" disabled={saving}><strong>{saving ? 'Saving…' : 'Save Profile'}</strong></button></div>
         </div>
       </div>
       {saved ? <p role="status">Profile saved on this device.</p> : null}

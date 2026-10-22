@@ -6,7 +6,7 @@ import { PageTransition } from './components/PageTransition';
 import { PrivacyBadge } from './components/PrivacyBadge';
 import { RouteLoadingBoundary } from './components/RouteLoadingBoundary';
 import { SidebarNav } from './components/SidebarNav';
-import { desktopNavItems, mobileNavItems } from './data/mockData';
+import { desktopNavItems, mobileNavItems, pageTitles } from './data/mockData';
 import { guideStepForPage, isGuideDetailPage } from './data/userGuide';
 import { attachReportedResult, clearReportedResult } from './gesture-entry/shotAssociation';
 import { HomePage } from './pages/HomePage';
@@ -14,6 +14,7 @@ import { LiveAnalysisPage } from './pages/LiveAnalysisPage';
 import { runPresentationTransition } from './motion/runPresentationTransition';
 import { pageForPathname, resolvePageFromPathname, routeForPage } from './navigation/routes';
 import { useAthleteProfile } from './hooks/useAthleteProfile';
+import { createSampleSession, isSampleShot } from './demo/sampleSession';
 
 const CalibrationPage = lazy(() => import('./pages/CalibrationPage').then((module) => ({ default: module.CalibrationPage })));
 const GestureGuidePage = lazy(() => import('./pages/GestureGuidePage').then((module) => ({ default: module.GestureGuidePage })));
@@ -354,6 +355,16 @@ function App() {
   const addShot = (shot: ShotAnalysis) => { setShots((current) => [...current, shot]); setSelectedShotId(shot.id); };
   const attachResult = (shotId: string, result: ReportedShotResult) => setShots((current) => attachReportedResult(current, shotId, result));
   const clearResult = (shotId: string) => setShots((current) => clearReportedResult(current, shotId));
+  const loadSampleSession = () => { setShots(createSampleSession()); setSelectedShotId(undefined); requestNavigation('dashboard'); };
+  const clearSampleSession = () => { setShots((current) => current.filter((shot) => !isSampleShot(shot))); setSelectedShotId(undefined); };
+  const viewingSample = shots.length > 0 && shots.every(isSampleShot);
+  // Step between arrows on the replay page without stacking history entries.
+  const showReplayShot = (shotNumber: number) => {
+    const next = shots[shotNumber - 1];
+    if (!next) return;
+    setSelectedShotId(next.id);
+    window.history.replaceState(routeHistoryState('replay-analysis', routeIndexRef.current), '', routeForPage('replay-analysis', { shotId: next.id }));
+  };
 
   const completeGuardedExit = useCallback(() => {
     if (!guardedExit) return;
@@ -372,13 +383,13 @@ function App() {
 
   const currentPage = (() => {
     switch (activePage) {
-      case 'home': return <HomePage onStart={() => beginTraining()} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.length > 0} />;
+      case 'home': return <HomePage onStart={() => beginTraining()} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} />;
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
       case 'manual-shot-entry': return <ManualShotEntryPage shot={selectedShot} onCancel={goBack} onSave={(result) => { if (selectedShot) attachResult(selectedShot.id, result); requestNavigation('replay-analysis'); }} />;
-      case 'replay-analysis': return <ReplayAnalysisPage shot={selectedShot} shotNumber={selectedShot ? shots.findIndex((shot) => shot.id === selectedShot.id) + 1 : 0} onManualEntry={() => requestNavigation('manual-shot-entry')} onUndoScore={() => selectedShot && clearResult(selectedShot.id)} />;
-      case 'dashboard': return <SessionDashboardPage shots={shots} selectedShotId={selectedShotId} onStart={() => beginTraining()} onSelectShot={(shotId) => { setSelectedShotId(shotId); commitNavigation('replay-analysis', { shotId }); }} />;
+      case 'replay-analysis': return <ReplayAnalysisPage shot={selectedShot} shotNumber={selectedShot ? shots.findIndex((shot) => shot.id === selectedShot.id) + 1 : 0} shotCount={shots.length} onShowShot={showReplayShot} onManualEntry={() => requestNavigation('manual-shot-entry')} onUndoScore={() => selectedShot && clearResult(selectedShot.id)} />;
+      case 'dashboard': return <SessionDashboardPage shots={shots} selectedShotId={selectedShotId} onStart={() => beginTraining()} onSample={loadSampleSession} onClearSample={viewingSample ? clearSampleSession : undefined} onSelectShot={(shotId) => { setSelectedShotId(shotId); commitNavigation('replay-analysis', { shotId }); }} />;
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
@@ -397,6 +408,12 @@ function App() {
         return activeGuideStep ? <GuideDetailPage step={activeGuideStep} onNavigate={requestNavigation} onProductNavigate={(page) => page === 'live-analysis' ? beginTraining() : requestNavigation(page)} /> : null;
     }
   })();
+
+  useEffect(() => {
+    document.title = activePage === 'home'
+      ? 'ArcherLab Edge · On-device archery form analysis'
+      : `${activePage === 'saved-recordings' ? 'Sessions' : activePage === 'dashboard' ? 'Analytics' : pageTitles[activePage]} · ArcherLab Edge`;
+  }, [activePage]);
 
   const navActive = primaryPageFor(activePage);
   const handleNavSelect = (page: PageKey) => page === 'live-analysis' && activePage !== 'live-analysis' ? beginTraining() : requestNavigation(page);

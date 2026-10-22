@@ -18,6 +18,7 @@ export function BottomNav({ items, active, onSelect }: BottomNavProps) {
             onClick={() => onSelect(item.key)}
             className={[
               'bottom-nav__item',
+              `bottom-nav__item--${item.key}`,
               active === item.key ? 'bottom-nav__item--active' : '',
             ].join(' ')}
             aria-current={active === item.key ? 'page' : undefined}

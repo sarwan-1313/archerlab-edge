@@ -26,8 +26,8 @@ export const desktopNavItems: NavItem[] = [
 
 export const mobileNavItems: NavItem[] = [
   { key: 'home', label: 'Home', icon: 'home' },
-  { key: 'live-analysis', label: 'Live', icon: 'camera' },
   { key: 'saved-recordings', label: 'Sessions', icon: 'history' },
+  { key: 'live-analysis', label: 'Live', icon: 'camera' },
   { key: 'dashboard', label: 'Analytics', icon: 'grid' },
   { key: 'user-guide', label: 'Guide', icon: 'accessibility' },
 ];

@@ -214,7 +214,7 @@ export function SavedRecordingsPage({ onStart }: { onStart?: () => void }) {
                 <div className="session-list__copy"><h2>{recording.sessionId || `Training Session ${list.length - index}`}</h2><p>{new Date(recording.startedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p><div><span>{formatDuration(recording.durationMs)} duration</span><span>{Math.round((recording.approximateBytes ?? 0) / 1024)} KB</span></div></div>
                 <StatusBadge label="Saved" tone="success" compact />
                 <div className="session-list__actions">
-                  <button type="button" className="button button--primary" onClick={() => void play(recording.id)} disabled={openingId !== null}><AppIcon name="play" size={16} />{openingId === recording.id ? 'Opening session?' : 'Open session'}</button>
+                  <button type="button" className="button button--primary" onClick={() => void play(recording.id)} disabled={openingId !== null}><AppIcon name="play" size={16} />{openingId === recording.id ? 'Opening session…' : 'Open session'}</button>
                   <button type="button" className="icon-button" onClick={() => void doExport(recording.id)} aria-label={`Export ${recording.sessionId ?? 'session'}`}><AppIcon name="arrow-right" size={16} /></button>
                   <button type="button" className="icon-button icon-button--danger" onClick={() => void doDelete(recording.id)} aria-label={`Delete ${recording.sessionId ?? 'session'}`}><AppIcon name="trash" size={16} /></button>
                 </div>
@@ -230,7 +230,7 @@ export function SavedRecordingsPage({ onStart }: { onStart?: () => void }) {
                   event.currentTarget.currentTime = Math.max(0, (shotEvents[0]?.tMs ?? 0) / 1000 - 0.8);
                 }} onError={() => setActionError('This video cannot be played. Try opening the session again or download the video to use another player.')} />
                 <div className="session-player__metrics">
-                  {[['Shoulder', currentTelemetry?.shoulderLineAngleDeg, '°'], ['Bow arm', currentTelemetry?.bowArmAngleDeg, '°'], ['Torso', currentTelemetry?.torsoLeanDeg, '°'], ['Pose confidence', currentTelemetry?.poseConfidence == null ? undefined : Math.round(currentTelemetry.poseConfidence * 100), '%']].map(([label, value, unit]) => <div key={label as string}><span>{label}</span><strong>{value ?? '—'}{value == null ? '' : unit}</strong></div>)}
+                  {[['Shoulder', currentTelemetry?.shoulderLineAngleDeg, '°'], ['Bow arm', currentTelemetry?.bowArmAngleDeg, '°'], ['Torso', currentTelemetry?.torsoLeanDeg, '°'], ['Pose confidence', currentTelemetry?.poseConfidence == null ? undefined : Math.round(currentTelemetry.poseConfidence * 100), '%']].map(([label, value, unit]) => <div key={label as string}><span>{label}</span><strong>{typeof value === 'number' && Number.isFinite(value) ? `${unit === '%' ? Math.round(value) : value.toFixed(1)}${unit}` : '—'}</strong></div>)}
                 </div>
                 <div className="session-player__timeline">
                   <span style={{ width: `${Math.min(100, (currentTime / Math.max(1, selectedRecording?.durationMs ?? 1)) * 100)}%` }} />

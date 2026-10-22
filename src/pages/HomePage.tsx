@@ -8,6 +8,7 @@ type HomePageProps = {
   onStart: () => void;
   onGuide: () => void;
   onProfile?: () => void;
+  onSample?: () => void;
   hasProfile?: boolean;
   hasTrainingHistory?: boolean;
 };
@@ -32,7 +33,7 @@ const sessionFlow: Array<{ icon: AppIconName; title: string; body: string }> = [
   { icon: 'history', title: 'Review and compare', body: 'Replay any shot, check its metrics, and track consistency across the session.' },
 ];
 
-export function HomePage({ onStart, onGuide, onProfile, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
+export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => (rootRef.current ? mountScrollScene(rootRef.current) : undefined), []);
 
@@ -62,6 +63,11 @@ export function HomePage({ onStart, onGuide, onProfile, hasProfile = false, hasT
             </ActionButton>
             <ActionButton variant="ghost" className="landing-ghost" aria-label="User Guide" onClick={onGuide}>Explore User Guide</ActionButton>
           </div>
+          {onSample ? (
+            <button type="button" className="landing-sample-link" onClick={onSample}>
+              <span>No bow nearby?</span> Explore a sample session <AppIcon name="arrow-right" size={15} />
+            </button>
+          ) : null}
           <ul className="landing-hero__facts" aria-label="Key facts">
             <li><strong>100%</strong><span>on-device processing</span></li>
             <li><strong>33</strong><span>body landmarks tracked</span></li>
@@ -210,6 +216,7 @@ export function HomePage({ onStart, onGuide, onProfile, hasProfile = false, hasT
         <div className="landing-final__rings" aria-hidden="true"><span /><span /><span /></div>
         <h2 id="landing-final-title">Ready to shoot?</h2>
         <p>Set up your camera and capture your first analysed shot in a few minutes.</p>
+        {onSample ? <button type="button" className="landing-sample-link landing-sample-link--center" onClick={onSample}>Or explore a 12-arrow sample session <AppIcon name="arrow-right" size={15} /></button> : null}
         {showGettingStarted ? (
           <ol className="landing-checklist" aria-label="Get started">
             {setupItems.map((item, index) => (
