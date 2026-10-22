@@ -1,486 +1,295 @@
-# ArcherLab Edge
+<div align="center">
 
-## From an Athlete's Problem to an Engineering Solution
+# ArcherLab Edge
 
 ### Privacy-first computer vision and performance analytics for precision archery
 
+**[Live demo](https://archerlab-edge.vercel.app)** · **[Try the sample session](https://archerlab-edge.vercel.app)** · **[User guide](https://archerlab-edge.vercel.app/guide)**
+
+![React](https://img.shields.io/badge/React-19-0b1326?logo=react&logoColor=61dafb)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-0b1326?logo=typescript&logoColor=3178c6)
+![Vite](https://img.shields.io/badge/Vite-8-0b1326?logo=vite&logoColor=ffc53d)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-on--device-0b1326?logo=google&logoColor=2ee6ff)
+![Tests](https://img.shields.io/badge/tests-124_cases-0b1326?logo=vitest&logoColor=3ddc84)
+![Version](https://img.shields.io/badge/version-0.1.0-0b1326)
+
+<img src="docs/images/landing.png" alt="ArcherLab Edge landing page: large 'ArcherLab Edge' headline, Start Analysis button and a glowing target in the background" width="100%" />
+
+</div>
+
 ---
 
-<p align="center">
-  <b>Transforming athletic experience into computational insight.</b>
-</p>
-
----
-
-## The Story Behind ArcherLab Edge
+## From an athlete's problem to an engineering solution
 
 ArcherLab Edge began with a question from my own experience as an archer:
 
 > **Can technology help an athlete better understand the small details that influence performance consistency?**
 
-Precision sports are often decided by details that are difficult to observe:
+Precision sports are decided by details that are hard to see: movement stability, body alignment, repeatability between attempts, and how technique relates to results. Analysing them usually takes expensive sensors, specialised equipment or hours of manual video review.
 
-- movement stability;
-- body alignment;
-- repeatability between attempts;
-- changes across training sessions;
-- relationships between technique and results.
+As both an athlete and a computer science student, I wanted to find out whether a standard laptop or phone camera, combined with modern computer vision, could make that analysis accessible, **while keeping every frame of the athlete's video on their own device.**
 
-Traditional performance analysis often requires expensive sensors, specialized equipment, or manual review.
-
-As both an athlete and a computer science student, I wanted to explore whether modern software engineering and computer vision could make performance analysis more accessible.
-
-That idea became **ArcherLab Edge**.
-
-A system built at the intersection of:
-
-- Precision Athletics
-- Computer Vision
-- Biomechanics
-- Statistical Analysis
-- Privacy-Preserving Computing
+That became ArcherLab Edge: a system at the intersection of precision athletics, computer vision, biomechanics, statistics and privacy-preserving computing.
 
 ---
 
-# Project Vision
+## Try it in ten seconds
 
-ArcherLab Edge explores a simple idea:
+No bow, no camera, no account needed.
 
-> **Can a standard consumer device become an intelligent training tool while keeping athlete data local?**
+1. Open **[archerlab-edge.vercel.app](https://archerlab-edge.vercel.app)**.
+2. Click **Explore a sample session** under the main buttons.
+3. Browse a 12-arrow round in **Analytics**, then click any arrow to open its **Replay**.
 
-The project investigates how browser-based computer vision and software engineering can help athletes visualize, analyze, and understand performance patterns.
+The sample session is not hard-coded data. Synthetic pose frames are run through the app's real `ShotCaptureEngine`, so every metric you see is genuine engine output.
 
-Rather than building a generic AI demonstration, ArcherLab Edge applies technology to a real domain problem experienced through competitive archery.
-
----
-
-# What ArcherLab Edge Does
-
-ArcherLab Edge is a browser-based sports analytics platform combining:
-
-- on-device computer vision;
-- movement analysis;
-- biomechanics estimation;
-- shot-cycle analysis;
-- gesture interaction;
-- local session recording;
-- performance analytics;
-- experimental statistical modeling.
+To analyse yourself, click **Start Analysis**, allow camera access and stand side-on to the camera.
 
 ---
 
-# Core Capabilities
+## One shot, four moments
 
-## 1. On-Device Computer Vision
+The landing page walks through a single shot as you scroll: the draw, the hold, the release and the impact. Each step explains what ArcherLab Edge measures at that moment.
 
-ArcherLab Edge uses MediaPipe Tasks Vision for local browser-based analysis.
-
-Implemented capabilities:
-
-- Pose Landmarker integration
-- Hand Landmarker integration
-- athlete detection
-- skeleton visualization
-- landmark processing
-- movement tracking
-- confidence-based quality handling
-- temporal smoothing
-
-The system is designed without requiring cloud video inference.
+<div align="center">
+<img src="docs/images/scroll-animation.gif" alt="Animation: a bow is drawn, the arrow is released and lands in the gold; readouts for draw, hold sway, release change and score update as it plays" width="760" />
+</div>
 
 ---
 
-# 2. Biomechanics Analysis Engine
+## Screenshots
 
-The biomechanics layer converts movement landmarks into archery-focused measurements.
+### Live Analysis
 
-Current analysis includes:
+Pose landmarks are tracked live on the device. A broadcast-style status bar shows session time, shots and tracking state, and the biomechanics panel updates shoulder line, bow-arm angle, torso lean, head motion and bow-hand motion in real time.
 
-- shoulder alignment;
-- bow-arm geometry;
-- torso positioning;
-- head movement stability;
-- bow-hand movement;
-- temporal consistency;
-- movement variation analysis.
+<img src="docs/images/live.png" alt="Live Analysis screen: camera feed with pose skeleton overlay, orange Session Active status bar, and live biomechanics tiles" width="100%" />
 
-The biomechanics system is separated from the interface layer, allowing calculations and visualization to evolve independently.
+<sub>Screenshot taken with a simulated camera feed and synthetic pose data; in real use the feed is your own camera.</sub>
 
----
+### Performance Analytics
 
-# 3. Shot Cycle Intelligence
+A scoreboard summary, a scorecard split into ends of six, where every arrow landed on the target, and arrow-by-arrow form charts coloured by score. These make it easy to see whether shaky holds line up with lower scores.
 
-Archery performance is not only a single frame — it is a sequence of movements.
+<img src="docs/images/analytics.png" alt="Analytics: total score 105 of 120, average 8.8, scorecard with ring-coloured arrows, and target group plot" width="100%" />
 
-ArcherLab Edge analyzes shot phases through:
+<img src="docs/images/analytics-trends.png" alt="Arrow-by-arrow bar charts for hold shoulder variation, bow-hand motion, head motion and release shoulder delta, coloured by score" width="100%" />
 
-- shot buffering;
-- release-event capture;
-- pre-release analysis;
-- post-release analysis;
-- release metrics;
-- shot-quality summaries;
-- follow-through analysis.
+### Shot Replay
 
-Automatic release recognition remains an experimental capability.
+Every captured arrow can be reviewed on its own: the athlete-reported score, data-quality indicators, and each metric charted across hold, release and follow-through. Previous and next buttons step through the round.
 
----
+<img src="docs/images/replay.png" alt="Replay of shot 3: gold 10 score badge, data quality tiles, and arrow stepper" width="100%" />
 
-# 4. Touchless Athlete Interaction
+<img src="docs/images/replay-charts.png" alt="Shot cycle charts for shoulder line, bow arm and torso lean with hold and follow-through phases shaded and a dashed release marker" width="100%" />
 
-The application includes an optional gesture-based interaction system.
+### Sessions and guided setup
 
-Features include:
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/sessions.png" alt="Training sessions library with a saved session open in the replay player" /></td>
+    <td width="50%"><img src="docs/images/camera-setup.png" alt="Camera setup step with framing checklist and readiness steps" /></td>
+  </tr>
+  <tr>
+    <td><b>Sessions.</b> Recordings are saved in the browser and replayed with synchronised telemetry and shot markers.</td>
+    <td><b>Guided setup.</b> Camera framing, readiness checks and session start, before anything is recorded.</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/summary.png" alt="Session complete summary with total shots and duration" /></td>
+    <td width="50%"><img src="docs/images/guide.png" alt="User guide with three sections: prepare, train and review" /></td>
+  </tr>
+  <tr>
+    <td><b>Session summary.</b> Shots captured, duration and per-shot review straight after training.</td>
+    <td><b>User guide.</b> A ten-step manual from camera setup to analytics, with deep links for each step.</td>
+  </tr>
+</table>
 
-- hand landmark processing;
-- gesture classification;
-- finger counting;
-- stability confirmation;
-- score association;
-- gesture diagnostics;
-- manual fallback input.
+### Mobile
 
-The goal is to allow athletes to interact with sessions while maintaining shooting workflow.
+The whole workflow works on a phone, with a raised **Live** button in the bottom navigation.
 
----
-
-# 5. Session Recording and Replay
-
-Training improvement requires reviewing both results and process.
-
-ArcherLab Edge includes:
-
-- local recording workflows;
-- session management;
-- replay analysis;
-- performance review;
-- session-based analytics.
-
-The architecture separates recorded data from analytical data, allowing future improvements without recreating training sessions.
+<img src="docs/images/mobile.png" alt="Four mobile screens: landing page, live analysis, analytics scoreboard and scorecard" width="100%" />
 
 ---
 
-# 6. Performance Analytics
+## What ArcherLab Edge does
 
-The analytics system transforms training sessions into measurable information.
+### 1. On-device computer vision
+MediaPipe Tasks Vision runs in the browser through WebAssembly: Pose Landmarker for the athlete's body, Hand Landmarker for gesture scoring. It includes athlete detection, skeleton visualisation, confidence-based quality handling and temporal smoothing. There is no cloud video inference.
 
-Implemented analysis includes:
+### 2. Biomechanics engine
+Landmarks are converted into archery-specific measurements: shoulder alignment, bow-arm geometry, torso position, head stability, bow-hand movement and variation over time. The engine is separate from the interface, so the calculations and the visuals can evolve independently.
 
-- target coordinate handling;
-- shot grouping;
-- centroid calculations;
-- spread analysis;
-- session statistics;
-- performance comparisons.
+### 3. Shot-cycle analysis
+Archery is a sequence, not a single frame. Each shot is buffered and split into draw, hold, release and follow-through, with pre- and post-release windows, release metrics, data-quality summaries and follow-through analysis. Automatic release detection is available as an experimental option.
 
-Statistical outputs are designed for exploration and understanding rather than unsupported coaching claims.
+### 4. Touchless scoring
+Archers can show their score with a hand gesture after each arrow, so they don't need to touch a device between shots. Stability confirmation guards against misreads, and manual and on-target entry are available as fallbacks.
 
----
+### 5. Recording and replay
+Sessions are recorded locally with synchronised pose telemetry and shot markers, then replayed from the Sessions library. Recorded data is kept separate from analytical data, so the analysis can improve without re-recording sessions.
 
-# 7. Experimental Performance Modeling
+### 6. Performance analytics
+Totals, averages, a scorecard by end, target grouping, consistency statistics across shots, and a comparison of form between high- and low-scoring arrows. This comparison is presented as a descriptive association only; the app does not claim causation.
 
-ArcherLab Edge includes an experimental statistical modeling layer.
-
-The system explores:
-
-- shot distributions;
-- athlete-specific variation;
-- simulated shot clouds;
-- uncertainty visualization.
-
-This component is experimental and is not presented as an exact arrow-impact predictor.
+### 7. Experimental modelling
+An exploratory layer simulates shot distributions and visualises uncertainty from observed groups. It is clearly labelled as experimental and is not presented as an arrow-impact predictor.
 
 ---
 
-# System Architecture
+## System architecture
 
 ```text
-Camera Input
-      |
-      v
-Local MediaPipe Processing
-      |
-      +----------------+
-      |                |
-      v                v
-Pose Analysis     Hand Analysis
-      |                |
-      v                v
-Biomechanics     Gesture Interaction
-      |
-      v
-Shot Analysis
-      |
-      v
-Target Analytics
-      |
-      v
-Session Intelligence
-      |
-      v
-Experimental Modeling
+Camera input
+     │
+     ▼
+Local MediaPipe processing (WebAssembly)
+     │
+     ├──────────────────┐
+     ▼                  ▼
+Pose analysis      Hand analysis
+     │                  │
+     ▼                  ▼
+Biomechanics       Gesture scoring
+     │                  │
+     └────────┬─────────┘
+              ▼
+       Shot-cycle capture
+              │
+              ▼
+   Session analytics & replay
+              │
+              ▼
+     Experimental modelling
 ```
 
----
-
-# Privacy-First Architecture
-
-A core design principle of ArcherLab Edge is local processing.
+## Privacy-first by design
 
 ```text
-Camera
-   |
-   v
-Local Vision Models
-   |
-   v
-Movement Landmarks
-   |
-   v
-Biomechanics Analysis
-   |
-   v
-Local Session Data
+Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Local session data
+                     (nothing leaves the device)
 ```
 
-The platform is designed around:
-
-- local computation;
-- user-owned data;
-- minimal external dependencies;
-- privacy-conscious architecture.
+- Video frames are processed in the browser and never uploaded.
+- Profiles and recordings are stored on the device (IndexedDB).
+- Fonts and models are self-hosted, so no visitor data is sent to third-party CDNs.
+- No accounts and no analytics trackers.
 
 ---
 
-# Technology Stack
+## Technology stack
 
-## Frontend
+| Area | Tools |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite |
+| Computer vision | MediaPipe Tasks Vision (Pose and Hand Landmarker), WebAssembly |
+| Browser APIs | MediaDevices camera capture, MediaRecorder, IndexedDB, Canvas and SVG |
+| Quality | Vitest + Testing Library (33 test files, 124 cases), oxlint, GitHub Actions CI |
+| Hosting | Vercel (production deploys from `main`), GitHub Codespaces for development |
 
-- React
-- TypeScript
-- Vite
-
-## Computer Vision
-
-- MediaPipe Tasks Vision
-- Pose Landmarker
-- Hand Landmarker
-- WebAssembly runtime
-
-## Browser Technologies
-
-- Camera APIs
-- Browser media workflows
-- Local storage systems
-- Canvas/SVG visualization
-
-## Engineering Practices
-
-- modular architecture;
-- reusable components;
-- custom React hooks;
-- typed domain models;
-- analytical utilities;
-- automated testing.
-
----
-
-# Engineering Highlights
-
-## Domain-Driven Development
-
-The project was created around a real problem from athletic experience rather than as an isolated technology experiment.
-
-## Computer Vision Application
-
-The system applies computer vision toward understanding movement patterns, not only detecting objects.
-
-## Separation of Concerns
-
-Camera processing, biomechanics, analytics, recording, and visualization are structured as independent modules.
-
-## Temporal Understanding
-
-The platform analyzes movement over time instead of treating every frame independently.
-
-## Responsible Analytics
-
-Experimental features are clearly separated from validated measurements.
-
-## Complete Product Workflow
-
-The application includes:
-
-- calibration;
-- live analysis;
-- sessions;
-- recording;
-- replay;
-- profiles;
-- analytics.
-
----
-
-# Repository Structure
+## Repository structure
 
 ```text
 src/
-├── analytics
-├── biomechanics
-├── components
-├── gesture-entry
-├── hooks
-├── pages
-├── profile
-├── recording
-├── services
-├── shot-analysis
-├── simulation
-├── target
-├── types
-└── utils
+├── analytics        session datasets and statistics
+├── biomechanics     landmark geometry, smoothing, archery metrics
+├── components       shared UI (camera, overlays, metric cards, navigation)
+├── demo             sample session generated through the real capture engine
+├── gesture-entry    hand-gesture score recognition
+├── hooks            camera, pose, recording and shot-analysis hooks
+├── landing          scroll-driven landing animation
+├── pages            Live Analysis, Analytics, Replay, Sessions, Guide, Profile
+├── profile          local athlete profile storage
+├── recording        local session recording and replay storage
+├── services         MediaPipe landmarker services
+├── shot-analysis    shot buffering, release capture, phases, summaries
+├── simulation       experimental shot-distribution modelling
+├── styles           theme and self-hosted fonts
+├── target           target-face geometry and scoring
+├── training         guided session workflow state machine
+└── types            typed domain models
 ```
 
 ---
 
-# Technology Challenges Solved
+## Running locally
 
-Building ArcherLab Edge required solving challenges across multiple areas:
+```bash
+npm ci
+npm run dev        # start the dev server on http://localhost:5173
+npm test           # run the test suite
+npm run check      # lint + tests + production build
+```
 
-### Real-time browser computer vision
+Camera access needs a secure context: `localhost` during development, HTTPS in production.
 
-Integrating vision models while maintaining interactive performance.
+### Cloud development with GitHub Codespaces
 
-### Movement analysis
+GitHub is the source of truth, and Vercel deploys production from `main`.
 
-Converting raw landmarks into meaningful domain-specific measurements.
+1. Open the [repository](https://github.com/sarwan-1313/archerlab-edge), click **Code → Codespaces → Create codespace on main**.
+2. Wait for the dev container and the automatic `npm ci` to finish.
+3. Run `npm run dev` and open the forwarded port **5173**.
+4. Run `npm test` during development and `npm run check` before pushing.
 
-### Temporal processing
+Real webcam testing uses the browser or device that opens the app.
 
-Understanding motion sequences instead of isolated observations.
+### Guide deep links
 
-### Local-first architecture
-
-Designing around privacy and browser capabilities.
-
-### Product engineering
-
-Creating a complete athlete workflow rather than a single technical demonstration.
-
----
-# Screenshots
-
-## Live Analysis
-
-The primary analysis workflow combines local camera processing, biomechanics visualization, and performance metrics.
-
-![Live Analysis](docs/images/hero-live-analysis.png)
+The manual uses browser-history routes such as `/guide/camera-setup` and `/guide/analytics`. Vite serves them automatically. In production, `vercel.json` rewrites unknown paths to `index.html`, so refreshing or opening a guide link directly still works.
 
 ---
 
-## Session Dashboard
+## Engineering highlights
 
-Session analytics provide an overview of training performance and measured indicators.
+- **Domain-driven.** Built around a real problem from competitive archery, not as an isolated technology demo.
+- **Movement over time.** Shots are analysed as sequences with phases, not as independent frames.
+- **Separation of concerns.** Camera, biomechanics, shot analysis, recording, analytics and UI are independent modules.
+- **Honest analytics.** Experimental features are labelled, and associations are never presented as causation.
+- **Complete product workflow.** Guided setup, live analysis, scoring, recording, replay, analytics and profiles.
+- **Accessible.** Keyboard focus styles, reduced-motion support, and text contrast that meets the WCAG AA standard.
 
-![Session Dashboard](docs/images/session-dashboard.png)
+---
 
-# Current Status
+## Current status
 
-## ArcherLab Edge v0.1.0
-
-Experimental engineering prototype.
-
-## Cloud Development with GitHub Codespaces
-
-GitHub remains the source of truth for development, and Vercel deploys
-production from `main`. To create a cloud development environment:
-
-1. Open the [ArcherLab Edge repository](https://github.com/sarwan-1313/archerlab-edge).
-2. Click **Code**, choose **Codespaces**, and select **Create codespace on main**.
-3. Wait for the devcontainer and automatic `npm ci` installation to finish.
-4. Run `npm run dev`, then open the forwarded port **5173**.
-5. Run `npm test` during development and `npm run build` before major commits.
-6. Commit and push changes from the Codespace.
-
-Real webcam testing still uses the browser or device accessing the app. A local
-Windows checkout may remain available as a backup, but it is not required for
-normal development.
-
-## Guide deep links
-
-The interactive manual uses browser-history routes such as `/guide/camera-setup`,
-`/guide/review-shots`, and `/guide/analytics`. Development and Vite preview
-serve these routes through the single-page application automatically. A static
-production host must rewrite unknown application paths to `index.html` so a
-refresh or direct visit to a guide detail URL can load the app.
-
-Current focus:
+**v0.1.0: experimental engineering prototype.** Current focus:
 
 - validating the technical foundation;
 - exploring browser-based sports intelligence;
-- creating a foundation for future athlete-centered research.
+- building toward athlete-centred research.
+
+## Limitations
+
+- Biomechanics outputs are not medically validated.
+- Gesture scoring records what the athlete reports.
+- Automatic release detection is experimental.
+- Simulation outputs are exploratory.
+- It is not a replacement for professional coaching, and not a medical device.
+
+These limitations are documented on purpose, as part of responsible engineering.
+
+## Roadmap
+
+| Version | Focus |
+| --- | --- |
+| v0.2 | Robustness, smoother interaction workflows, user experience |
+| v0.3 | Richer session analytics, comparisons across sessions, deeper visualisation |
+| v0.5 | Athlete-specific datasets and personalised performance models |
+| v1.0 | A mature computational sports-performance platform |
 
 ---
 
-# Limitations
+## Why I built this
 
-ArcherLab Edge is an experimental prototype.
+A problem I experienced as an athlete became a technical question. That question became an engineering challenge, and that challenge became ArcherLab Edge.
 
-Current limitations:
-
-- biomechanics outputs are not medically validated;
-- gesture scoring represents athlete input;
-- automatic release detection remains experimental;
-- simulation outputs are exploratory;
-- the system is not a professional coaching replacement;
-- the system is not a medical device.
-
-These limitations are intentionally documented as part of responsible engineering practice.
-
----
-
-# Future Direction
-
-## v0.2
-
-- improved robustness;
-- stronger interaction workflows;
-- enhanced user experience.
-
-## v0.3
-
-- richer session analytics;
-- improved comparisons;
-- deeper visualization.
-
-## v0.5
-
-- athlete-specific datasets;
-- personalized performance models;
-- expanded experimentation.
-
-## v1.0
-
-A mature computational sports-performance platform.
-
----
-
-# Why I Built This
-
-A problem experienced as an athlete became a technical question.
-
-That question became an engineering challenge.
-
-That engineering challenge became ArcherLab Edge.
-
-This project represents the intersection of two disciplines:
+This project sits where two disciplines meet:
 
 **the precision of athletics and the creativity of computer science.**
 
----
+<div align="center">
 
-## Version
+**ArcherLab Edge v0.1.0** · experimental public engineering prototype
 
-**ArcherLab Edge v0.1.0**
-
-Experimental public engineering prototype.
+</div>

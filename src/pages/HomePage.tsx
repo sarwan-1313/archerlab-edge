@@ -88,7 +88,7 @@ export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = f
           </div>
           <div className="landing-story__stage">
             <figure className="landing-scene">
-              <svg viewBox="60 28 940 356" role="img" aria-label="Illustration: a bow is drawn, the arrow is released and lands in the centre of the target">
+              <svg viewBox="0 28 1000 356" role="img" aria-label="Illustration: a bow is drawn, the arrow is released and lands in the centre of the target">
                 <defs>
                   <radialGradient id="landing-gold" cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor="#ffe9a3" />
