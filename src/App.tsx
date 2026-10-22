@@ -168,9 +168,8 @@ function App() {
   const initialPageRef = useRef<PageKey>(getInitialPage());
   const [activePage, setActivePage] = useState<PageKey>(initialPageRef.current);
   const [canGoBack, setCanGoBack] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return localStorage.getItem(ONBOARDING_KEY) !== 'true'; } catch { return true; }
-  });
+  // The landing page is the first-visit welcome; the quick-start modal opens on request from the User Guide.
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [sessionConfiguration, setSessionConfiguration] = useState<SessionConfiguration>({ handedness: 'right', cameraView: 'side', scoreEntryMethod: 'gesture-manual', shotCaptureMethod: 'manual' });
   const [profileDefaults, setProfileDefaults] = useState<Partial<Pick<SessionConfiguration, 'handedness' | 'cameraView'>>>({});
   const [reference, setReference] = useState<BiomechanicsReference>();
