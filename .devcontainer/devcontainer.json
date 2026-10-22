@@ -1,27 +1,20 @@
 {
-  "name": "ArcherLab Edge Cloud",
+  "name": "ArcherLab Edge",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:22-bookworm",
-  "forwardPorts": [5173, 20128],
+  "forwardPorts": [5173],
   "portsAttributes": {
     "5173": {
       "label": "ArcherLab Edge",
       "onAutoForward": "openBrowser"
-    },
-    "20128": {
-      "label": "OmniRoute",
-      "onAutoForward": "silent"
     }
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "GitHub.copilot",
-        "GitHub.copilot-chat",
-        "openai.chatgpt",
-        "Continue.continue"
+        "oxc.oxc-vscode",
+        "vitest.explorer"
       ]
     }
   },
-  "postCreateCommand": "npm ci && .devcontainer/bootstrap-ai-tools.sh",
-  "postStartCommand": ".devcontainer/start-omniroute.sh"
+  "postCreateCommand": "npm ci"
 }

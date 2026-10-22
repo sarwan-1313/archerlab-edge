@@ -6,7 +6,7 @@ import { PageTransition } from './components/PageTransition';
 import { PrivacyBadge } from './components/PrivacyBadge';
 import { RouteLoadingBoundary } from './components/RouteLoadingBoundary';
 import { SidebarNav } from './components/SidebarNav';
-import { desktopNavItems, mobileNavItems, pageTitles } from './data/mockData';
+import { desktopNavItems, mobileNavItems, pageTitles } from './data/navigation';
 import { guideStepForPage, isGuideDetailPage } from './data/userGuide';
 import { attachReportedResult, clearReportedResult } from './gesture-entry/shotAssociation';
 import { HomePage } from './pages/HomePage';

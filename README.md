@@ -12,6 +12,7 @@
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-on--device-0b1326?logo=google&logoColor=2ee6ff)
 ![Tests](https://img.shields.io/badge/tests-124_cases-0b1326?logo=vitest&logoColor=3ddc84)
 ![Version](https://img.shields.io/badge/version-0.1.0-0b1326)
+![License](https://img.shields.io/badge/license-MIT-0b1326)
 
 <img src="docs/images/landing.png" alt="ArcherLab Edge landing page: large 'ArcherLab Edge' headline, Start Analysis button and a glowing target in the background" width="100%" />
 
@@ -277,6 +278,12 @@ These limitations are documented on purpose, as part of responsible engineering.
 | v0.3 | Richer session analytics, comparisons across sessions, deeper visualisation |
 | v0.5 | Athlete-specific datasets and personalised performance models |
 | v1.0 | A mature computational sports-performance platform |
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE). Bundled fonts are under the SIL Open Font License and MediaPipe assets under the Apache License 2.0.
 
 ---
 
