@@ -150,8 +150,8 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
   }
 
   const limitations = [
-    'The level is estimated from movement only. ArcherLab does not see the target or know your scores.',
-    'Scoring thresholds are coaching heuristics in a prototype, not a validated standard. Treat the level as a guide, and a coach\'s eye as the final word.',
+    'The form score and level are estimates from movement only, not a validated rating. ArcherLab does not see the target or know your scores.',
+    'Scoring thresholds are coaching heuristics in a prototype, not a validated standard. Treat the score and level as a guide, and a coach\'s eye as the final word.',
     'Depth is estimated from a single camera, so movement toward or away from the camera is measured less precisely than movement across the frame.',
   ];
   if (view.kind === 'down-the-line') limitations.push('From this camera angle, release travel and draw length are the least certain measurements.');

@@ -30,9 +30,10 @@ function Scoreboard({ report }: { report: VideoAnalysisReport }) {
         <span>Form score</span>
         <strong>{scores.overall === null ? '–' : Math.round(scores.overall)}<small>/100</small></strong>
         <small>{scores.level ? LEVEL_LABEL[scores.level] : 'Not enough data to rate'}</small>
+        <small className="va-estimate-note">Estimate from movement only, not a validated rating</small>
       </div>
       <div className="scoreboard__stats">
-        <div><span>Estimated level</span><strong><LevelBadge level={scores.level} /></strong><small>{scores.confidence} confidence</small></div>
+        <div><span>Estimated level</span><strong><LevelBadge level={scores.level} /></strong><small>{scores.confidence} confidence · estimate</small></div>
         <div><span>Shots found</span><strong>{report.shots.length}</strong><small>{report.letDowns.length ? `${report.letDowns.length} let-down${report.letDowns.length === 1 ? '' : 's'}` : `${Math.round(report.tracking.trackedRatio * 100)}% of frames tracked`}</small></div>
         <div><span>Camera view</span><strong>{VIEW_LABEL[report.view.kind]}</strong><small>{report.settings.handedness === 'right' ? 'Right' : 'Left'}-hand draw{report.settings.handednessSource === 'auto' ? ' · detected' : ''}</small></div>
         <div><span>Bow</span><strong>{BOW_LABEL[report.settings.bowType]}</strong><small>{report.source.analysisFps} fps{report.tracking.refinedFrames ? ` + ${report.tracking.refinedFrames} precision frames` : ''}</small></div>

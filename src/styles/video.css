@@ -204,6 +204,7 @@
 .va-scoreboard { grid-template-columns: minmax(230px, 320px) 1fr; }
 .va-scoreboard .scoreboard__total strong small { font-size: .38em; opacity: .7; }
 .va-scoreboard .scoreboard__stats strong { font-size: clamp(22px, 2.4vw, 32px); text-transform: uppercase; }
+.va-scoreboard .scoreboard__total .va-estimate-note { display: block; margin-top: 6px; font-size: 12px; font-weight: 500; font-style: italic; opacity: .7; }
 .va-callouts { display: flex; flex-wrap: wrap; gap: 10px; }
 .va-callout {
   flex: 1 1 320px;
