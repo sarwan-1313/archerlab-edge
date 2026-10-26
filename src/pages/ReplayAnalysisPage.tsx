@@ -6,7 +6,7 @@ import { ShotTimeline } from '../components/shot/ShotTimeline';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import type { BiomechanicsMetric } from '../types/biomechanics';
-import type { ShotAnalysis } from '../types/shotAnalysis';
+import type { ReleaseSource, ShotAnalysis } from '../types/shotAnalysis';
 
 type ReplayAnalysisPageProps = {
   shot?: ShotAnalysis;
@@ -15,6 +15,12 @@ type ReplayAnalysisPageProps = {
   onShowShot?: (shotNumber: number) => void;
   onManualEntry?: () => void;
   onUndoScore?: () => void;
+};
+
+const RELEASE_SOURCE_LABEL: Record<ReleaseSource, string> = {
+  manual: 'Manual',
+  'automatic-candidate-confirmed': 'Automatic candidate confirmed',
+  'video-detected': 'Detected in uploaded video',
 };
 
 function scoreTone(score: number | undefined): string {
@@ -45,7 +51,7 @@ export function ReplayAnalysisPage({ shot, shotNumber, shotCount = 0, onShowShot
     <div className="replay-page">
       <PageHeader
         title={`Shot #${shotNumber}`}
-        subtitle={`Release source: ${shot.releaseSource === 'manual' ? 'Manual' : 'Automatic candidate confirmed'}`}
+        subtitle={`Release source: ${RELEASE_SOURCE_LABEL[shot.releaseSource]}${shot.videoSource ? ` · ${shot.videoSource.fileName}` : ''}`}
         actions={
           <div className="replay-header-actions">
             <StatusBadge label={`Data quality: ${shot.dataQuality.label}`} tone={shot.dataQuality.label === 'Good' ? 'success' : 'warning'} compact />

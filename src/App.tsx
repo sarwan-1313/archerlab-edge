@@ -15,6 +15,7 @@ import { runPresentationTransition } from './motion/runPresentationTransition';
 import { pageForPathname, resolvePageFromPathname, routeForPage } from './navigation/routes';
 import { useAthleteProfile } from './hooks/useAthleteProfile';
 import { createSampleSession, isSampleShot } from './demo/sampleSession';
+import { isVideoShot } from './video-analysis/toShotAnalyses';
 
 const CalibrationPage = lazy(() => import('./pages/CalibrationPage').then((module) => ({ default: module.CalibrationPage })));
 const GestureGuidePage = lazy(() => import('./pages/GestureGuidePage').then((module) => ({ default: module.GestureGuidePage })));
@@ -89,7 +90,7 @@ function isValidShotAnalysis(value: unknown): value is ShotAnalysis {
     || typeof value.capturedAt !== 'number'
     || typeof value.releaseTimestampMs !== 'number'
     || (value.handedness !== 'left' && value.handedness !== 'right')
-    || (value.releaseSource !== 'manual' && value.releaseSource !== 'automatic-candidate-confirmed')
+    || (value.releaseSource !== 'manual' && value.releaseSource !== 'automatic-candidate-confirmed' && value.releaseSource !== 'video-detected')
     || !Array.isArray(value.frames)
     || !Array.isArray(value.preReleaseFrames)
     || !Array.isArray(value.postReleaseFrames)
@@ -360,6 +361,14 @@ function App() {
   const loadSampleSession = () => { setShots(createSampleSession()); setSelectedShotId(undefined); requestNavigation('dashboard'); };
   const clearSampleSession = () => { setShots((current) => current.filter((shot) => !isSampleShot(shot))); setSelectedShotId(undefined); };
   const viewingSample = shots.length > 0 && shots.every(isSampleShot);
+  const loadVideoShots = (videoShots: ShotAnalysis[]) => {
+    const realShots = shots.filter((shot) => !isSampleShot(shot) && !isVideoShot(shot)).length;
+    if (realShots && !window.confirm(`Replace your current session?\n\nOpening this video in Analytics replaces the ${realShots} shot${realShots === 1 ? '' : 's'} you captured in Live Analysis.`)) return;
+    setShots(videoShots);
+    setSelectedShotId(undefined);
+    requestNavigation('dashboard');
+  };
+  const videoFileName = shots.length > 0 && shots.every(isVideoShot) ? shots[0].videoSource?.fileName ?? 'uploaded clip' : undefined;
   // Step between arrows on the replay page without stacking history entries.
   const showReplayShot = (shotNumber: number) => {
     const next = shots[shotNumber - 1];
@@ -389,10 +398,10 @@ function App() {
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
-      case 'video-analysis': return <VideoAnalysisPage />;
+      case 'video-analysis': return <VideoAnalysisPage onOpenInAnalytics={loadVideoShots} />;
       case 'manual-shot-entry': return <ManualShotEntryPage shot={selectedShot} onCancel={goBack} onSave={(result) => { if (selectedShot) attachResult(selectedShot.id, result); requestNavigation('replay-analysis'); }} />;
       case 'replay-analysis': return <ReplayAnalysisPage shot={selectedShot} shotNumber={selectedShot ? shots.findIndex((shot) => shot.id === selectedShot.id) + 1 : 0} shotCount={shots.length} onShowShot={showReplayShot} onManualEntry={() => requestNavigation('manual-shot-entry')} onUndoScore={() => selectedShot && clearResult(selectedShot.id)} />;
-      case 'dashboard': return <SessionDashboardPage shots={shots} selectedShotId={selectedShotId} onStart={() => beginTraining()} onSample={loadSampleSession} onClearSample={viewingSample ? clearSampleSession : undefined} onSelectShot={(shotId) => { setSelectedShotId(shotId); commitNavigation('replay-analysis', { shotId }); }} />;
+      case 'dashboard': return <SessionDashboardPage shots={shots} selectedShotId={selectedShotId} onStart={() => beginTraining()} onSample={loadSampleSession} onClearSample={viewingSample ? clearSampleSession : undefined} videoFileName={videoFileName} onSelectShot={(shotId) => { setSelectedShotId(shotId); commitNavigation('replay-analysis', { shotId }); }} />;
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;

@@ -17,7 +17,9 @@ import { VIDEO_CONFIG } from '../video-analysis/config';
 import { VIEW_LABEL, formatBytes, formatDate } from '../video-analysis/format';
 import { applyReportToProfile } from '../video-analysis/profileStatus';
 import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport } from '../video-analysis/storage';
+import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
 import type { BowType, PoseModelVariant, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
+import type { ShotAnalysis } from '../types/shotAnalysis';
 import '../styles/video.css';
 
 const OPTIONS_KEY = 'archerlab-edge:video-options';
@@ -46,7 +48,12 @@ const TIPS = [
   { title: 'Sound on', body: 'The release sound pins the exact moment of each shot.' },
 ];
 
-export function VideoAnalysisPage() {
+type VideoAnalysisPageProps = {
+  /** Opens the clip's shots in Analytics and Replay. */
+  onOpenInAnalytics?: (shots: ShotAnalysis[]) => void;
+};
+
+export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps = {}) {
   const { profile, save } = useAthleteProfile();
   const account = useCloudAccount();
   const [view, setView] = useState<View>({ kind: 'upload' });
@@ -229,6 +236,13 @@ export function VideoAnalysisPage() {
     }
   };
 
+  const openInAnalytics = (report: VideoAnalysisReport) => {
+    if (!onOpenInAnalytics) return;
+    const shots = toShotAnalyses(report);
+    if (!shots.length) { setNotice('None of the shots in this clip had enough tracked movement around release to open in Analytics.'); return; }
+    onOpenInAnalytics(shots);
+  };
+
   const subtitle = 'Upload a recorded clip from any angle. Every frame is tracked on this device, with audio, to rate your form and coach your next session.';
 
   return (
@@ -304,6 +318,9 @@ export function VideoAnalysisPage() {
           cloudCoach={<CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
           actions={(
             <>
+              {onOpenInAnalytics && view.report.samples.some((sample) => sample.image) && view.report.shots.some((shot) => shot.source !== 'audio-only') ? (
+                <ActionButton variant="secondary" type="button" onClick={() => openInAnalytics(view.report)}><AppIcon name="grid" size={16} /> Open in Analytics</ActionButton>
+              ) : null}
               <ActionButton variant="secondary" type="button" onClick={() => exportJson(view.report)}><AppIcon name="download" size={16} /> Export report (JSON)</ActionButton>
               {account.configured && view.source !== 'cloud' ? (
                 <>
