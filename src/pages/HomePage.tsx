@@ -241,7 +241,7 @@ export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPri
 
       <footer className="landing-footer">
         <span><AppIcon name="shield" size={14} /> Video processing stays on your device unless you opt in{onPrivacy ? <> · <button type="button" className="landing-footer__link" onClick={onPrivacy}>Privacy</button></> : null}</span>
-        <span>Built by an archer · Version 0.1.0</span>
+        <span>Built by an archer · Version 0.2.0</span>
       </footer>
     </div>
   );
