@@ -7,6 +7,7 @@ const EXPECTED_ROUTES = {
   'new-session': '/camera',
   calibration: '/readiness',
   'live-analysis': '/analysis',
+  'video-analysis': '/video',
   'manual-shot-entry': '/manual-shot-entry',
   'replay-analysis': '/replay-analysis',
   dashboard: '/analytics',

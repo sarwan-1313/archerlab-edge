@@ -27,6 +27,7 @@ const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then(
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
 const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').then((module) => ({ default: module.SessionDashboardPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
+const VideoAnalysisPage = lazy(() => import('./pages/VideoAnalysisPage').then((module) => ({ default: module.VideoAnalysisPage })));
 import type { PageKey, SessionConfiguration } from './types';
 import type { BiomechanicsReference, CameraView } from './types/biomechanics';
 import type { ReportedShotResult } from './types/gestureScore';
@@ -42,6 +43,7 @@ const ROUTE_LOADING_STATUS = {
   'new-session': 'Preparing your session...',
   calibration: 'Loading calibration...',
   'live-analysis': 'Preparing Live Analysis...',
+  'video-analysis': 'Loading Video Analysis...',
   'manual-shot-entry': 'Opening shot entry...',
   'replay-analysis': 'Loading replay...',
   dashboard: 'Loading analytics...',
@@ -383,17 +385,18 @@ function App() {
 
   const currentPage = (() => {
     switch (activePage) {
-      case 'home': return <HomePage onStart={() => beginTraining()} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} />;
+      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} />;
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
+      case 'video-analysis': return <VideoAnalysisPage />;
       case 'manual-shot-entry': return <ManualShotEntryPage shot={selectedShot} onCancel={goBack} onSave={(result) => { if (selectedShot) attachResult(selectedShot.id, result); requestNavigation('replay-analysis'); }} />;
       case 'replay-analysis': return <ReplayAnalysisPage shot={selectedShot} shotNumber={selectedShot ? shots.findIndex((shot) => shot.id === selectedShot.id) + 1 : 0} shotCount={shots.length} onShowShot={showReplayShot} onManualEntry={() => requestNavigation('manual-shot-entry')} onUndoScore={() => selectedShot && clearResult(selectedShot.id)} />;
       case 'dashboard': return <SessionDashboardPage shots={shots} selectedShotId={selectedShotId} onStart={() => beginTraining()} onSample={loadSampleSession} onClearSample={viewingSample ? clearSampleSession : undefined} onSelectShot={(shotId) => { setSelectedShotId(shotId); commitNavigation('replay-analysis', { shotId }); }} />;
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
-      case 'profile': return <ProfilePage />;
+      case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;
       case 'guide-start-analysis':
       case 'guide-camera-setup':

@@ -136,6 +136,16 @@
   transition: border-color .2s ease, background-color .2s ease;
 }
 .landing .landing-ghost:hover { border-color: rgba(39, 217, 238, .45); background: rgba(39, 217, 238, .06); }
+.app-shell .landing .landing-video {
+  min-height: 54px;
+  padding: 0 22px;
+  border: 1px solid rgba(255, 107, 26, .55);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 107, 26, .18), rgba(255, 154, 61, .05));
+  color: #fff;
+}
+.app-shell .landing .landing-video svg { color: #ff9a3d; }
+.app-shell .landing .landing-video:hover { border-color: #ff9a3d; background: linear-gradient(135deg, rgba(255, 107, 26, .28), rgba(255, 154, 61, .1)); transform: translateY(-2px); }
 
 .landing-hero__facts {
   display: flex;

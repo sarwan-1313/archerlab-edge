@@ -19,6 +19,7 @@ export type PageKey =
   | 'new-session'
   | 'calibration'
   | 'live-analysis'
+  | 'video-analysis'
   | 'manual-shot-entry'
   | 'replay-analysis'
   | 'dashboard'

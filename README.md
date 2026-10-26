@@ -10,7 +10,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-0b1326?logo=typescript&logoColor=3178c6)
 ![Vite](https://img.shields.io/badge/Vite-8-0b1326?logo=vite&logoColor=ffc53d)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-on--device-0b1326?logo=google&logoColor=2ee6ff)
-![Tests](https://img.shields.io/badge/tests-124_cases-0b1326?logo=vitest&logoColor=3ddc84)
+![Tests](https://img.shields.io/badge/tests-182_cases-0b1326?logo=vitest&logoColor=3ddc84)
 ![Version](https://img.shields.io/badge/version-0.1.0-0b1326)
 ![License](https://img.shields.io/badge/license-MIT-0b1326)
 
@@ -44,7 +44,7 @@ No bow, no camera, no account needed.
 
 The sample session is not hard-coded data. Synthetic pose frames are run through the app's real `ShotCaptureEngine`, so every metric you see is genuine engine output.
 
-To analyse yourself, click **Start Analysis**, allow camera access and stand side-on to the camera.
+To analyse yourself, click **Start Analysis**, allow camera access and stand side-on to the camera. Or click **Analyse a Video** and upload a clip you have already filmed, from any angle.
 
 ---
 
@@ -67,6 +67,16 @@ Pose landmarks are tracked live on the device. A broadcast-style status bar show
 <img src="docs/images/live.png" alt="Live Analysis screen: camera feed with pose skeleton overlay, orange Session Active status bar, and live biomechanics tiles" width="100%" />
 
 <sub>Screenshot taken with a simulated camera feed and synthetic pose data; in real use the feed is your own camera.</sub>
+
+### Video Analysis
+
+Upload a recorded clip and the second engine tracks every frame, listens for the sound of each release, splits the clip into shots and phases, and returns a form score, an estimated level, the top things to work on (each with a drill and a **Show me** button that jumps the replay to the moment) and a practice plan. It works from side-on, angled and down-the-line footage.
+
+<img src="docs/images/video-report.png" alt="Video Analysis report: orange form score 77 of 100, Intermediate level, 3 shots, side-on view, level-capped note, and the frame-by-frame replay with skeleton overlay and per-frame readout" width="100%" />
+
+<img src="docs/images/video-focus.png" alt="What to work on: two coaching cards, 'Release hand moves away from the arrow line' and 'Bow arm bends at full draw', each with what was measured, why it matters, how to fix it, a drill and a Show me button" width="100%" />
+
+<sub>Screenshots from a rendered synthetic test clip with a simulated pose model, used to test the pipeline end to end; real clips use the on-device MediaPipe model.</sub>
 
 ### Performance Analytics
 
@@ -136,6 +146,12 @@ Totals, averages, a scorecard by end, target grouping, consistency statistics ac
 ### 7. Experimental modelling
 An exploratory layer simulates shot distributions and visualises uncertainty from observed groups. It is clearly labelled as experimental and is not presented as an arrow-impact predictor.
 
+### 8. Video analysis: a second engine
+A separate engine for recorded clips (`src/video-analysis`). Because it sees the whole clip, it smooths without lag, finds every shot automatically (release first, then anchor, draw and follow-through, rejecting let-downs), and snaps each release to its sound for millisecond timing; it also picks up clicker and arrow-impact sounds. 3D world landmarks make the measurements largely independent of camera angle, and the view is detected automatically. A transparent rubric scores six areas, estimates a level (with caps when a fundamental fault remains), and writes the result to the athlete profile so progress is tracked over time. Details: [docs/video-analysis.md](docs/video-analysis.md).
+
+### 9. Optional second opinions and backup
+From any video report, athletes can ask Claude, GPT and Gemini for a coaching review with **their own API keys** (six annotated stills plus the measurements; never the video unless they opt in). The coaches' views are combined to show where they agree. Accounts and cloud backup (Supabase) and Dropbox / Google Drive import can be switched on by whoever deploys the app. All of this is off by default: see [docs/cloud-setup.md](docs/cloud-setup.md).
+
 ---
 
 ## System architecture
@@ -164,6 +180,15 @@ Biomechanics       Gesture scoring
      Experimental modelling
 ```
 
+The video engine runs alongside it:
+
+```text
+Video file ─► audio onsets ───────────────┐
+     │                                    ▼
+     └─► pose on every frame ─► smoothed tracks ─► shots & phases ─► metrics ─► scores & level
+              (precision pass at each release) ──┘                          └─► coaching & plan
+```
+
 ## Privacy-first by design
 
 ```text
@@ -171,10 +196,11 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
                      (nothing leaves the device)
 ```
 
-- Video frames are processed in the browser and never uploaded.
-- Profiles and recordings are stored on the device (IndexedDB).
+- Video frames are processed in the browser, for live sessions and uploaded clips alike.
+- Profiles, recordings and video reports are stored on the device (IndexedDB).
 - Fonts and models are self-hosted, so no visitor data is sent to third-party CDNs.
-- No accounts and no analytics trackers.
+- No account needed and no analytics trackers.
+- Optional and off by default: AI coach reviews (sent only to the provider the athlete picks, with their own key and explicit consent) and account backup when the deployment enables it.
 
 ---
 
@@ -184,8 +210,9 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite |
 | Computer vision | MediaPipe Tasks Vision (Pose and Hand Landmarker), WebAssembly |
-| Browser APIs | MediaDevices camera capture, MediaRecorder, IndexedDB, Canvas and SVG |
-| Quality | Vitest + Testing Library (33 test files, 124 cases), oxlint, GitHub Actions CI |
+| Browser APIs | MediaDevices camera capture, MediaRecorder, requestVideoFrameCallback, Web Audio, IndexedDB, Canvas and SVG |
+| Optional cloud | Claude, OpenAI and Gemini APIs (bring your own key); Supabase Auth, Postgres and Storage over REST |
+| Quality | Vitest + Testing Library (43 test files, 182 cases), oxlint, GitHub Actions CI |
 | Hosting | Vercel (production deploys from `main`), GitHub Codespaces for development |
 
 ## Repository structure
@@ -194,12 +221,13 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 src/
 ├── analytics        session datasets and statistics
 ├── biomechanics     landmark geometry, smoothing, archery metrics
+├── cloud            optional AI coaches, accounts/backup and storage import
 ├── components       shared UI (camera, overlays, metric cards, navigation)
 ├── demo             sample session generated through the real capture engine
 ├── gesture-entry    hand-gesture score recognition
 ├── hooks            camera, pose, recording and shot-analysis hooks
 ├── landing          scroll-driven landing animation
-├── pages            Live Analysis, Analytics, Replay, Sessions, Guide, Profile
+├── pages            Live Analysis, Video Analysis, Analytics, Replay, Sessions, Guide, Profile
 ├── profile          local athlete profile storage
 ├── recording        local session recording and replay storage
 ├── services         MediaPipe landmarker services
@@ -208,7 +236,11 @@ src/
 ├── styles           theme and self-hosted fonts
 ├── target           target-face geometry and scoring
 ├── training         guided session workflow state machine
-└── types            typed domain models
+├── types            typed domain models
+└── video-analysis   second engine: recorded clips, audio, scoring, coaching
+docs/                engine notes, cloud setup
+scripts/             optional model download
+supabase/            SQL for optional accounts and backup
 ```
 
 ---
@@ -220,7 +252,10 @@ npm ci
 npm run dev        # start the dev server on http://localhost:5173
 npm test           # run the test suite
 npm run check      # lint + tests + production build
+npm run models:pose  # optional: add the more accurate Full pose model for video analysis
 ```
+
+Optional cloud features are configured with environment variables; copy `.env.example` to `.env.local` and see [docs/cloud-setup.md](docs/cloud-setup.md). Without them the app stays fully on-device.
 
 Camera access needs a secure context: `localhost` during development, HTTPS in production.
 
@@ -264,7 +299,8 @@ The manual uses browser-history routes such as `/guide/camera-setup` and `/guide
 
 - Biomechanics outputs are not medically validated.
 - Gesture scoring records what the athlete reports.
-- Automatic release detection is experimental.
+- Automatic release detection in the live engine is experimental.
+- Video analysis scores use coaching heuristics that have not yet been validated against coach ratings, and depth from a single camera is approximate.
 - Simulation outputs are exploratory.
 - It is not a replacement for professional coaching, and not a medical device.
 
@@ -274,7 +310,7 @@ These limitations are documented on purpose, as part of responsible engineering.
 
 | Version | Focus |
 | --- | --- |
-| v0.2 | Robustness, smoother interaction workflows, user experience |
+| v0.2 | Video analysis engine, optional AI second opinions and backup, robustness |
 | v0.3 | Richer session analytics, comparisons across sessions, deeper visualisation |
 | v0.5 | Athlete-specific datasets and personalised performance models |
 | v1.0 | A mature computational sports-performance platform |

@@ -29,6 +29,13 @@ export type AppIconName =
   | 'check'
   | 'stop'
   | 'refresh'
+  | 'film'
+  | 'upload'
+  | 'cloud'
+  | 'sparkles'
+  | 'link'
+  | 'download'
+  | 'user'
   | 'unknown';
 
 const iconPaths: Record<AppIconName, ReactNode> = {
@@ -168,6 +175,45 @@ const iconPaths: Record<AppIconName, ReactNode> = {
     <>
       <path d="M20 7v5h-5" />
       <path d="M19 12a7 7 0 1 0-2 5" />
+    </>
+  ),
+  film: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="2" />
+      <path d="M7.5 5v14M16.5 5v14M3.5 9.5h4M3.5 14.5h4M16.5 9.5h4M16.5 14.5h4" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 15V4M7.5 8.5 12 4l4.5 4.5" />
+      <path d="M4.5 14.5V18a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3.5" />
+    </>
+  ),
+  cloud: (
+    <path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 9.3 4.6 4.6 0 0 0 7 18.5Z" />
+  ),
+  sparkles: (
+    <>
+      <path d="M12 3.5 13.6 8.4 18.5 10l-4.9 1.6L12 16.5l-1.6-4.9L5.5 10l4.9-1.6L12 3.5Z" />
+      <path d="M18.5 15.5 19.2 17.3 21 18l-1.8.7-.7 1.8-.7-1.8L16 18l1.8-.7.7-1.8Z" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.1-3.1a4.5 4.5 0 0 0-6.4-6.4L11.6 6" />
+      <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.1 3.1a4.5 4.5 0 0 0 6.4 6.4l1.5-1.5" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" />
+      <path d="M4.5 19.5h15" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5" />
     </>
   ),
   unknown: (

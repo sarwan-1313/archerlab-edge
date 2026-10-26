@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { AccountPanel } from '../components/account/AccountPanel';
 import { PageHeader } from '../components/PageHeader';
+import { FormStatusCard } from '../components/profile/FormStatusCard';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
+import '../styles/video.css';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
 
-export function ProfilePage() {
+export function ProfilePage({ onAnalyzeVideo }: { onAnalyzeVideo?: () => void } = {}) {
   const { profile, loadError, save, removePhoto } = useAthleteProfile();
   const [form, setForm] = useState<any>({ displayName: '', archerId: '', handedness: 'right', bowType: '', discipline: '', experienceLevel: '', defaultCameraAngle: 'side' });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -31,8 +34,17 @@ export function ProfilePage() {
     try { await save({ ...profile, ...form }); setSaved(true); } catch { setError('Your profile could not be saved. Check browser storage and try again.'); } finally { setSaving(false); }
   };
   const onRemove = async () => { setError(null); setSaving(true); setSaved(false); try { await removePhoto(); setPhotoPreview(null); setSaved(true); } catch { setError('The photo could not be removed. Try again.'); } finally { setSaving(false); } };
+  const onAdoptLevel = async (experienceLevel: string) => {
+    setForm((current: any) => ({ ...current, experienceLevel }));
+    setSaved(false);
+    try { await save({ ...profile, ...form, experienceLevel }); setSaved(true); } catch { setError('Your profile could not be saved. Check browser storage and try again.'); }
+  };
+  const onRestoreProfile = async (data: Record<string, unknown>) => {
+    await save({ ...data, profilePhotoBlob: profile?.profilePhotoBlob });
+  };
   return (<div className="page-container page-container--wide"><PageHeader title="Athlete Profile" subtitle="Local athlete identity stored on this device" />
     {loadError ? <p role="alert">Your profile could not be loaded from this device. Try again or save the form to recreate it.</p> : null}
+    <FormStatusCard formStatus={profile?.formStatus} experienceLevel={form.experienceLevel} onAdoptLevel={(level) => void onAdoptLevel(level)} onAnalyze={onAnalyzeVideo} />
     <form className="profile-form" onSubmit={onSave}>
       <div className="profile-grid">
         <div className="profile-card">
@@ -61,5 +73,6 @@ export function ProfilePage() {
       </div>
       {saved ? <p role="status">Profile saved on this device.</p> : null}
     </form>
+    <AccountPanel profile={profile} onRestoreProfile={onRestoreProfile} />
   </div>);
 }
