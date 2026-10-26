@@ -118,11 +118,16 @@ export function VideoAnalysisPage() {
     setView({ kind: 'processing', file, url: makeUrl(file) });
   };
 
+  // Options, models and profile are read once, when the run starts, so changing them never restarts a run.
+  const runInputsRef = useRef({ options, models, save, refreshHistory });
+  useEffect(() => { runInputsRef.current = { options, models, save, refreshHistory }; }, [options, models, save, refreshHistory]);
+
   // Run the engine once the processing view (and its video element) is on screen.
   const processingFile = view.kind === 'processing' ? view.file : null;
   const processingUrl = view.kind === 'processing' ? view.url : null;
   useEffect(() => {
     if (!processingFile || !processingUrl) return;
+    const { options, models, save, refreshHistory } = runInputsRef.current;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -167,7 +172,6 @@ export function VideoAnalysisPage() {
       }
     })();
     return () => controller.abort();
-    // Options, models and profile are read once, when the run starts.
   }, [processingFile, processingUrl]);
 
   const openSaved = async (summary: VideoReportSummary) => {
