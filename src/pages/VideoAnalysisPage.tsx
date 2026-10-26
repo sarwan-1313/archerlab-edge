@@ -17,6 +17,7 @@ import { loadVideo, runVideoAnalysis, type AnalysisProgress } from '../video-ana
 import { VIDEO_CONFIG } from '../video-analysis/config';
 import { VIEW_LABEL, formatBytes, formatDate } from '../video-analysis/format';
 import { buildReport } from '../video-analysis/buildReport';
+import { chooseDefaultModel, isPoseModelVariant } from '../video-analysis/modelChoice';
 import { applyReportToProfile, isFormStatus } from '../video-analysis/profileStatus';
 import { ReportFileError, inputFromReport, parseReportFile, type RescoreSettings } from '../video-analysis/reportFile';
 import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport, updateVideoReport } from '../video-analysis/storage';
@@ -26,6 +27,8 @@ import type { ShotAnalysis } from '../types/shotAnalysis';
 import '../styles/video.css';
 
 const OPTIONS_KEY = 'archerlab-edge:video-options';
+// Set only when the athlete picks a pose model, so the default can improve for everyone else.
+const MODEL_CHOICE_KEY = 'archerlab-edge:video-model';
 const BOW_TYPES: BowType[] = ['recurve', 'compound', 'barebow', 'traditional'];
 
 type View =
@@ -41,6 +44,16 @@ function readOptions(): Partial<UploadOptions> {
   } catch {
     return {};
   }
+}
+
+function readModelChoice(): PoseModelVariant | null {
+  try {
+    const choice = localStorage.getItem(MODEL_CHOICE_KEY);
+    if (isPoseModelVariant(choice)) return choice;
+  } catch { /* fall through */ }
+  // Older saved options always held a model; anything but the old Lite default was a deliberate pick.
+  const legacy = readOptions().model;
+  return isPoseModelVariant(legacy) && legacy !== 'lite' ? legacy : null;
 }
 
 const TIPS = [
@@ -97,7 +110,11 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
 
   useEffect(() => {
     let cancelled = false;
-    void availableModels().then((variants) => { if (!cancelled) setModels(variants); });
+    void availableModels().then((variants) => {
+      if (cancelled) return;
+      setModels(variants);
+      setOptions((current) => ({ ...current, model: chooseDefaultModel(variants, readModelChoice()) }));
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -126,6 +143,13 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
     abortRef.current?.abort();
     urlsRef.current.forEach((url) => URL.revokeObjectURL(url));
   }, []);
+
+  const changeOptions = (next: UploadOptions) => {
+    if (next.model !== options.model) {
+      try { localStorage.setItem(MODEL_CHOICE_KEY, next.model); } catch { /* per-viewer convenience only */ }
+    }
+    setOptions(next);
+  };
 
   const startAnalysis = (file: File) => {
     setNotice(null);
@@ -324,7 +348,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
 
       {view.kind === 'upload' ? (
         <>
-          <UploadPanel options={options} availableModels={models} onOptionsChange={setOptions} onFile={startAnalysis} />
+          <UploadPanel options={options} availableModels={models} onOptionsChange={changeOptions} onFile={startAnalysis} />
           <div className="va-open-report">
             <input ref={reportFileRef} type="file" accept="application/json,.json" aria-label="Report file" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void openReportFile(file); }} />
             <ActionButton variant="ghost" type="button" onClick={() => reportFileRef.current?.click()}><AppIcon name="upload" size={16} /> Open report file (.json)</ActionButton>

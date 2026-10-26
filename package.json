@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:vercel": "node scripts/fetch-pose-models.mjs full heavy --optional --if-missing && npm run build",
     "lint": "oxlint src",
     "test": "vitest run",
     "preview": "vite preview",

@@ -1,7 +1,6 @@
 import { useRef, useState, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import { dropboxEnabled, googleDriveEnabled } from '../../cloud/config';
 import { importFromLink, pickFromDropbox, pickFromGoogleDrive } from '../../cloud/pickers';
-import { MODEL_LABELS } from '../../video-analysis/browser/poseModel';
 import { BOW_LABEL, formatBytes } from '../../video-analysis/format';
 import type { AnalysisQuality, BowType, PoseModelVariant } from '../../video-analysis/types';
 import type { ArcherHandedness } from '../../types/biomechanics';
@@ -53,6 +52,17 @@ const QUALITY_HINT: Record<AnalysisQuality, string> = {
   standard: '24 frames per second plus a precision pass around each release. Recommended.',
   max: 'Every frame of the video. Slowest; best for slow-motion clips.',
 };
+
+const MODEL_HINT: Record<PoseModelVariant, string> = {
+  lite: 'Lite: the fastest, and the least precise.',
+  full: 'Full: more accurate than Lite at a moderate speed. Recommended.',
+  heavy: 'Heavy: the most accurate, but the slowest.',
+};
+
+function modelHint(model: PoseModelVariant, available: PoseModelVariant[]): string {
+  if (available.length <= 1) return 'The built-in model. Larger, more accurate models can be added to the deployment (see docs/video-analysis.md).';
+  return model !== 'heavy' && available.includes('heavy') ? `${MODEL_HINT[model]} Heavy is the most accurate but slowest.` : MODEL_HINT[model];
+}
 
 export function UploadPanel({ options, availableModels, onOptionsChange, onFile }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +148,7 @@ export function UploadPanel({ options, availableModels, onOptionsChange, onFile 
             { value: 'fast', label: 'Fast' }, { value: 'standard', label: 'Standard' }, { value: 'max', label: 'Every frame' },
           ]} />
         </Field>
-        <Field label="Pose model" hint={availableModels.length > 1 ? MODEL_LABELS[options.model] : 'The built-in model. Larger, more accurate models can be added to the deployment (see docs/video-analysis.md).'}>
+        <Field label="Pose model" hint={modelHint(options.model, availableModels)}>
           <Chips name="Pose model" value={options.model} onChange={(value) => set('model', value)} options={(['lite', 'full', 'heavy'] as const).map((variant) => ({
             value: variant, label: variant === 'lite' ? 'Lite' : variant === 'full' ? 'Full' : 'Heavy', disabled: !availableModels.includes(variant),
           }))} />

@@ -16,12 +16,6 @@ export const MODEL_PATHS: Record<PoseModelVariant, string> = {
   heavy: `${appBase}/models/pose_landmarker_heavy.task`,
 };
 
-export const MODEL_LABELS: Record<PoseModelVariant, string> = {
-  lite: 'Lite (fastest, built in)',
-  full: 'Full (more accurate)',
-  heavy: 'Heavy (most accurate, slowest)',
-};
-
 let visionPromise: ReturnType<typeof FilesetResolver.forVisionTasks> | null = null;
 
 function vision() {

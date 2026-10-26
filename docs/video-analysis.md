@@ -137,14 +137,29 @@ SW = shoulder widths (3D); % torso = percent of 2D torso length; CV = coefficien
 
 ## Larger pose models
 
-The Lite pose model ships with the app. For more accurate landmarks, download the Full and/or Heavy models from Google's MediaPipe model storage:
+The Lite pose model ships with the app. The Full (~9 MB) and Heavy (~29 MB) models give more accurate landmarks; Heavy is the most accurate but the slowest. They come from Google's MediaPipe model storage, pinned to version 1.
+
+**On Vercel they are downloaded automatically.** `vercel.json` sets the build command to `npm run build:vercel`, which runs
 
 ```bash
-npm run models:pose          # Full model (~9 MB)
-npm run models:pose -- heavy # Heavy model (~29 MB, slower)
+node scripts/fetch-pose-models.mjs full heavy --optional --if-missing && npm run build
 ```
 
-The script saves them in `public/models/` and lists them in `public/models/models.json`; the Video Analysis settings then offer them. Commit the files to deploy them.
+before the normal build. The models land in `public/models/` and are deployed with the app, so no extra setup is needed. With `--optional`, a failed download prints a warning and the build carries on without that model; the app then offers only the models that were deployed.
+
+**Locally**, download them yourself:
+
+```bash
+npm run models:pose                    # Full model
+npm run models:pose -- heavy           # Heavy model
+npm run models:pose -- full heavy --if-missing
+```
+
+The script writes `public/models/models.json` to list exactly the models present on disk, and Video Analysis reads that list. `--if-missing` skips models already downloaded. The `.task` files are git-ignored: don't commit them, and don't commit a `models.json` that lists them (keep it at `["lite"]`), or deployments whose download failed would offer a missing model.
+
+Video Analysis preselects Full when it is deployed, otherwise Lite. A model the athlete picked themselves is kept for later clips while it is still deployed.
+
+Other static hosts need the same step: run `npm run build:vercel` (or the fetch script followed by `npm run build`) as the build command.
 
 ## Limits
 
