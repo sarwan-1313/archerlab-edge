@@ -120,7 +120,7 @@ export function UploadPanel({ options, availableModels, onOptionsChange, onFile 
           <span className="va-drop__icon"><AppIcon name="upload" size={30} /></span>
           <span className="va-eyebrow">Recorded clip · any camera angle</span>
           <h2>Drop your shooting video</h2>
-          <p className="va-muted">MP4, MOV or WebM up to 15 minutes. Every frame is tracked on this device, and the sound of each release sharpens the timing.</p>
+          <p className="va-muted">MP4, MOV or WebM. Longer videos can be trimmed to a 15-minute stretch before analysis. Every frame is tracked on this device, and the sound of each release sharpens the timing.</p>
           <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" aria-label="Video file" onChange={(event) => { acceptFile(event.target.files?.[0]); event.target.value = ''; }} />
           <ActionButton variant="primary" type="button" onClick={() => inputRef.current?.click()} disabled={importing}>
             <AppIcon name="film" size={18} /> Choose video

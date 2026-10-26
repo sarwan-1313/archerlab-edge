@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { containRect, drawSkeleton } from '../../video-analysis/drawing';
 import { PHASE_LABEL, formatClock } from '../../video-analysis/format';
+import { sourceRange } from '../../video-analysis/range';
 import { indexAtTime } from '../../video-analysis/signal';
 import type { FrameReadout, JointName, VideoAnalysisReport } from '../../video-analysis/types';
 import { AppIcon } from '../AppIcon';
@@ -60,12 +61,13 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timelineRef = useRef<SVGSVGElement>(null);
-  const [time, setTime] = useState(report.shots[0]?.anchorStart ?? 0);
+  // The timeline covers the analysed range; times stay in seconds of the original video.
+  const { start, end } = sourceRange(report.source);
+  const [time, setTime] = useState(report.shots[0]?.anchorStart ?? start);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(0.5);
   const [highlight, setHighlight] = useState<{ joints: JointName[]; until: number } | null>(null);
   const timeRef = useRef(time);
-  const duration = report.source.durationS;
   const sampleTimes = useMemo(() => report.samples.map((sample) => sample.t), [report.samples]);
   const frameTimes = useMemo(() => report.frames.map((frame) => frame.t), [report.frames]);
   const step = 1 / (report.source.nativeFps ?? report.source.analysisFps ?? 30);
@@ -94,13 +96,13 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
   useEffect(() => { drawRef.current = draw; }, [draw]);
 
   const goTo = useCallback((t: number) => {
-    const clamped = Math.min(duration, Math.max(0, t));
+    const clamped = Math.min(end, Math.max(start, t));
     timeRef.current = clamped;
     setTime(clamped);
     const video = videoRef.current;
     if (video && videoUrl) video.currentTime = clamped;
     draw(clamped);
-  }, [draw, duration, videoUrl]);
+  }, [draw, end, start, videoUrl]);
 
   const goToRef = useRef(goTo);
   useEffect(() => { goToRef.current = goTo; }, [goTo]);
@@ -125,10 +127,10 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
       let t: number;
       if (video && videoUrl) {
         t = video.currentTime;
-        if (video.ended) setPlaying(false);
+        if (video.ended || t >= end) { t = Math.min(t, end); video.pause(); setPlaying(false); }
       } else {
         t = timeRef.current + ((now - last) / 1000) * speed;
-        if (t >= duration) { t = duration; setPlaying(false); }
+        if (t >= end) { t = end; setPlaying(false); }
       }
       last = now;
       timeRef.current = t;
@@ -136,13 +138,19 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
       drawRef.current(t);
       frame = requestAnimationFrame(tick);
     };
-    if (video && videoUrl) void video.play().catch(() => setPlaying(false));
+    if (video && videoUrl) {
+      // Playing from the end of the range starts it over.
+      if (video.currentTime >= end - 0.02 || video.currentTime < start) video.currentTime = start;
+      void video.play().catch(() => setPlaying(false));
+    } else if (timeRef.current >= end - 0.02) {
+      timeRef.current = start;
+    }
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
       video?.pause();
     };
-  }, [duration, playing, speed, videoUrl]);
+  }, [end, playing, speed, start, videoUrl]);
 
   useEffect(() => {
     const redraw = () => draw(timeRef.current);
@@ -163,7 +171,7 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
     const rect = timelineRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0) return;
     setPlaying(false);
-    goTo(((event.clientX - rect.left) / rect.width) * duration);
+    goTo(start + ((event.clientX - rect.left) / rect.width) * (end - start));
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -172,7 +180,7 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
     else if (event.key === 'ArrowLeft') { event.preventDefault(); setPlaying(false); goTo(time - step); }
   };
 
-  const x = (t: number) => (duration > 0 ? (t / duration) * 1000 : 0);
+  const x = (t: number) => (end > start ? ((t - start) / (end - start)) * 1000 : 0);
   const frame = report.frames.length ? report.frames[indexAtTime(frameTimes, time)] ?? null : null;
 
   return (
@@ -189,14 +197,14 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
           <button type="button" className="icon-button icon-button--primary" onClick={() => setPlaying((value) => !value)} aria-label={playing ? 'Pause' : 'Play'}><AppIcon name={playing ? 'pause' : 'play'} size={18} /></button>
           <button type="button" className="icon-button" onClick={() => { setPlaying(false); goTo(time + step); }} aria-label="Next frame"><AppIcon name="arrow-right" size={18} /></button>
           <button type="button" className="icon-button" onClick={() => jumpShot(1)} aria-label="Next shot"><AppIcon name="skip-next" size={18} /></button>
-          <span className="va-time">{formatClock(time, 2)} / {formatClock(duration, 1)}</span>
+          <span className="va-time">{formatClock(time, 2)} / {formatClock(end, 1)}{start > 0 ? <small> · from {formatClock(start, 1)}</small> : null}</span>
           <div className="va-speed" role="group" aria-label="Playback speed">
             {SPEEDS.map((value) => (
               <button key={value} type="button" className={speed === value ? 'is-selected' : ''} onClick={() => setSpeed(value)} aria-pressed={speed === value}>{value}×</button>
             ))}
           </div>
         </div>
-        <svg ref={timelineRef} className="va-timeline" viewBox="0 0 1000 56" preserveAspectRatio="none" role="slider" aria-label="Timeline" aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(time)} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); seekFromPointer(event); }} onPointerMove={(event) => { if (event.buttons) seekFromPointer(event); }}>
+        <svg ref={timelineRef} className="va-timeline" viewBox="0 0 1000 56" preserveAspectRatio="none" role="slider" aria-label="Timeline" aria-valuemin={Math.round(start)} aria-valuemax={Math.round(end)} aria-valuenow={Math.round(time)} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); seekFromPointer(event); }} onPointerMove={(event) => { if (event.buttons) seekFromPointer(event); }}>
           <rect className="va-timeline__track" x="0" y="10" width="1000" height="24" />
           {report.letDowns.map((letDown) => <rect key={`l${letDown.start}`} className="va-timeline__letdown" x={x(letDown.start)} y="12" width={Math.max(2, x(letDown.end) - x(letDown.start))} height="20" />)}
           {report.shots.map((shot) => (

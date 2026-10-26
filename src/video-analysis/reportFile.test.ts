@@ -89,6 +89,14 @@ describe('report files', () => {
     expectFileError(exported((value) => { value.audio = { available: true, onsets: [{ t: 1 }] }; }), /audio data/);
   });
 
+  it('keeps the analysed range and rejects a malformed one', () => {
+    // Reports from before trimming have no range and cover the whole clip.
+    expect(parseReportFile(exported()).source.range).toBeUndefined();
+    const trimmed = parseReportFile(exported((value) => { (value.source as Record<string, unknown>).range = { start: 2, end: 20 }; }));
+    expect(trimmed.source.range).toEqual({ start: 2, end: 20 });
+    expectFileError(exported((value) => { (value.source as Record<string, unknown>).range = { start: 20, end: 2 }; }), /analysed range/);
+  });
+
   it('accepts an already-parsed value', () => {
     expect(restoreReportInput(JSON.parse(exported())).samples.length).toBeGreaterThan(0);
   });

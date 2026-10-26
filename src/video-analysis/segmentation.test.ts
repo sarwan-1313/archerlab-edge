@@ -12,7 +12,7 @@ function segment(scenario: SyntheticScenario, fps = 24, withAudio = false) {
   const onsets = withAudio
     ? detectOnsets(synthesizeRangeAudio(scenario.durationS, scenario.shots.filter((shot) => !shot.letDown).map((shot) => ({ t: shot.release, kind: 'release' as const }))), 16000).onsets
     : null;
-  return segmentShots(track, onsets, scenario.durationS);
+  return segmentShots(track, onsets, { start: 0, end: scenario.durationS });
 }
 
 describe('segmentShots', () => {

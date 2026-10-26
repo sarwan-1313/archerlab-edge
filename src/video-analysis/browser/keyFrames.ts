@@ -1,5 +1,6 @@
 import type { MediaPart } from '../../cloud/ai/providers';
 import { drawSkeleton } from '../drawing';
+import { sourceRange } from '../range';
 import { indexAtTime } from '../signal';
 import type { JointName, VideoAnalysisReport } from '../types';
 import { seekTo } from './frameCapture';
@@ -16,11 +17,12 @@ export async function renderKeyFrames(report: VideoAnalysisReport, video: HTMLVi
     .slice(0, maxShots)
     .sort((a, b) => a.index - b.index);
   const highlight = new Set<JointName>(report.focusAreas.flatMap((finding) => finding.where.joints));
+  const range = sourceRange(report.source);
   const moments = shots.flatMap((shot) => [
     { t: shot.release - 0.3, caption: `shot ${shot.index}, at anchor 0.3 s before release` },
     { t: shot.release + 0.08, caption: `shot ${shot.index}, just after release` },
     { t: shot.release + 0.6, caption: `shot ${shot.index}, follow-through 0.6 s after release` },
-  ]).filter((moment) => moment.t >= 0 && moment.t <= report.source.durationS);
+  ]).filter((moment) => moment.t >= range.start && moment.t <= range.end);
 
   const canvas = document.createElement('canvas');
   const longEdge = Math.max(video.videoWidth, video.videoHeight) || 1;

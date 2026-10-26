@@ -34,6 +34,16 @@ Frame features (2D + 3D) ──► smoothed tracks ──► release-first shot 
                     findings ("what to work on"), strengths, practice plan, resources
 ```
 
+### Choosing the range
+
+A chosen file is previewed first. The athlete sets the start and end of the part to analyse (sliders, or "Set start here" / "Set end here" at the current frame); clips up to 15 minutes are selected whole. The 15-minute limit applies to the selected range, not the file, so a long session recording can be analysed a stretch at a time.
+
+Only the selected range is tracked. Audio onsets outside it are dropped, so shots that were trimmed away cannot reappear as audio-only shots. The range is stored as `report.source.range`, in seconds of the original file: shot times, the replay timeline and segmentation all use the original media time, limited to the range, so a kept video stays in sync. Reports made before trimming have no range and cover the whole clip.
+
+The whole audio track is decoded into memory, however short the range, so files longer than 30 minutes skip audio decoding; the report says so and release timing comes from video only.
+
+While the analysis runs, the page holds a screen wake lock where the browser supports it (taken again when the tab returns to the front), so a phone does not sleep mid-run.
+
 Key files:
 
 | File | Role |
@@ -168,4 +178,5 @@ Other static hosts need the same step: run `npm run build:vercel` (or the fetch 
 - Depth comes from a single camera, so movement toward or away from the lens is the least precise.
 - Clicker and impact sounds are best-effort and can be confused by other archers.
 - With several people in frame, the most prominent person is followed.
-- Very long clips take time; the tab must stay visible (browsers pause hidden video).
+- Long ranges take time. The screen is kept on where the browser allows it, but the tab must stay open and in front: browsers pause video in background tabs.
+- Files longer than 30 minutes are analysed without their sound.

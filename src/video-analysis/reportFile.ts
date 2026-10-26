@@ -90,7 +90,15 @@ function restoreSource(value: unknown): VideoSourceInfo {
     throw new ReportFileError('The video details in this report are missing or malformed.');
   }
   const { fileName, fileSize, mimeType, durationS, width, height, nativeFps, analysisFps, hasAudio } = value;
-  return { fileName, fileSize, mimeType, durationS, width, height, nativeFps, analysisFps, hasAudio };
+  const source: VideoSourceInfo = { fileName, fileSize, mimeType, durationS, width, height, nativeFps, analysisFps, hasAudio };
+  if (value.range !== undefined) {
+    const range = value.range;
+    if (!isRecord(range) || !isNumber(range.start) || !isNumber(range.end) || range.start < 0 || range.end <= range.start || range.end > durationS + 0.01) {
+      throw new ReportFileError('The analysed range in this report is malformed.');
+    }
+    source.range = { start: range.start, end: range.end };
+  }
+  return source;
 }
 
 function restoreSettings(value: unknown): AnalysisSettings {

@@ -2,7 +2,7 @@ import { matchShotAudio, type ShotAudioMatch } from './audio';
 import { VIDEO_CONFIG } from './config';
 import { indicesBetween, median } from './signal';
 import type { FeatureTrack } from './track';
-import type { AudioOnset, FramePhase, LetDown, ShotSource, ShotTiming } from './types';
+import type { AudioOnset, FramePhase, LetDown, ShotSource, ShotTiming, TimeRange } from './types';
 import { finite } from './vec';
 
 const SEG = VIDEO_CONFIG.segmentation;
@@ -250,7 +250,7 @@ function findWeakRelease(track: FeatureTrack, run: Run, minSpeed: number): Relea
  * shot is only accepted after the archer has come down from the previous one,
  * so follow-through movements are never mistaken for releases.
  */
-export function segmentShots(track: FeatureTrack, onsets: readonly AudioOnset[] | null, durationS: number): SegmentationResult {
+export function segmentShots(track: FeatureTrack, onsets: readonly AudioOnset[] | null, range: TimeRange): SegmentationResult {
   const { times } = track;
   const mask = times.map((_, index) => isFullDraw(track, index));
   const candidates = findReleaseCandidates(track, mask);
@@ -355,10 +355,10 @@ export function segmentShots(track: FeatureTrack, onsets: readonly AudioOnset[] 
     if (shot.source !== 'audio-only') {
       shot.anchorStart = findAnchorStart(track, mask, shot.release);
       if (shot.anchorStart !== null) {
-        const floor = previous ? (previous.followThroughEnd ?? previous.release + 0.5) : 0;
+        const floor = previous ? (previous.followThroughEnd ?? previous.release + 0.5) : range.start;
         shot.drawStart = findDrawStart(track, shot.anchorStart, floor);
       }
-      const ceiling = Math.min(shot.release + SEG.maxFollowThroughS, next ? (next.drawStart ?? next.release - 1) : durationS, durationS);
+      const ceiling = Math.min(shot.release + SEG.maxFollowThroughS, next ? (next.drawStart ?? next.release - 1) : range.end, range.end);
       const follow = findFollowThroughEnd(track, shot.release, Math.max(shot.release, ceiling));
       shot.followThroughEnd = follow.end;
       shot.followThroughCensored = follow.censored;

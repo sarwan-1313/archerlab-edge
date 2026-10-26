@@ -192,6 +192,16 @@
 .va-progress__number small { margin-left: 4px; color: var(--ath-muted); font-size: .4em; }
 .va-progress__bar { height: 8px; overflow: hidden; border-radius: 2px; background: rgba(255, 255, 255, .06); transform: skewX(-20deg); }
 .va-progress__bar > div { height: 100%; background: linear-gradient(90deg, var(--ath-volt), var(--ath-gold)); transition: width .25s ease; }
+.va-trim__controls { display: grid; gap: 14px; }
+.va-trim__controls h2 { margin: 0; }
+.va-trim__controls p { margin: 0; }
+.va-trim__controls input[type="range"] { width: 100%; accent-color: var(--ath-volt); }
+.va-trim__bar { position: relative; height: 12px; border-radius: 2px; background: rgba(255, 255, 255, .06); }
+.va-trim__selected { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: rgba(46, 230, 255, .45); }
+.va-trim__head { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ath-gold); }
+.va-trim__set { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.va-trim__length { color: var(--ath-muted); }
+.va-trim__length strong { color: var(--ath-text); font-variant-numeric: tabular-nums; }
 .va-steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .va-steps li { display: flex; align-items: center; gap: 10px; color: var(--ath-faint); font-size: 14px; }
 .va-steps li i { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid var(--ath-line-strong); border-radius: 50%; font-style: normal; }

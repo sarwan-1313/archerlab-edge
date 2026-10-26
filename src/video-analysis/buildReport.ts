@@ -6,6 +6,8 @@ import { computeFrameFeatures } from './frameFeatures';
 import { measureSession, measureShot } from './metrics';
 import { recommendResources } from './resources';
 import { aggregateMetrics, scoreMetrics, scoreSession } from './scoring';
+import { formatClock } from './format';
+import { onsetsInRange, rangeLength, sourceRange } from './range';
 import { phaseAt, segmentShots } from './segmentation';
 import { buildFeatureTrack } from './track';
 import type {
@@ -65,8 +67,10 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
 
   const features = samples.map((sample) => computeFrameFeatures(sample, aspect, handedness));
   const track = buildFeatureTrack(features);
-  const onsets = input.audio?.kind === 'analysed' ? input.audio.onsets : null;
-  const segmentation = segmentShots(track, onsets, source.durationS);
+  const range = sourceRange(source);
+  // Sounds outside the analysed range belong to shots that were trimmed away.
+  const onsets = input.audio?.kind === 'analysed' ? onsetsInRange(input.audio.onsets, range) : null;
+  const segmentation = segmentShots(track, onsets, range);
   const view = detectCameraView(features, segmentation.fullDrawMask);
   const bowType = input.settings.bowType;
 
@@ -140,7 +144,7 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
       durationS: input.audio.durationS,
       sampleRate: input.audio.sampleRate,
       noiseFloorDb: input.audio.noiseFloorDb,
-      onsets: input.audio.onsets,
+      onsets: onsets ?? [],
       syncOffsetS: segmentation.syncOffsetS,
       matchedReleases: segmentation.matchedReleases,
       unmatchedStrong: segmentation.unmatchedStrong,
@@ -158,6 +162,8 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
   const audioOnly = shots.filter((shot) => shot.source === 'audio-only').length;
   if (audioOnly) limitations.push(`${audioOnly} shot${audioOnly === 1 ? ' was' : 's were'} heard but the archer was not tracked, so only timing is available for ${audioOnly === 1 ? 'it' : 'them'}.`);
   if (audio?.available) limitations.push('Clicker and arrow-impact sounds are best-effort and can be confused by other archers or range noise.');
+  if (audio && !audio.available && audio.reason) limitations.push(audio.reason);
+  if (rangeLength(range) < source.durationS - 0.05) limitations.push(`Only ${formatClock(range.start, 1)}–${formatClock(range.end, 1)} of the ${formatClock(source.durationS, 0)} video was analysed.`);
   limitations.push('If several people are in the frame, the tool follows the most prominent person.');
 
   return {

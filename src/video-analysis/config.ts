@@ -10,9 +10,14 @@ export const QUALITY_FPS: Record<AnalysisQuality, number> = {
 };
 
 export const VIDEO_CONFIG = {
+  /** Longest range that can be analysed at once (the file itself may be longer). */
   maxDurationS: 15 * 60,
+  /** Shortest range worth analysing. */
+  minRangeS: 2,
   warnDurationS: 4 * 60,
   maxAudioDecodeBytes: 450 * 1024 * 1024,
+  /** Files longer than this skip audio decoding: the whole track is decoded into memory. */
+  maxAudioDecodeDurationS: 30 * 60,
   /** Long edge of the frame handed to the pose model. MediaPipe downsamples internally anyway. */
   inferenceLongEdgePx: 720,
   /** Landmark visibility below this is treated as missing. */

@@ -114,4 +114,39 @@ describe('buildReport', () => {
     const summary = summarizeReport(result, true);
     expect(summary).toMatchObject({ id: 'test', fileName: 'clip.mp4', shots: 2, hasVideo: true, view: 'broadside' });
   });
+
+  it('analyses only the selected range of a longer video', () => {
+    const scenario = makeScenario({ shots: scriptShots(4) });
+    const range = { start: 9.5, end: 28.5 };
+    // The browser pipeline tracks only the range but decodes the whole audio track.
+    const samples = syntheticSamples(scenario, 24).filter((sample) => sample.t >= range.start && sample.t <= range.end);
+    const releases = scenario.shots.map((shot) => shot.release);
+    const analysis = detectOnsets(synthesizeRangeAudio(scenario.durationS, releases.map((t) => ({ t, kind: 'release' as const }))), 16000);
+    const result = buildReport({
+      id: 'trimmed', createdAt: 1, samples,
+      source: { fileName: 'long.mp4', fileSize: 1000, mimeType: 'video/mp4', durationS: scenario.durationS, range, width: 1280, height: 720, nativeFps: 30, analysisFps: 24, hasAudio: true },
+      settings: { quality: 'standard', requestedHandedness: 'auto', bowType: 'recurve', model: 'lite', delegate: 'CPU' },
+      audio: { kind: 'analysed', onsets: analysis.onsets, noiseFloorDb: analysis.noiseFloorDb, sampleRate: 16000, durationS: scenario.durationS },
+    });
+    expect(result.source.range).toEqual(range);
+    // Shots 1 and 4 fall outside the range: their sounds must not turn into audio-only shots.
+    expect(result.shots.map((shot) => shot.source)).toEqual(['video+audio', 'video+audio']);
+    expect(result.shots[0].release).toBeCloseTo(releases[1], 1);
+    expect(result.shots[1].release).toBeCloseTo(releases[2], 1);
+    expect(result.audio?.onsets.length).toBeGreaterThan(0);
+    expect(result.audio?.onsets.every((onset) => onset.t >= range.start && onset.t <= range.end)).toBe(true);
+    expect(result.shots.every((shot) => (shot.drawStart ?? range.start) >= range.start && (shot.followThroughEnd ?? range.end) <= range.end)).toBe(true);
+    expect(result.limitations.some((line) => line.startsWith('Only 0:09.5–0:28.5 of the'))).toBe(true);
+  });
+
+  it('says in the report when the audio could not be used', () => {
+    const result = buildReport({
+      id: 'quiet', createdAt: 1, samples: syntheticSamples(makeScenario(), 24),
+      source: { fileName: 'clip.mp4', fileSize: 1000, mimeType: 'video/mp4', durationS: 40 * 60, width: 1280, height: 720, nativeFps: 30, analysisFps: 24, hasAudio: false },
+      settings: { quality: 'standard', requestedHandedness: 'auto', bowType: 'recurve', model: 'lite', delegate: 'CPU' },
+      audio: { kind: 'unavailable', reason: 'The video is longer than 30 minutes, so its audio was not decoded.' },
+    });
+    expect(result.audio).toMatchObject({ available: false, reason: 'The video is longer than 30 minutes, so its audio was not decoded.' });
+    expect(result.limitations).toContain('The video is longer than 30 minutes, so its audio was not decoded.');
+  });
 });

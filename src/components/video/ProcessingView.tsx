@@ -20,10 +20,12 @@ type ProcessingViewProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   progress: AnalysisProgress | null;
   handedness: ArcherHandedness;
+  /** True when the browser can keep the screen on during the run. */
+  screenKeptAwake: boolean;
   onCancel: () => void;
 };
 
-export function ProcessingView({ fileName, videoRef, canvasRef, progress, handedness, onCancel }: ProcessingViewProps) {
+export function ProcessingView({ fileName, videoRef, canvasRef, progress, handedness, screenKeptAwake, onCancel }: ProcessingViewProps) {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const percent = Math.round((progress?.fraction ?? 0) * 100);
   const activeIndex = ORDER.indexOf(progress?.stage ?? 'loading');
@@ -76,7 +78,7 @@ export function ProcessingView({ fileName, videoRef, canvasRef, progress, handed
         {progress?.framesProcessed ? (
           <p className="va-faint">{progress.framesProcessed} frames tracked{progress.playbackRate ? ` · running at ${progress.playbackRate.toFixed(2)}× real time` : ''}</p>
         ) : null}
-        <p className="va-faint"><AppIcon name="shield" size={13} /> Keep this tab open and visible. Everything runs on this device; nothing is uploaded.</p>
+        <p className="va-faint"><AppIcon name="shield" size={13} /> {screenKeptAwake ? 'The screen stays on while this runs. Keep this tab open and in front: browsers pause videos in background tabs.' : 'Keep this tab open and in front, and the screen on: browsers pause videos in background tabs.'} Everything runs on this device; nothing is uploaded.</p>
         <ActionButton variant="secondary" type="button" onClick={onCancel}><AppIcon name="close" size={16} /> Cancel</ActionButton>
       </div>
     </section>

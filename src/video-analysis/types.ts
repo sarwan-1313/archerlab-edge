@@ -17,6 +17,8 @@ export type FramePhase = 'idle' | 'draw' | 'anchor' | 'release' | 'follow-throug
 export type BodySideName = 'left' | 'right';
 
 export interface Vec2 { x: number; y: number }
+/** A stretch of the video in seconds of media time. */
+export interface TimeRange { start: number; end: number }
 export interface Vec3 { x: number; y: number; z: number }
 
 /** One analysed frame. Landmarks are stored compactly for replay and recomputation. */
@@ -254,7 +256,10 @@ export interface VideoSourceInfo {
   fileName: string;
   fileSize: number;
   mimeType: string;
+  /** Length of the whole file. */
   durationS: number;
+  /** The analysed part of the file; absent on reports made before trimming (whole clip). */
+  range?: TimeRange;
   width: number;
   height: number;
   nativeFps: number | null;

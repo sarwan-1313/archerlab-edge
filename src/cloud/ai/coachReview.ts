@@ -1,3 +1,4 @@
+import { rangeLength, sourceRange } from '../../video-analysis/range';
 import { CATEGORY_INFO, METRIC_RUBRIC, formatMetric } from '../../video-analysis/rubric';
 import { LEVEL_LABEL } from '../../video-analysis/scoring';
 import type { MetricKey, SkillLevel, VideoAnalysisReport } from '../../video-analysis/types';
@@ -44,9 +45,11 @@ function metricLine(key: MetricKey, value: number, confidence: number): string {
 /** Builds the coaching prompt from a finished on-device report. */
 export function buildCoachRequest(report: VideoAnalysisReport, media: MediaPart[]): CoachRequest {
   const session = report.scores;
+  const range = sourceRange(report.source);
+  const trimmed = rangeLength(range) < report.source.durationS - 0.05;
   const lines: string[] = [
     `Bow type: ${report.settings.bowType}. Drawing hand: ${report.settings.handedness}. Camera view: ${report.view.kind}.`,
-    `Clip length: ${report.source.durationS.toFixed(1)} s. Shots detected: ${report.shots.length}${report.letDowns.length ? `, let-downs: ${report.letDowns.length}` : ''}.`,
+    `Clip length: ${trimmed ? `${rangeLength(range).toFixed(1)} s analysed (${range.start.toFixed(1)}–${range.end.toFixed(1)} s of a ${report.source.durationS.toFixed(1)} s video)` : `${report.source.durationS.toFixed(1)} s`}. Shots detected: ${report.shots.length}${report.letDowns.length ? `, let-downs: ${report.letDowns.length}` : ''}.`,
     `On-device estimate: ${session.overall === null ? 'not enough data' : `${Math.round(session.overall)}/100 (${LEVEL_LABEL[session.level ?? 'beginner']}, ${session.confidence} confidence)`}.`,
     '',
     'Category scores (0–100):',

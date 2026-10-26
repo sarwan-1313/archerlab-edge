@@ -9,20 +9,23 @@ import { LevelBadge } from '../components/video/LevelBadge';
 import { ProcessingView } from '../components/video/ProcessingView';
 import { RescorePanel } from '../components/video/RescorePanel';
 import { ReportView } from '../components/video/ReportView';
+import { TrimPreview } from '../components/video/TrimPreview';
 import { UploadPanel, type UploadOptions } from '../components/video/UploadPanel';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
+import { isWakeLockSupported, useWakeLock } from '../hooks/useWakeLock';
 import { AnalysisCancelledError } from '../video-analysis/browser/frameCapture';
 import { availableModels } from '../video-analysis/browser/poseModel';
 import { loadVideo, runVideoAnalysis, type AnalysisProgress } from '../video-analysis/browser/runVideoAnalysis';
 import { VIDEO_CONFIG } from '../video-analysis/config';
-import { VIEW_LABEL, formatBytes, formatDate } from '../video-analysis/format';
+import { VIEW_LABEL, formatBytes, formatClock, formatDate } from '../video-analysis/format';
 import { buildReport } from '../video-analysis/buildReport';
 import { chooseDefaultModel, isPoseModelVariant } from '../video-analysis/modelChoice';
+import { rangeLength } from '../video-analysis/range';
 import { applyReportToProfile, isFormStatus } from '../video-analysis/profileStatus';
 import { ReportFileError, inputFromReport, parseReportFile, type RescoreSettings } from '../video-analysis/reportFile';
 import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport, updateVideoReport } from '../video-analysis/storage';
 import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
-import type { BowType, PoseModelVariant, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
+import type { BowType, PoseModelVariant, TimeRange, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
 import type { ShotAnalysis } from '../types/shotAnalysis';
 import '../styles/video.css';
 
@@ -33,7 +36,8 @@ const BOW_TYPES: BowType[] = ['recurve', 'compound', 'barebow', 'traditional'];
 
 type View =
   | { kind: 'upload' }
-  | { kind: 'processing'; file: File; url: string }
+  | { kind: 'preview'; file: File; url: string }
+  | { kind: 'processing'; file: File; url: string; range: TimeRange }
   | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' }
   | { kind: 'error'; message: string; file?: File };
 
@@ -151,12 +155,20 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
     setOptions(next);
   };
 
-  const startAnalysis = (file: File) => {
+  // A chosen file is previewed first, so long videos can be trimmed before any tracking.
+  const chooseFile = (file: File) => {
     setNotice(null);
     setReportFileError(null);
-    setProgress(null);
-    setView({ kind: 'processing', file, url: makeUrl(file) });
+    setView({ kind: 'preview', file, url: makeUrl(file) });
   };
+
+  const startAnalysis = (file: File, url: string, range: TimeRange) => {
+    setNotice(null);
+    setProgress(null);
+    setView({ kind: 'processing', file, url, range });
+  };
+
+  useWakeLock(view.kind === 'processing');
 
   // Options, models and profile are read once, when the run starts, so changing them never restarts a run.
   const runInputsRef = useRef({ options, models, save, refreshHistory });
@@ -165,8 +177,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
   // Run the engine once the processing view (and its video element) is on screen.
   const processingFile = view.kind === 'processing' ? view.file : null;
   const processingUrl = view.kind === 'processing' ? view.url : null;
+  const processingRange = view.kind === 'processing' ? view.range : null;
   useEffect(() => {
-    if (!processingFile || !processingUrl) return;
+    if (!processingFile || !processingUrl || !processingRange) return;
     const { options, models, save, refreshHistory } = runInputsRef.current;
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -179,12 +192,14 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       try {
         await loadVideo(video, processingUrl);
         if (controller.signal.aborted) return;
-        if (video.duration > VIDEO_CONFIG.warnDurationS) setNotice('Long clip: analysis may take a few minutes. Keep this tab open.');
+        if (rangeLength(processingRange) > VIDEO_CONFIG.warnDurationS) {
+          setNotice(`Long clip: analysis may take a few minutes. ${isWakeLockSupported() ? 'The screen stays on meanwhile; keep this tab open and in front.' : 'Keep this tab open and in front, and the screen on.'}`);
+        }
         const report = await runVideoAnalysis({
           file: processingFile, video, canvas,
           quality: options.quality, model: models.includes(options.model) ? options.model : 'lite',
           requestedHandedness: options.handedness, profileHandedness, bowType: options.bowType,
-          analyzeAudio: options.analyzeAudio, signal: controller.signal, onProgress: setProgress,
+          analyzeAudio: options.analyzeAudio, range: processingRange, signal: controller.signal, onProgress: setProgress,
         });
         if (controller.signal.aborted) return;
         const keep = options.keepVideo ? processingFile : null;
@@ -212,7 +227,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       }
     })();
     return () => controller.abort();
-  }, [processingFile, processingUrl]);
+  }, [processingFile, processingRange, processingUrl]);
 
   const openSaved = async (summary: VideoReportSummary) => {
     setNotice(null);
@@ -348,7 +363,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
 
       {view.kind === 'upload' ? (
         <>
-          <UploadPanel options={options} availableModels={models} onOptionsChange={changeOptions} onFile={startAnalysis} />
+          <UploadPanel options={options} availableModels={models} onOptionsChange={changeOptions} onFile={chooseFile} />
           <div className="va-open-report">
             <input ref={reportFileRef} type="file" accept="application/json,.json" aria-label="Report file" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void openReportFile(file); }} />
             <ActionButton variant="ghost" type="button" onClick={() => reportFileRef.current?.click()}><AppIcon name="upload" size={16} /> Open report file (.json)</ActionButton>
@@ -384,9 +399,14 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
         </>
       ) : null}
 
+      {view.kind === 'preview' ? (
+        <TrimPreview file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => setView({ kind: 'upload' })} />
+      ) : null}
+
       {view.kind === 'processing' ? (
         <ProcessingView
-          fileName={`${view.file.name} · ${formatBytes(view.file.size)}`}
+          fileName={`${view.file.name} · ${formatBytes(view.file.size)} · ${formatClock(view.range.start, 1)}–${formatClock(view.range.end, 1)}`}
+          screenKeptAwake={isWakeLockSupported()}
           videoRef={videoRef}
           canvasRef={canvasRef}
           progress={progress}
@@ -401,7 +421,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
           <h2>That clip could not be analysed</h2>
           <p>{view.message}</p>
           <div className="analytics-empty-state__actions">
-            {view.file ? <ActionButton variant="primary" type="button" onClick={() => startAnalysis(view.file as File)}>Try again</ActionButton> : null}
+            {view.file ? <ActionButton variant="primary" type="button" onClick={() => chooseFile(view.file as File)}>Try again</ActionButton> : null}
             <ActionButton variant="secondary" type="button" onClick={() => setView({ kind: 'upload' })}>Choose another video</ActionButton>
           </div>
         </section>
