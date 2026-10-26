@@ -42,4 +42,5 @@ export const pageTitles: Record<PageKey, string> = {
   'guide-analytics': 'Analytics Guide',
   'saved-recordings': 'Recordings',
   profile: 'Profile',
+  privacy: 'Privacy',
 };

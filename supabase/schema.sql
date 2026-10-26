@@ -57,3 +57,19 @@ drop policy if exists "Delete own videos" on storage.objects;
 create policy "Delete own videos" on storage.objects
   for delete to authenticated
   using (bucket_id = 'videos' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- Lets a signed-in athlete delete their own account (Privacy page → "Delete my account").
+-- Rows in athlete_profiles and video_reports go with it (on delete cascade). The app
+-- deletes the athlete's files in the videos bucket first, because stored objects can
+-- keep a user from being deleted.
+create or replace function public.delete_my_account()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from auth.users where id = auth.uid();
+$$;
+
+revoke execute on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;

@@ -6,7 +6,8 @@ import type { VideoAnalysisReport, VideoReportSummary } from './types';
  * their own store so the history list loads without reading every report.
  * The video itself is only kept when the athlete asks for it.
  */
-const DB = 'archerlab-edge-video';
+export const VIDEO_DB_NAME = 'archerlab-edge-video';
+const DB = VIDEO_DB_NAME;
 const VERSION = 1;
 
 function open(): Promise<IDBDatabase> {

@@ -6,6 +6,9 @@
 
 export interface CloudUser { id: string; email?: string }
 
+/** An entry from a storage folder listing; sub-folders have no id. */
+export interface StorageEntry { name: string; id: string | null }
+
 export interface CloudSession {
   accessToken: string;
   refreshToken: string;
@@ -93,6 +96,15 @@ export function createSupabaseRest(baseUrl: string, anonKey: string, fetcher: Fe
     return next;
   }
 
+  async function removeObjects(bucket: string, paths: string[], token: string): Promise<void> {
+    await call(`/storage/v1/object/${bucket}`, {
+      method: 'DELETE',
+      token,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prefixes: paths }),
+    });
+  }
+
   return {
     loadSession,
 
@@ -178,11 +190,29 @@ export function createSupabaseRest(baseUrl: string, anonKey: string, fetcher: Fe
     },
 
     async removeObject(bucket: string, path: string, token: string): Promise<void> {
-      await call(`/storage/v1/object/${bucket}`, {
-        method: 'DELETE',
+      await removeObjects(bucket, [path], token);
+    },
+
+    removeObjects,
+
+    /** One page of a storage folder; `prefix` is the folder, e.g. "<user id>/". */
+    async listObjects(bucket: string, prefix: string, token: string, page: { limit: number; offset: number }): Promise<StorageEntry[]> {
+      const entries = await call<StorageEntry[] | null>(`/storage/v1/object/list/${bucket}`, {
+        method: 'POST',
         token,
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ prefixes: [path] }),
+        body: JSON.stringify({ prefix, limit: page.limit, offset: page.offset, sortBy: { column: 'name', order: 'asc' } }),
+      });
+      return entries ?? [];
+    },
+
+    /** Calls a Postgres function exposed by PostgREST. */
+    async rpc<T = void>(fn: string, args: Record<string, unknown>, token: string): Promise<T> {
+      return call<T>(`/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        token,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(args),
       });
     },
   };

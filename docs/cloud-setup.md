@@ -17,7 +17,7 @@ Many ArcherLab users are under 18. Before turning cloud features on for a club o
 - The AI coach panel requires an explicit consent tick ("a parent or guardian has agreed") before anything is sent. By default it sends **six annotated still frames plus the measurements**, not the video. Gemini can be allowed to watch the whole clip (under 14 MB), as a separate opt-in.
 - API keys stay in the browser (session storage, or local storage if "remember" is ticked) and go only to the chosen provider. ArcherLab has no server.
 - Account backup stores reports **without** per-frame landmarks. Videos are uploaded only when the athlete presses "Back up report + video". Row-level security keeps every row and file private to its owner.
-- Update the app's privacy wording (Home page, README) if you change these defaults.
+- The in-app **Privacy** page (`/privacy`, `src/pages/PrivacyPage.tsx`) explains all of this to athletes and lets them export or delete their data. Update it, and the README, if you change these defaults.
 
 ## 1. AI coaches
 
@@ -42,7 +42,7 @@ Each model answers as a coach in a fixed JSON shape; the app shows each review a
 ## 2. Accounts and backup (Supabase)
 
 1. Create a project at https://supabase.com.
-2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles` and `video_reports` tables, a private `videos` storage bucket, and row-level-security policies so each user can only reach their own rows and files.
+2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add the function to an existing project.
 3. In **Authentication → URL Configuration**, set the Site URL to your deployment (e.g. `https://archerlab-edge.vercel.app`) and add `https://archerlab-edge.vercel.app/profile` (plus `http://localhost:5173/profile` for development) to the redirect URLs.
 4. Email sign-in links work out of the box. To add Google sign-in, enable the Google provider in **Authentication → Providers**.
 5. Copy the project URL and the **anon** public key from **Project Settings → API** into environment variables (below). The anon key is safe to ship to browsers; row-level security protects the data.
@@ -50,6 +50,17 @@ Each model answers as a coach in a fixed JSON shape; the app shows each review a
 The app talks to Supabase over plain REST (`src/cloud/account/supabaseRest.ts`), so no extra npm package is needed.
 
 The free plan limits single uploads to 50 MB; the app checks this before uploading a video and backs up only the report when a video is larger. Set `VITE_SUPABASE_MAX_UPLOAD_MB` if your project allows more.
+
+### Deleting cloud data and accounts
+
+Signed-in athletes can remove their data themselves from the Privacy page:
+
+- **Delete my cloud data** lists the athlete's own folder in the `videos` bucket (`<user id>/…`) and deletes every file in it, plus any file a report row points to. It then deletes all of their `video_reports` rows and their `athlete_profiles` row. The account stays. Row-level security limits every request to the athlete's own rows and files.
+- **Delete my account** does the same, then calls `POST /rest/v1/rpc/delete_my_account`, then signs out. Storage files are deleted first because stored objects can keep a user from being deleted.
+
+`delete_my_account()` is a `security definer` SQL function that runs `delete from auth.users where id = auth.uid()`, so it can only ever delete the caller. Its `search_path` is empty and every name is schema-qualified. Execution is revoked from `public` and `anon` and granted only to `authenticated`. Deleting the user cascades to their rows in `athlete_profiles` and `video_reports`.
+
+If a project was set up before this function existed, **Delete my account** still deletes the athlete's cloud data, then reports that the account could not be removed. Re-run `supabase/schema.sql` to add the function.
 
 ## 3. Dropbox and Google Drive import (desktop)
 

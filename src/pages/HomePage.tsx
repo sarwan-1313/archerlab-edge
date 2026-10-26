@@ -12,6 +12,7 @@ type HomePageProps = {
   onSample?: () => void;
   hasProfile?: boolean;
   hasTrainingHistory?: boolean;
+  onPrivacy?: () => void;
 };
 
 const sceneSteps = [
@@ -35,7 +36,7 @@ const sessionFlow: Array<{ icon: AppIconName; title: string; body: string }> = [
   { icon: 'history', title: 'Review and compare', body: 'Replay any shot, check its metrics, and track consistency across the session.' },
 ];
 
-export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
+export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPrivacy, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => (rootRef.current ? mountScrollScene(rootRef.current) : undefined), []);
 
@@ -239,7 +240,7 @@ export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, hasPr
       </section>
 
       <footer className="landing-footer">
-        <span><AppIcon name="shield" size={14} /> Video processing stays on your device unless you opt in</span>
+        <span><AppIcon name="shield" size={14} /> Video processing stays on your device unless you opt in{onPrivacy ? <> · <button type="button" className="landing-footer__link" onClick={onPrivacy}>Privacy</button></> : null}</span>
         <span>Built by an archer · Version 0.1.0</span>
       </footer>
     </div>

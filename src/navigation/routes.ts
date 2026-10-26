@@ -24,6 +24,7 @@ export const PAGE_PATHS = {
   'guide-analytics': '/guide/analytics',
   'saved-recordings': '/sessions',
   profile: '/profile',
+  privacy: '/privacy',
 } as const satisfies Readonly<Record<PageKey, string>>;
 
 const PAGE_BY_PATH = new Map<string, PageKey>(

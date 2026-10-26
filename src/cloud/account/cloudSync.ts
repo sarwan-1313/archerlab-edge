@@ -92,6 +92,52 @@ export async function deleteCloudReport(client: SupabaseRest, session: CloudSess
   await client.remove('video_reports', `id=eq.${encodeURIComponent(id)}`, session.accessToken);
 }
 
+const STORAGE_PAGE = 100;
+
+/** Every file in the athlete's own folder of the video bucket, listed page by page. */
+export async function listOwnVideoPaths(client: SupabaseRest, session: CloudSession): Promise<string[]> {
+  const prefix = `${session.user.id}/`;
+  const paths: string[] = [];
+  for (let offset = 0; ; offset += STORAGE_PAGE) {
+    const page = await client.listObjects(CLOUD_CONFIG.videoBucket, prefix, session.accessToken, { limit: STORAGE_PAGE, offset });
+    for (const entry of page) if (entry.id !== null && entry.name) paths.push(`${prefix}${entry.name}`);
+    if (page.length < STORAGE_PAGE) return paths;
+  }
+}
+
+/**
+ * Deletes everything the athlete has in the cloud: their video files, every
+ * video report row and the backed-up profile. Files go first, so no report is
+ * left pointing at nothing and nothing blocks deleting the account afterwards.
+ */
+export async function deleteAllCloudData(client: SupabaseRest, session: CloudSession): Promise<{ files: number; reports: number }> {
+  const token = session.accessToken;
+  const userFilter = `user_id=eq.${encodeURIComponent(session.user.id)}`;
+  const rows = await client.select<{ video_path: string | null }>('video_reports', `select=video_path&${userFilter}`, token);
+  const paths = new Set(await listOwnVideoPaths(client, session));
+  for (const row of rows) if (row.video_path) paths.add(row.video_path);
+  const all = [...paths];
+  for (let start = 0; start < all.length; start += STORAGE_PAGE) {
+    await client.removeObjects(CLOUD_CONFIG.videoBucket, all.slice(start, start + STORAGE_PAGE), token);
+  }
+  await client.remove('video_reports', userFilter, token);
+  await client.remove('athlete_profiles', userFilter, token);
+  return { files: all.length, reports: rows.length };
+}
+
+/** Deletes the athlete's cloud data, then their account (supabase/schema.sql: delete_my_account). The caller signs out afterwards. */
+export async function deleteCloudAccount(client: SupabaseRest, session: CloudSession): Promise<void> {
+  await deleteAllCloudData(client, session);
+  try {
+    await client.rpc('delete_my_account', {}, session.accessToken);
+  } catch (error) {
+    if (error instanceof CloudError && error.status === 404) {
+      throw new CloudError('Your cloud data was deleted, but the account itself could not be removed: this project is missing the delete_my_account function. Ask whoever runs this app to run the latest supabase/schema.sql.', 501);
+    }
+    throw error;
+  }
+}
+
 export function describeCloudError(error: unknown): string {
   if (error instanceof CloudError) {
     if (error.status === 401) return 'Your sign-in has expired. Sign in again.';

@@ -23,6 +23,7 @@ const GuideDetailPage = lazy(() => import('./pages/GuideDetailPage').then((modul
 const ManualShotEntryPage = lazy(() => import('./pages/ManualShotEntryPage').then((module) => ({ default: module.ManualShotEntryPage })));
 const MultiCameraPage = lazy(() => import('./pages/MultiCameraPage').then((module) => ({ default: module.MultiCameraPage })));
 const NewSessionPage = lazy(() => import('./pages/NewSessionPage').then((module) => ({ default: module.NewSessionPage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then((module) => ({ default: module.ReplayAnalysisPage })));
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
@@ -63,12 +64,14 @@ const ROUTE_LOADING_STATUS = {
   'guide-analytics': 'Loading Analytics guide...',
   'saved-recordings': 'Loading sessions...',
   profile: 'Loading profile...',
+  privacy: 'Loading privacy...',
 } as const satisfies Record<PageKey, string>;
 
 function primaryPageFor(page: PageKey): PageKey {
   if (page === 'new-session' || page === 'calibration' || page === 'multi-camera') return 'live-analysis';
   if (page === 'manual-shot-entry' || page === 'replay-analysis') return 'dashboard';
   if (page === 'gesture-guide' || isGuideDetailPage(page)) return 'user-guide';
+  if (page === 'privacy') return 'profile';
   return page;
 }
 
@@ -394,7 +397,7 @@ function App() {
 
   const currentPage = (() => {
     switch (activePage) {
-      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} />;
+      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} onPrivacy={() => requestNavigation('privacy')} />;
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
@@ -405,7 +408,8 @@ function App() {
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
-      case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} />;
+      case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} />;
+      case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;
       case 'guide-start-analysis':
       case 'guide-camera-setup':
