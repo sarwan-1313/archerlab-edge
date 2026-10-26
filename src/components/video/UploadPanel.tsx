@@ -25,7 +25,7 @@ type UploadPanelProps = {
   onFile: (file: File) => void;
 };
 
-function Chips<T extends string>({ name, value, options, onChange }: { name: string; value: T; options: Array<{ value: T; label: string; disabled?: boolean }>; onChange: (value: T) => void }) {
+export function Chips<T extends string>({ name, value, options, onChange }: { name: string; value: T; options: Array<{ value: T; label: string; disabled?: boolean }>; onChange: (value: T) => void }) {
   return (
     <div className="va-chips" role="radiogroup" aria-label={name}>
       {options.map((option) => (
@@ -38,7 +38,7 @@ function Chips<T extends string>({ name, value, options, onChange }: { name: str
   );
 }
 
-function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: ReactNode }) {
+export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: ReactNode }) {
   return (
     <div className="va-field">
       <span>{label}</span>

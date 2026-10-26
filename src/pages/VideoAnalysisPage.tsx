@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { CloudCoachPanel } from '../components/video/CloudCoachPanel';
 import { LevelBadge } from '../components/video/LevelBadge';
 import { ProcessingView } from '../components/video/ProcessingView';
+import { RescorePanel } from '../components/video/RescorePanel';
 import { ReportView } from '../components/video/ReportView';
 import { UploadPanel, type UploadOptions } from '../components/video/UploadPanel';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
@@ -15,8 +16,10 @@ import { availableModels } from '../video-analysis/browser/poseModel';
 import { loadVideo, runVideoAnalysis, type AnalysisProgress } from '../video-analysis/browser/runVideoAnalysis';
 import { VIDEO_CONFIG } from '../video-analysis/config';
 import { VIEW_LABEL, formatBytes, formatDate } from '../video-analysis/format';
-import { applyReportToProfile } from '../video-analysis/profileStatus';
-import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport } from '../video-analysis/storage';
+import { buildReport } from '../video-analysis/buildReport';
+import { applyReportToProfile, isFormStatus } from '../video-analysis/profileStatus';
+import { ReportFileError, inputFromReport, parseReportFile, type RescoreSettings } from '../video-analysis/reportFile';
+import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport, updateVideoReport } from '../video-analysis/storage';
 import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
 import type { BowType, PoseModelVariant, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
 import type { ShotAnalysis } from '../types/shotAnalysis';
@@ -28,7 +31,7 @@ const BOW_TYPES: BowType[] = ['recurve', 'compound', 'barebow', 'traditional'];
 type View =
   | { kind: 'upload' }
   | { kind: 'processing'; file: File; url: string }
-  | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' }
+  | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' }
   | { kind: 'error'; message: string; file?: File };
 
 function readOptions(): Partial<UploadOptions> {
@@ -48,6 +51,8 @@ const TIPS = [
   { title: 'Sound on', body: 'The release sound pins the exact moment of each shot.' },
 ];
 
+type ReportViewState = Extract<View, { kind: 'report' }>;
+
 type VideoAnalysisPageProps = {
   /** Opens the clip's shots in Analytics and Replay. */
   onOpenInAnalytics?: (shots: ShotAnalysis[]) => void;
@@ -66,6 +71,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
   const [cloudHistory, setCloudHistory] = useState<VideoReportSummary[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [backingUp, setBackingUp] = useState(false);
+  const [rescoring, setRescoring] = useState(false);
+  const reportFileRef = useRef<HTMLInputElement>(null);
+  const [reportFileError, setReportFileError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -121,6 +129,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
 
   const startAnalysis = (file: File) => {
     setNotice(null);
+    setReportFileError(null);
     setProgress(null);
     setView({ kind: 'processing', file, url: makeUrl(file) });
   };
@@ -204,6 +213,65 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
     }
   };
 
+  const rescore = async (current: ReportViewState, changes: RescoreSettings) => {
+    setNotice(null);
+    setRescoring(true);
+    // Let the button show its busy state before the synchronous engine run.
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    try {
+      const report = buildReport(inputFromReport(current.report, changes));
+      if (current.source !== 'file') {
+        try {
+          await updateVideoReport(report);
+        } catch {
+          setNotice('The re-scored report could not be saved on this device (storage may be full), but you can still review and export it.');
+        }
+        // Only refresh the profile when this clip is its latest form status, so an old clip never replaces a newer one.
+        const formStatus = profileRef.current?.formStatus;
+        if (options.updateProfile && (!isFormStatus(formStatus) || formStatus.lastReportId === report.id)) {
+          try {
+            await save(applyReportToProfile(profileRef.current as Record<string, unknown> | null, report));
+          } catch { /* Profile update is best-effort. */ }
+        }
+        refreshHistory();
+      }
+      // Leave the page alone if another report was opened meanwhile.
+      setView((shown) => (shown.kind === 'report' && shown.report.id === report.id ? { ...shown, report } : shown));
+    } catch (error) {
+      console.error('Re-scoring failed', error);
+      setNotice('This report could not be re-scored.');
+    } finally {
+      setRescoring(false);
+    }
+  };
+
+  const openReportFile = async (file: File) => {
+    setNotice(null);
+    setReportFileError(null);
+    try {
+      const report = buildReport(parseReportFile(await file.text()));
+      setView({ kind: 'report', report, videoUrl: null, videoBlob: null, source: 'file' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      if (!(error instanceof ReportFileError)) console.error('Opening a report file failed', error);
+      setReportFileError(error instanceof ReportFileError ? error.message : 'That file could not be opened as a report.');
+    }
+  };
+
+  const saveFileReport = async (current: ReportViewState) => {
+    setNotice(null);
+    try {
+      const summary = await updateVideoReport(current.report);
+      // The same clip may already be on this device with its video kept.
+      const blob = summary.hasVideo ? await loadVideoBlob(summary.id) : null;
+      refreshHistory();
+      setView({ ...current, source: 'saved', videoBlob: blob, videoUrl: blob ? makeUrl(blob) : null });
+      setNotice('Saved to this device.');
+    } catch {
+      setNotice('The report could not be saved on this device (storage may be full).');
+    }
+  };
+
   const exportJson = (report: VideoAnalysisReport) => {
     const blob = new Blob([reportToJson(report)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -257,6 +325,11 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       {view.kind === 'upload' ? (
         <>
           <UploadPanel options={options} availableModels={models} onOptionsChange={setOptions} onFile={startAnalysis} />
+          <div className="va-open-report">
+            <input ref={reportFileRef} type="file" accept="application/json,.json" aria-label="Report file" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void openReportFile(file); }} />
+            <ActionButton variant="ghost" type="button" onClick={() => reportFileRef.current?.click()}><AppIcon name="upload" size={16} /> Open report file (.json)</ActionButton>
+            {reportFileError ? <p className="va-callout" role="alert">{reportFileError}</p> : null}
+          </div>
           <section aria-labelledby="va-tips-title">
             <h2 id="va-tips-title" className="va-section-title">For the best results</h2>
             <ul className="va-tips">{TIPS.map((tip) => <li key={tip.title}><strong>{tip.title}</strong><span>{tip.body}</span></li>)}</ul>
@@ -314,7 +387,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
         <ReportView
           report={view.report}
           videoUrl={view.videoUrl}
-          notice={view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p> : undefined}
+          notice={view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
+            : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
+          settingsControl={view.report.samples.length ? <RescorePanel key={view.report.id} report={view.report} busy={rescoring} onRescore={(changes) => void rescore(view, changes)} /> : undefined}
           cloudCoach={<CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
           actions={(
             <>
@@ -322,7 +397,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
                 <ActionButton variant="secondary" type="button" onClick={() => openInAnalytics(view.report)}><AppIcon name="grid" size={16} /> Open in Analytics</ActionButton>
               ) : null}
               <ActionButton variant="secondary" type="button" onClick={() => exportJson(view.report)}><AppIcon name="download" size={16} /> Export report (JSON)</ActionButton>
-              {account.configured && view.source !== 'cloud' ? (
+              {view.source === 'file' ? <ActionButton variant="primary" type="button" onClick={() => void saveFileReport(view)}><AppIcon name="check" size={16} /> Save to this device</ActionButton> : null}
+              {account.configured && view.source !== 'cloud' && view.source !== 'file' ? (
                 <>
                   <ActionButton variant="secondary" type="button" disabled={backingUp || !account.session} title={account.session ? undefined : 'Sign in on your Profile page first'} onClick={() => void backup(view.report, null)}>
                     <AppIcon name="cloud" size={16} /> {backingUp ? 'Backing up…' : account.session ? 'Back up report' : 'Sign in to back up'}
@@ -334,7 +410,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
                   ) : null}
                 </>
               ) : null}
-              {view.source !== 'cloud' ? <ActionButton variant="danger" type="button" onClick={() => void removeReport(view.report)}><AppIcon name="trash" size={16} /> Delete</ActionButton> : null}
+              {view.source !== 'cloud' && view.source !== 'file' ? <ActionButton variant="danger" type="button" onClick={() => void removeReport(view.report)}><AppIcon name="trash" size={16} /> Delete</ActionButton> : null}
               <ActionButton variant="primary" type="button" onClick={() => setView({ kind: 'upload' })}><AppIcon name="upload" size={16} /> Analyse another video</ActionButton>
             </>
           )}

@@ -16,6 +16,8 @@ type ReportViewProps = {
   cloudCoach?: ReactNode;
   actions: ReactNode;
   notice?: ReactNode;
+  /** Re-score controls, shown under the score callouts. */
+  settingsControl?: ReactNode;
 };
 
 const RESOURCE_ICON: Record<ResourceLink['kind'], AppIconName> = {
@@ -172,13 +174,13 @@ function Consistency({ report }: { report: VideoAnalysisReport }) {
   );
 }
 
-export function ReportView({ report, videoUrl, cloudCoach, actions, notice }: ReportViewProps) {
+export function ReportView({ report, videoUrl, cloudCoach, actions, notice, settingsControl }: ReportViewProps) {
   const [seek, setSeek] = useState<SeekRequest | null>(null);
   const nonce = useRef(0);
   const show = (t: number, joints: SeekRequest['joints'] = []) => {
     nonce.current += 1;
     setSeek({ t, joints, nonce: nonce.current });
-    document.querySelector('.va-review')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelector('.va-review')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
   const others = report.findings.filter((finding) => !report.focusAreas.includes(finding));
 
@@ -187,6 +189,7 @@ export function ReportView({ report, videoUrl, cloudCoach, actions, notice }: Re
       {notice}
       <Scoreboard report={report} />
       <Callouts report={report} />
+      {settingsControl}
       <AnalysisPlayer report={report} videoUrl={videoUrl} seek={seek} />
 
       <section className="va-panel" aria-labelledby="va-focus-title">

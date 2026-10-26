@@ -45,6 +45,17 @@ export async function saveVideoReport(report: VideoAnalysisReport, video?: Blob 
   return summary;
 }
 
+/** Saves a report over the stored one with the same id, keeping any stored video. */
+export async function updateVideoReport(report: VideoAnalysisReport): Promise<VideoReportSummary> {
+  const existing = await transact<VideoReportSummary>(['summaries'], 'readonly', (tx) => tx.objectStore('summaries').get(report.id));
+  const summary = summarizeReport(report, existing?.hasVideo ?? false);
+  await transact(['reports', 'summaries'], 'readwrite', (tx) => {
+    tx.objectStore('reports').put(report);
+    tx.objectStore('summaries').put(summary);
+  });
+  return summary;
+}
+
 export async function listVideoReports(): Promise<VideoReportSummary[]> {
   const all = await transact<VideoReportSummary[]>(['summaries'], 'readonly', (tx) => tx.objectStore('summaries').getAll());
   return (all ?? []).sort((a, b) => b.createdAt - a.createdAt);

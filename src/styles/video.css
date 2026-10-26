@@ -347,6 +347,9 @@
 .va-details ul { margin: 12px 0 0; padding-left: 18px; }
 .va-details li + li { margin-top: 6px; }
 .va-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.va-rescore p { margin: 10px 0 14px; }
+.va-open-report { display: grid; justify-items: center; gap: 10px; }
+.va-open-report input { display: none; }
 
 /* ---------- Cloud coaches ---------- */
 .va-cloud { display: grid; gap: 16px; }
