@@ -6,19 +6,22 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:vercel": "node scripts/fetch-pose-models.mjs full heavy --optional --if-missing && npm run build",
+    "build:vercel": "node scripts/fetch-pose-models.mjs full heavy --optional --if-missing && node scripts/fetch-whisper-model.mjs --optional --if-missing && npm run build",
     "lint": "oxlint src",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "e2e:clip": "node scripts/make-e2e-clip.mjs",
     "pwa:icons": "node scripts/make-pwa-icons.mjs",
     "ffmpeg:core": "node scripts/copy-ffmpeg-core.mjs",
+    "ort:wasm": "node scripts/copy-ort-wasm.mjs",
+    "models:whisper": "node scripts/fetch-whisper-model.mjs",
     "preview": "vite preview",
     "check": "npm run lint && npm test && npm run build",
     "models:pose": "node scripts/fetch-pose-models.mjs"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "0.12.15",
+    "@huggingface/transformers": "4.3.1",
     "@mediapipe/tasks-vision": "^1.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

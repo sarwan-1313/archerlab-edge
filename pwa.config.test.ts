@@ -58,6 +58,13 @@ describe('runtime caching', () => {
     expect(handles('https://app.test/archerlab/ffmpeg/single/ffmpeg-core.wasm')).toBe(true);
   });
 
+  it('caches the voice-note runtime after first use, but never precaches it or the speech model', () => {
+    expect(handles('https://app.test/ort/ort-wasm-simd-threaded.asyncify.wasm')).toBe(true);
+    expect(handles('https://app.test/ort/ort-wasm-simd-threaded.asyncify.mjs')).toBe(true);
+    expect(PRECACHE_GLOBS.join('\n')).not.toMatch(/ort|whisper/);
+    expect(handles('https://cdn.example.com/ort/ort-wasm-simd-threaded.asyncify.wasm', false)).toBe(false);
+  });
+
   it('names the converter\'s cache after its version, so a new core is not answered with the old files', () => {
     expect(FFMPEG_CORE_CACHE).toMatch(/^archerlab-ffmpeg-core-.+/);
     const manifestUrl = new URL('./public/ffmpeg/manifest.json', import.meta.url);

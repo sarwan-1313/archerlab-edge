@@ -443,3 +443,10 @@
 @media (prefers-reduced-motion: reduce) {
   .va-progress__bar > div, .va-chip, .va-drop { transition: none; }
 }
+
+/* Shot notes */
+.va-table__notes { max-width: 220px; }
+.va-table__notes span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ath-muted); }
+.va-link-button { padding: 0; border: 0; background: none; color: var(--ath-cyan, inherit); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.va-shot-note { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ath-line, rgba(255,255,255,.12)); }
+.va-shot-note h3 { margin: 0; font-size: 15px; }

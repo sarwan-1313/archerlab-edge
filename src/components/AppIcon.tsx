@@ -9,6 +9,7 @@ export type AppIconName =
   | 'devices'
   | 'shield'
   | 'sensors'
+  | 'mic'
   | 'arrow-right'
   | 'undo'
   | 'trash'
@@ -78,6 +79,12 @@ const iconPaths: Record<AppIconName, ReactNode> = {
   ),
   shield: (
     <path d="M12 3.5 18.5 6v5.5c0 4-2.6 7.7-6.5 9.5-3.9-1.8-6.5-5.5-6.5-9.5V6L12 3.5Z" />
+  ),
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" />
+    </>
   ),
   sensors: (
     <>

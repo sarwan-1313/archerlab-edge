@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defaultClientConditions, defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { pwaOptions } from './pwa.config.ts'
@@ -12,6 +12,9 @@ export default defineConfig({
   plugins: [react(), VitePWA(pwaOptions)],
   resolve: {
     alias: e2eBuild ? { '@mediapipe/tasks-vision': fileURLToPath(new URL('./e2e/support/mediapipeStub.ts', import.meta.url)) } : {},
+    // ONNX Runtime (voice notes) without its wasm bundled in: the runtime is self-hosted in public/ort
+    // (npm run ort:wasm), so the build does not emit a second 27 MB copy of it.
+    conditions: ['onnxruntime-web-use-extern-wasm', ...defaultClientConditions],
   },
   server: {
     host: '0.0.0.0',

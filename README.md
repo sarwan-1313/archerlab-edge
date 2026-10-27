@@ -209,6 +209,7 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 - Profiles, recordings and video reports are stored on the device (IndexedDB).
 - Fonts and models are self-hosted, so no visitor data is sent to third-party CDNs.
 - Installable and offline-capable: after the first visit the app and its models are kept in the browser's cache, which never holds athlete data or cloud (Supabase, AI provider) requests ([docs/pwa.md](docs/pwa.md)).
+- Voice notes are transcribed by Whisper in the browser; the audio is never uploaded or saved ([docs/voice-notes.md](docs/voice-notes.md)).
 - No account needed and no analytics trackers.
 - Optional and off by default: AI coach reviews (sent only to the provider the athlete picks, with their own key and explicit consent) and account backup when the deployment enables it.
 - A [Privacy page](https://archerlab-edge.vercel.app/privacy) with export and delete controls for everything on the device, and for cloud data and the account when signed in.
@@ -271,6 +272,7 @@ supabase/            SQL for optional accounts, backup and account deletion
 | Document | Covers |
 | --- | --- |
 | [docs/video-analysis.md](docs/video-analysis.md) | The video engine: pipeline, segmentation, audio, scoring, trimming, larger pose models, limits |
+| [docs/voice-notes.md](docs/voice-notes.md) | On-device voice notes with Whisper: score parsing, the model and runtime, download and caching, languages |
 | [docs/video-conversion.md](docs/video-conversion.md) | Converting a clip the browser cannot play to MP4 on the device: flow, ffmpeg settings, the self-hosted core, licence |
 | [docs/cloud-setup.md](docs/cloud-setup.md) | Optional AI review, accounts and backup, account deletion, imports, environment variables |
 | [docs/biomechanics.md](docs/biomechanics.md) | Live-engine measurement conventions (handedness, angle signs, normalisation) |

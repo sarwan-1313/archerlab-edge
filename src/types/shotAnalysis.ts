@@ -88,6 +88,8 @@ export interface ShotAnalysis {
   summary: ShotSummary;
   dataQuality: ShotDataQuality;
   actualResult?: import('./gestureScore').ReportedShotResult;
+  /** The athlete's own note for this shot (typed, or a voice note transcribed on the device). */
+  notes?: string;
   /** Set on shots converted from a video analysis report. */
   videoSource?: { reportId: string; fileName: string };
 }

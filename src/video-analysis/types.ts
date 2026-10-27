@@ -123,6 +123,8 @@ export interface ShotReport extends ShotTiming {
   quality: { trackedRatio: number; meanVisibility: number; label: 'good' | 'limited' | 'poor' };
   audio?: { releaseOnset?: number; clickerOnset?: number; impactOnset?: number; flightTime?: number };
   anchorVector?: Vec3;
+  /** The athlete's own note for this shot (a voice note transcribed on the device, or typed). */
+  notes?: string;
   /** Direction notes used to word posture findings. */
   posture?: { bowShoulderHigher: boolean | null; leanTowardTarget: boolean | null };
 }

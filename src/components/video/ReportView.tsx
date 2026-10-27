@@ -7,6 +7,7 @@ import type { Finding, MetricKey, ResourceLink, ShotReport, VideoAnalysisReport 
 import { AppIcon, type AppIconName } from '../AppIcon';
 import { ActionButton } from '../ActionButton';
 import { StatusBadge } from '../StatusBadge';
+import { VoiceNotePanel } from '../VoiceNotePanel';
 import { AnalysisPlayer, type SeekRequest } from './AnalysisPlayer';
 import { LevelBadge } from './LevelBadge';
 
@@ -18,6 +19,8 @@ type ReportViewProps = {
   notice?: ReactNode;
   /** Re-score controls, shown under the score callouts. */
   settingsControl?: ReactNode;
+  /** Saves the athlete's note for a shot; without it the notes are shown but cannot be changed. */
+  onShotNotes?: (shotIndex: number, notes: string) => void;
 };
 
 const RESOURCE_ICON: Record<ResourceLink['kind'], AppIconName> = {
@@ -116,15 +119,17 @@ function shotMetric(shot: ShotReport, key: MetricKey): string {
   return metric ? formatMetricShort(key, metric.value) : '–';
 }
 
-function ShotTable({ report, onSeek }: { report: VideoAnalysisReport; onSeek: (t: number) => void }) {
+function ShotTable({ report, onSeek, onShotNotes }: { report: VideoAnalysisReport; onSeek: (t: number) => void; onShotNotes?: (shotIndex: number, notes: string) => void }) {
+  const [noting, setNoting] = useState<number | null>(null);
   if (!report.shots.length) return null;
+  const notingShot = report.shots.find((shot) => shot.index === noting);
   return (
     <section className="va-panel" aria-labelledby="va-shots-title">
       <h2 id="va-shots-title">Shot by shot <small>click a row to replay it</small></h2>
       <div className="va-table-wrap">
         <table className="va-table">
           <thead>
-            <tr><th>Shot</th><th>Release</th><th>Draw</th><th>Aim</th><th>Follow-through</th><th>Bow arm</th><th>Release line</th><th>Bow-hand sway</th><th>Form</th><th>Data</th></tr>
+            <tr><th>Shot</th><th>Release</th><th>Draw</th><th>Aim</th><th>Follow-through</th><th>Bow arm</th><th>Release line</th><th>Bow-hand sway</th><th>Form</th><th>Data</th><th>Notes</th></tr>
           </thead>
           <tbody>
             {report.shots.map((shot) => (
@@ -139,11 +144,26 @@ function ShotTable({ report, onSeek }: { report: VideoAnalysisReport; onSeek: (t
                 <td>{shotMetric(shot, 'bowHandSway')}</td>
                 <td><strong>{shot.formScore === null ? '–' : Math.round(shot.formScore)}</strong></td>
                 <td><span className={`va-pill va-pill--${shot.source === 'audio-only' ? 'audio' : shot.quality.label}`}>{shot.source === 'audio-only' ? 'heard only' : shot.quality.label}</span></td>
+                <td className="va-table__notes">
+                  {shot.notes ? <span title={shot.notes}>{shot.notes}</span> : null}
+                  {onShotNotes ? (
+                    <button type="button" className="va-link-button" aria-label={`${shot.notes ? 'Change' : 'Add'} the note for shot ${shot.index}`} onClick={(event) => { event.stopPropagation(); setNoting(shot.index); }}>
+                      {shot.notes ? 'Edit' : 'Add note'}
+                    </button>
+                  ) : shot.notes ? null : '–'}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {notingShot && onShotNotes ? (
+        <div className="va-shot-note">
+          <h3>Note for shot {notingShot.index}</h3>
+          <VoiceNotePanel key={notingShot.index} existing={notingShot.notes} suggestScore={false} onSave={(text) => { onShotNotes(notingShot.index, text); setNoting(null); }} />
+          <ActionButton variant="ghost" type="button" onClick={() => setNoting(null)}>Close</ActionButton>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -174,7 +194,7 @@ function Consistency({ report }: { report: VideoAnalysisReport }) {
   );
 }
 
-export function ReportView({ report, videoUrl, cloudCoach, actions, notice, settingsControl }: ReportViewProps) {
+export function ReportView({ report, videoUrl, cloudCoach, actions, notice, settingsControl, onShotNotes }: ReportViewProps) {
   const [seek, setSeek] = useState<SeekRequest | null>(null);
   const nonce = useRef(0);
   const show = (t: number, joints: SeekRequest['joints'] = []) => {
@@ -221,7 +241,7 @@ export function ReportView({ report, videoUrl, cloudCoach, actions, notice, sett
       ) : null}
 
       <Categories report={report} />
-      <ShotTable report={report} onSeek={(t) => show(t)} />
+      <ShotTable report={report} onSeek={(t) => show(t)} onShotNotes={onShotNotes} />
       <Consistency report={report} />
 
       <div className="va-two">

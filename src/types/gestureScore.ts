@@ -18,7 +18,7 @@ export interface TargetResult {
 export interface ReportedShotResult {
   score: number;
   isX: boolean;
-  source: 'gesture' | 'manual' | 'manual-score' | 'manual-target';
+  source: 'gesture' | 'manual' | 'manual-score' | 'manual-target' | 'voice';
   capturedAt: number;
   gestureConfidence?: number;
   gestureId?: string;

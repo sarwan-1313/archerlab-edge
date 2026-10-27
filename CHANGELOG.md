@@ -13,6 +13,7 @@ A second, offline engine for recorded video, plus privacy controls and optional 
 - **Sample session** for visitors without a camera or bow, generated through the real capture engine.
 - **Scroll-driven landing page** and an athletic redesign across the app, including an Analytics scoreboard, a scorecard split into ends and arrow-by-arrow form charts, with self-hosted fonts, page metadata and a social preview image.
 - MIT license.
+- **Voice notes.** Say the score and what you noticed after a shot; Whisper (whisper-tiny, about 70 MB with its runtime, downloaded once after asking) turns it into text on the device. The score is suggested and confirmed before it is saved; notes show in Replay and in the video report. English, with experimental Hindi and Punjabi. The audio never leaves the device.
 
 - **Video analysis engine** (`src/video-analysis`). Upload a recorded clip from any camera angle. Every frame is tracked on the device, with a precision pass at the clip's native frame rate around each release. Shots are found automatically (release first, then anchor, draw and follow-through), let-downs are rejected, and the camera view and drawing hand are detected.
 - **Audio timing.** The sound of each release snaps its time to the millisecond, and clicker and arrow-impact sounds are picked up. Shots that are heard but not tracked are reported as audio-only.

@@ -96,6 +96,17 @@ export const RUNTIME_CACHING: NonNullable<NonNullable<VitePWAOptions['workbox']>
       expiration: { maxEntries: 3, purgeOnQuotaError: true },
     },
   },
+  {
+    // The ONNX Runtime that voice notes run Whisper on (27 MB), kept after the first note. The model itself is
+    // kept by Transformers.js in its own cache. Bump the version when `npm run ort:wasm` copies a new runtime.
+    urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/ort\/ort-wasm-simd-threaded\.asyncify\.(?:mjs|wasm)$/.test(url.pathname),
+    handler: 'CacheFirst',
+    options: {
+      cacheName: 'archerlab-ort-runtime-v1',
+      cacheableResponse: { statuses: [200] },
+      expiration: { maxEntries: 2, purgeOnQuotaError: true },
+    },
+  },
 ];
 
 export const pwaOptions: Partial<VitePWAOptions> = {

@@ -103,6 +103,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Live analysis.</strong> Camera frames go to a pose model that runs in this browser. They are measured and then discarded; they are never uploaded.</li>
           <li><strong>Video analysis.</strong> The video you choose is read and tracked frame by frame in this browser, including its sound. The file is not uploaded.</li>
           <li><strong>Converting a video.</strong> If your browser cannot play a clip, you can convert it to an MP4 in this browser. The converter (ffmpeg) is downloaded from this website only when you ask for it, and the video is not uploaded.</li>
+          <li><strong>Voice notes.</strong> Your voice is recorded only while you record a note, turned into text by a speech model (Whisper) running in this browser, and then discarded: the audio never leaves this device and is never saved. Only the text you confirm is kept, with the shot. The speech model and its runtime (about 70 MB) is downloaded from this website once, after you agree.</li>
           <li>The pose models are served by this website itself, not loaded from another company’s servers. ArcherLab has no server that receives your data.</li>
         </ul>
       </Section>
@@ -115,6 +116,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Video reports</strong>: measurements, scores and the tracked body positions of each analysed clip. The video itself only if you tick “Keep the video on this device”.</li>
           <li><strong>Settings</strong>: analysis options, onboarding progress and the shots of the current session.</li>
           <li><strong>A copy of the app</strong>: its code, fonts and pose models, saved so ArcherLab opens and analyses without a connection, and so it can be installed on your phone. It holds none of your data, so “Delete everything on this device” leaves it in place; clear this site’s data in your browser to remove it.</li>
+          <li><strong>Voice notes</strong>: the text of notes you saved, with their shots, and the speech model once you have downloaded it.</li>
           <li><strong>Saved AI keys</strong>: only if you enter one. They are kept for this tab, or on this device if you tick “remember”.</li>
           {accountsEnabled ? <li><strong>Your sign-in</strong>, if you sign in to an account.</li> : null}
         </ul>

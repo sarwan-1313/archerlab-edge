@@ -73,6 +73,7 @@ export function ReplayAnalysisPage({ shot, shotNumber, shotCount = 0, onShowShot
             <span className="eyebrow">Athlete reported</span>
             <strong>{result ? (result.isX ? 'X — inner ten' : `${result.score} points`) : 'No result yet'}</strong>
             <small>{result ? `${result.source} entry` : 'Not entered'}</small>
+            {shot.notes ?? result?.notes ? <p className="replay-notes"><span className="eyebrow">Notes</span> {shot.notes ?? result?.notes}</p> : null}
             <div className="replay-actions">
               <ActionButton variant={result ? 'secondary' : 'primary'} onClick={onManualEntry}>Add Actual Result</ActionButton>
               {result ? <ActionButton variant="ghost" onClick={onUndoScore}>Undo Score</ActionButton> : null}

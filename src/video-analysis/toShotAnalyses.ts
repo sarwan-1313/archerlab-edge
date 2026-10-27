@@ -166,6 +166,7 @@ export function toShotAnalyses(report: VideoAnalysisReport): ShotAnalysis[] {
       // Shots keep their order without dates in the future (release times can be far into a long video).
       capturedAt: report.createdAt + captured.length,
       videoSource: { reportId: report.id, fileName: report.source.fileName },
+      notes: report.shots.find((reportShot) => reportShot.index === release.index)?.notes,
     });
   }
   return captured;

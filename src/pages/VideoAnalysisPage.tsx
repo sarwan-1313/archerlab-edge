@@ -334,6 +334,19 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
     }
   };
 
+  // A note is kept with the report; a report that is not saved on this device yet keeps it until it is.
+  const saveShotNotes = async (current: ReportViewState, shotIndex: number, notes: string) => {
+    const report = { ...current.report, shots: current.report.shots.map((shot) => shot.index === shotIndex ? { ...shot, notes: notes || undefined } : shot) };
+    setView({ ...current, report });
+    if (current.source === 'file') return;
+    try {
+      await updateVideoReport(report);
+      refreshHistory();
+    } catch (error) {
+      setNotice(`The note could not be saved on this device: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   const saveFileReport = async (current: ReportViewState) => {
     setNotice(null);
     try {
@@ -470,6 +483,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
           videoUrl={view.videoUrl}
           notice={view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
             : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
+          onShotNotes={view.source === 'cloud' ? undefined : (shotIndex, notes) => void saveShotNotes(view, shotIndex, notes)}
           settingsControl={view.report.samples.length ? <RescorePanel key={view.report.id} report={view.report} busy={rescoring} onRescore={(changes) => void rescore(view, changes)} /> : undefined}
           cloudCoach={<CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
           actions={(

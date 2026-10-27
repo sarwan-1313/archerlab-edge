@@ -53,3 +53,6 @@ public/models/*.download
 # Playwright output
 test-results/
 playwright-report/
+
+# Voice-note model: fetched at build time (npm run models:whisper), not committed
+public/models/whisper-tiny/
