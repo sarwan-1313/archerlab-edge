@@ -73,7 +73,8 @@ export async function pullProfile(client: SupabaseRest, session: CloudSession): 
 }
 
 export async function listCloudReports(client: SupabaseRest, session: CloudSession): Promise<VideoReportSummary[]> {
-  const rows = await client.select<{ summary: VideoReportSummary; video_path: string | null }>('video_reports', 'select=summary,video_path&order=created_at.desc&limit=100', session.accessToken);
+  // Reports shared with this account by others are readable too, so ask for the athlete's own.
+  const rows = await client.select<{ summary: VideoReportSummary; video_path: string | null }>('video_reports', `select=summary,video_path&user_id=eq.${encodeURIComponent(session.user.id)}&order=created_at.desc&limit=100`, session.accessToken);
   return rows.map((row) => ({ ...row.summary, hasVideo: Boolean(row.video_path) }));
 }
 
@@ -86,10 +87,11 @@ export async function loadCloudReport(client: SupabaseRest, session: CloudSessio
 }
 
 export async function deleteCloudReport(client: SupabaseRest, session: CloudSession, id: string): Promise<void> {
-  const rows = await client.select<{ video_path: string | null }>('video_reports', `select=video_path&id=eq.${encodeURIComponent(id)}`, session.accessToken);
+  const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}`;
+  const rows = await client.select<{ video_path: string | null }>('video_reports', `select=video_path&${filter}`, session.accessToken);
   const path = rows[0]?.video_path;
   if (path) await client.removeObject(CLOUD_CONFIG.videoBucket, path, session.accessToken).catch(() => undefined);
-  await client.remove('video_reports', `id=eq.${encodeURIComponent(id)}`, session.accessToken);
+  await client.remove('video_reports', filter, session.accessToken);
 }
 
 const STORAGE_PAGE = 100;
@@ -107,8 +109,10 @@ export async function listOwnVideoPaths(client: SupabaseRest, session: CloudSess
 
 /**
  * Deletes everything the athlete has in the cloud: their video files, every
- * video report row and the backed-up profile. Files go first, so no report is
- * left pointing at nothing and nothing blocks deleting the account afterwards.
+ * video report row (with its shares and comments), comments they wrote on
+ * reports shared with them, and the backed-up profile. Files go first, so no
+ * report is left pointing at nothing and nothing blocks deleting the account
+ * afterwards.
  */
 export async function deleteAllCloudData(client: SupabaseRest, session: CloudSession): Promise<{ files: number; reports: number }> {
   const token = session.accessToken;
@@ -120,6 +124,10 @@ export async function deleteAllCloudData(client: SupabaseRest, session: CloudSes
   for (let start = 0; start < all.length; start += STORAGE_PAGE) {
     await client.removeObjects(CLOUD_CONFIG.videoBucket, all.slice(start, start + STORAGE_PAGE), token);
   }
+  // Projects set up before coach review have no comments table (404).
+  await client.remove('report_comments', `author_id=eq.${encodeURIComponent(session.user.id)}`, token).catch((error: unknown) => {
+    if (!(error instanceof CloudError && error.status === 404)) throw error;
+  });
   await client.remove('video_reports', userFilter, token);
   await client.remove('athlete_profiles', userFilter, token);
   return { files: all.length, reports: rows.length };

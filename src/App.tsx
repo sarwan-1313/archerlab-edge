@@ -12,7 +12,7 @@ import { attachReportedResult, clearReportedResult } from './gesture-entry/shotA
 import { HomePage } from './pages/HomePage';
 import { LiveAnalysisPage } from './pages/LiveAnalysisPage';
 import { runPresentationTransition } from './motion/runPresentationTransition';
-import { pageForPathname, resolvePageFromPathname, routeForPage } from './navigation/routes';
+import { pageForPathname, readReportParam, resolvePageFromPathname, routeForPage } from './navigation/routes';
 import { useAthleteProfile } from './hooks/useAthleteProfile';
 import { createSampleSession, isSampleShot } from './demo/sampleSession';
 import { isVideoShot } from './video-analysis/toShotAnalyses';
@@ -237,7 +237,7 @@ function App() {
     window.history.replaceState(
       routeHistoryState(initialPage, initialIndex),
       '',
-      routeForPage(initialPage, { shotId: readReplayShotId() }),
+      routeForPage(initialPage, { shotId: readReplayShotId(), reportId: readReportParam(window.location.search) }),
     );
   }, []);
 

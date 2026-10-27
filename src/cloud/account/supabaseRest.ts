@@ -161,6 +161,26 @@ export function createSupabaseRest(baseUrl: string, anonKey: string, fetcher: Fe
       });
     },
 
+    /** Inserts rows and returns them as stored. With `onConflict`, a row that already exists is updated instead. */
+    async insert<T>(table: string, rows: unknown[], token: string, onConflict?: string): Promise<T[]> {
+      return call<T[]>(`/rest/v1/${table}${onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : ''}`, {
+        method: 'POST',
+        token,
+        headers: { 'content-type': 'application/json', prefer: onConflict ? 'resolution=merge-duplicates,return=representation' : 'return=representation' },
+        body: JSON.stringify(rows),
+      });
+    },
+
+    /** Updates the rows matching `filter` and returns them as stored. */
+    async update<T>(table: string, filter: string, patch: Record<string, unknown>, token: string): Promise<T[]> {
+      return call<T[]>(`/rest/v1/${table}?${filter}`, {
+        method: 'PATCH',
+        token,
+        headers: { 'content-type': 'application/json', prefer: 'return=representation' },
+        body: JSON.stringify(patch),
+      });
+    },
+
     async select<T>(table: string, query: string, token: string): Promise<T[]> {
       return call<T[]>(`/rest/v1/${table}?${query}`, { token });
     },

@@ -41,12 +41,20 @@ function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
 }
 
-export function routeForPage(page: PageKey, params?: { shotId?: string }): string {
+export function routeForPage(page: PageKey, params?: { shotId?: string; reportId?: string }): string {
   const path = PAGE_PATHS[page];
   if (page === 'replay-analysis' && params?.shotId) {
     return `${path}?shot=${encodeURIComponent(params.shotId)}`;
   }
+  // A video report shared with a coach, opened from the cloud.
+  if (page === 'video-analysis' && params?.reportId) {
+    return `${path}?report=${encodeURIComponent(params.reportId)}`;
+  }
   return path;
+}
+
+export function readReportParam(search: string): string | undefined {
+  return new URLSearchParams(search).get('report') || undefined;
 }
 
 export function resolvePageFromPathname(pathname: string): PageKey | undefined {

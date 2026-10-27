@@ -8,7 +8,7 @@ const session: CloudSession = { accessToken: 'user-token', refreshToken: 'r', ex
 type Request = { method: string; path: string; body: unknown; authorization: string };
 
 /** A fake Supabase project: a storage folder, report rows, and an optional account-deletion function. */
-function fakeProject(options: { files: string[]; folders?: string[]; rows: Array<{ video_path: string | null }>; rpc?: boolean; listStatus?: number }) {
+function fakeProject(options: { files: string[]; folders?: string[]; rows: Array<{ video_path: string | null }>; rpc?: boolean; listStatus?: number; noComments?: boolean }) {
   const requests: Request[] = [];
   let files = [...options.files];
   const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -33,6 +33,7 @@ function fakeProject(options: { files: string[]; folders?: string[]; rows: Array
       return json(prefixes.map((name) => ({ name })));
     }
     if (method === 'GET' && url.pathname === '/rest/v1/video_reports') return json(options.rows);
+    if (method === 'DELETE' && url.pathname === '/rest/v1/report_comments' && options.noComments) return json({ message: 'Could not find the table public.report_comments' }, 404);
     if (method === 'DELETE' && url.pathname.startsWith('/rest/v1/')) return new Response(null, { status: 204 });
     if (method === 'POST' && url.pathname === '/rest/v1/rpc/delete_my_account') {
       return options.rpc === false ? json({ message: 'Could not find the function public.delete_my_account' }, 404) : new Response(null, { status: 204 });
@@ -66,7 +67,7 @@ describe('cloud data deletion', () => {
     expect((removals.flatMap((request) => (request.body as { prefixes: string[] }).prefixes))).toContain('u1/orphan.mov');
 
     const rowDeletes = project.requests.filter((request) => request.method === 'DELETE' && request.path.startsWith('/rest/v1/'));
-    expect(rowDeletes.map((request) => request.path)).toEqual(['/rest/v1/video_reports?user_id=eq.u1', '/rest/v1/athlete_profiles?user_id=eq.u1']);
+    expect(rowDeletes.map((request) => request.path)).toEqual(['/rest/v1/report_comments?author_id=eq.u1', '/rest/v1/video_reports?user_id=eq.u1', '/rest/v1/athlete_profiles?user_id=eq.u1']);
     // Rows go only after the files.
     const lastFileDelete = project.requests.lastIndexOf(removals.at(-1) as Request);
     expect(project.requests.indexOf(rowDeletes[0])).toBeGreaterThan(lastFileDelete);
@@ -77,6 +78,12 @@ describe('cloud data deletion', () => {
     const project = fakeProject({ files: [], rows: [] });
     expect(await deleteAllCloudData(project.client, session)).toEqual({ files: 0, reports: 0 });
     expect(project.requests.some((request) => request.path === '/storage/v1/object/videos')).toBe(false);
+  });
+
+  it('still deletes reports on a project set up before coach review', async () => {
+    const project = fakeProject({ files: [], rows: [{ video_path: null }], noComments: true });
+    expect(await deleteAllCloudData(project.client, session)).toEqual({ files: 0, reports: 1 });
+    expect(project.requests.some((request) => request.method === 'DELETE' && request.path === '/rest/v1/video_reports?user_id=eq.u1')).toBe(true);
   });
 
   it('stops before deleting rows when the files cannot be listed', async () => {
