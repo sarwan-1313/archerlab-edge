@@ -1,11 +1,13 @@
 import { lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { AppIcon } from './components/AppIcon';
 import { BottomNav } from './components/BottomNav';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { OnboardingModal } from './components/OnboardingModal';
 import { PageTransition } from './components/PageTransition';
 import { PrivacyBadge } from './components/PrivacyBadge';
 import { RouteLoadingBoundary } from './components/RouteLoadingBoundary';
 import { SidebarNav } from './components/SidebarNav';
+import { UpdateToast } from './components/UpdateToast';
 import { desktopNavItems, mobileNavItems, pageTitles } from './data/navigation';
 import { guideStepForPage, isGuideDetailPage } from './data/userGuide';
 import { attachReportedResult, clearReportedResult } from './gesture-entry/shotAssociation';
@@ -14,6 +16,8 @@ import { LiveAnalysisPage } from './pages/LiveAnalysisPage';
 import { runPresentationTransition } from './motion/runPresentationTransition';
 import { pageForPathname, readReportParam, resolvePageFromPathname, routeForPage } from './navigation/routes';
 import { useAthleteProfile } from './hooks/useAthleteProfile';
+import { useHoldUpdates } from './pwa/updateStore';
+import { useOnlineStatus } from './pwa/useOnlineStatus';
 import { createSampleSession, isSampleShot } from './demo/sampleSession';
 import { isVideoShot } from './video-analysis/toShotAnalyses';
 
@@ -187,6 +191,10 @@ function App() {
   const [guardedExit, setGuardedExit] = useState<GuardedExit>();
   const [routeRevision, setRouteRevision] = useState(0);
   const { profile } = useAthleteProfile();
+  // A new version waits for the end of a live session or a video analysis rather than reloading under it.
+  const [videoProcessing, setVideoProcessing] = useState(false);
+  useHoldUpdates(sessionActive || videoProcessing);
+  const online = useOnlineStatus();
   // Track accepted navigation synchronously, before a native transition renders it.
   const navigationPageRef = useRef(initialPageRef.current);
   const navigationRevisionRef = useRef(0);
@@ -401,7 +409,7 @@ function App() {
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
-      case 'video-analysis': return <VideoAnalysisPage onOpenInAnalytics={loadVideoShots} />;
+      case 'video-analysis': return <VideoAnalysisPage onOpenInAnalytics={loadVideoShots} online={online} onProcessingChange={setVideoProcessing} />;
       case 'manual-shot-entry': return <ManualShotEntryPage shot={selectedShot} onCancel={goBack} onSave={(result) => { if (selectedShot) attachResult(selectedShot.id, result); requestNavigation('replay-analysis'); }} />;
       case 'replay-analysis': return <ReplayAnalysisPage shot={selectedShot} shotNumber={selectedShot ? shots.findIndex((shot) => shot.id === selectedShot.id) + 1 : 0} shotCount={shots.length} onShowShot={showReplayShot} onManualEntry={() => requestNavigation('manual-shot-entry')} onUndoScore={() => selectedShot && clearResult(selectedShot.id)} />;
       case 'dashboard': return <SessionDashboardPage shots={shots} selectedShotId={selectedShotId} onStart={() => beginTraining()} onSample={loadSampleSession} onClearSample={viewingSample ? clearSampleSession : undefined} videoFileName={videoFileName} onSelectShot={(shotId) => { setSelectedShotId(shotId); commitNavigation('replay-analysis', { shotId }); }} />;
@@ -445,6 +453,7 @@ function App() {
                 <div className="app-topbar__leading">
                   {canGoBack ? <button type="button" className="app-back" onClick={goBack} aria-label="Go back"><AppIcon name="arrow-left" size={18} /><span>Back</span></button> : null}
                   <button type="button" className="app-brand" onClick={() => requestNavigation('home')} aria-label="ArcherLab Edge: go to Home"><span className="app-brand__mark"><AppIcon name="target" size={18} /></span><span>ArcherLab <strong>Edge</strong></span></button>
+                  <OfflineIndicator />
                 </div>
                 <div className="app-topbar__privacy"><PrivacyBadge /></div>
                 <button type="button" className="app-topbar__profile" onClick={() => requestNavigation('profile')} aria-label="Open athlete profile"><AppIcon name="sensors" size={18} /></button>
@@ -458,6 +467,7 @@ function App() {
           </div>
         </div>
         <BottomNav items={mobileNavItems} active={navActive} onSelect={handleNavSelect} />
+        <UpdateToast />
         {showOnboarding ? <OnboardingModal onClose={closeOnboarding} onStart={startFromOnboarding} /> : null}
       </div>
     </>

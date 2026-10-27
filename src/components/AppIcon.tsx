@@ -32,6 +32,7 @@ export type AppIconName =
   | 'film'
   | 'upload'
   | 'cloud'
+  | 'cloud-off'
   | 'sparkles'
   | 'link'
   | 'download'
@@ -191,6 +192,12 @@ const iconPaths: Record<AppIconName, ReactNode> = {
   ),
   cloud: (
     <path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 9.3 4.6 4.6 0 0 0 7 18.5Z" />
+  ),
+  'cloud-off': (
+    <>
+      <path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 9.3 4.6 4.6 0 0 0 7 18.5Z" />
+      <path d="M4 4l16 16" />
+    </>
   ),
   sparkles: (
     <>

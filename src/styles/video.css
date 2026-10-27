@@ -200,6 +200,14 @@
 .va-trim__selected { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: rgba(46, 230, 255, .45); }
 .va-trim__head { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ath-gold); }
 .va-trim__set { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* Convert to MP4 (shown when a video cannot be played) */
+.va-convert { display: grid; gap: 12px; }
+.va-convert__title { margin: 0; color: var(--ath-text); font-size: 15px; }
+.va-convert__title strong { font-variant-numeric: tabular-nums; }
+.va-convert__log summary { margin-top: 8px; cursor: pointer; color: var(--ath-muted); font-size: 13px; }
+.va-convert__log pre { max-height: 180px; margin: 8px 0 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ath-muted); font: 12px/1.5 var(--ath-mono, monospace); }
+.va-convert a { color: inherit; text-decoration: underline; }
 .va-trim__length { color: var(--ath-muted); }
 .va-trim__length strong { color: var(--ath-text); font-variant-numeric: tabular-nums; }
 .va-steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }

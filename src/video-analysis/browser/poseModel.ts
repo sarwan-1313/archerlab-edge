@@ -28,21 +28,37 @@ function vision() {
   return visionPromise;
 }
 
+/** Whether the service worker already holds this file, which is the only way it can load offline. */
+async function isCached(url: string): Promise<boolean> {
+  try {
+    return typeof caches !== 'undefined' && Boolean(await caches.match(url));
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Which pose models are deployed. public/models/models.json lists them (the lite
- * model always ships); `npm run models:pose` downloads the larger ones and
- * updates the list. Reading a manifest avoids probing for missing files.
+ * Which pose models can be used. public/models/models.json lists the ones deployed (the lite model always
+ * ships); `npm run models:pose` downloads the larger ones and updates the list. Reading a manifest avoids
+ * probing for missing files.
+ *
+ * Offline, only models already on this device count: Lite is installed with the app, while Full and Heavy
+ * are cached the first time they are used online. Without this, the preselected Full model would fail
+ * to load on a device that has never used it.
  */
 export async function availableModels(): Promise<PoseModelVariant[]> {
+  let deployed: PoseModelVariant[] = ['lite'];
   try {
     const response = await fetch(`${appBase}/models/models.json`, { cache: 'no-cache' });
-    if (!response.ok) return ['lite'];
-    const manifest = await response.json() as { available?: unknown };
-    const listed = Array.isArray(manifest.available) ? manifest.available : [];
-    return (['lite', 'full', 'heavy'] as const).filter((variant) => variant === 'lite' || listed.includes(variant));
-  } catch {
-    return ['lite'];
-  }
+    if (response.ok) {
+      const manifest = await response.json() as { available?: unknown };
+      const listed = Array.isArray(manifest.available) ? manifest.available : [];
+      deployed = (['lite', 'full', 'heavy'] as const).filter((variant) => variant === 'lite' || listed.includes(variant));
+    }
+  } catch { /* Only the Lite model is certain. */ }
+  if (typeof navigator === 'undefined' || navigator.onLine !== false) return deployed;
+  const usable = await Promise.all(deployed.map(async (variant) => variant === 'lite' || await isCached(MODEL_PATHS[variant])));
+  return deployed.filter((_, index) => usable[index]);
 }
 
 export interface VideoPoseModel {

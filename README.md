@@ -208,6 +208,7 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 - Video frames are processed in the browser, for live sessions and uploaded clips alike.
 - Profiles, recordings and video reports are stored on the device (IndexedDB).
 - Fonts and models are self-hosted, so no visitor data is sent to third-party CDNs.
+- Installable and offline-capable: after the first visit the app and its models are kept in the browser's cache, which never holds athlete data or cloud (Supabase, AI provider) requests ([docs/pwa.md](docs/pwa.md)).
 - No account needed and no analytics trackers.
 - Optional and off by default: AI coach reviews (sent only to the provider the athlete picks, with their own key and explicit consent) and account backup when the deployment enables it.
 - A [Privacy page](https://archerlab-edge.vercel.app/privacy) with export and delete controls for everything on the device, and for cloud data and the account when signed in.
@@ -218,9 +219,9 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 
 | Area | Tools |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite |
+| Frontend | React 19, TypeScript, Vite, `vite-plugin-pwa` (Workbox) |
 | Computer vision | MediaPipe Tasks Vision (Pose and Hand Landmarker), WebAssembly |
-| Browser APIs | MediaDevices camera capture, MediaRecorder, requestVideoFrameCallback, Web Audio, Screen Wake Lock, IndexedDB, Canvas and SVG |
+| Browser APIs | MediaDevices camera capture, MediaRecorder, requestVideoFrameCallback, Web Audio, Screen Wake Lock, IndexedDB, Service Worker and Cache Storage (offline, installable), Canvas and SVG |
 | Optional cloud | Claude, OpenAI and Gemini APIs (bring your own key); Supabase Auth, Postgres and Storage over REST |
 | Quality | Vitest + Testing Library (56 test files, 270 cases), oxlint, GitHub Actions CI |
 | Hosting | Vercel (production deploys from `main`; builds fetch the larger pose models), GitHub Codespaces for development |
@@ -242,6 +243,7 @@ src/
 ├── pages            Live Analysis, Video Analysis, Analytics, Replay, Sessions, Guide, Profile, Privacy
 ├── privacy          export and delete everything stored on the device
 ├── profile          local athlete profile storage
+├── pwa              service worker registration, update prompt state, online status
 ├── recording        local session recording and replay storage
 ├── services         MediaPipe landmarker services
 ├── shot-analysis    shot buffering, release capture, phases, summaries
@@ -255,8 +257,10 @@ src/
     ├── browser      frame capture, audio decoding, pose models (browser-only)
     ├── fixtures     real-clip regression fixtures (exported reports)
     └── testing      synthetic archer and range audio for the tests
-docs/                engine notes, cloud setup
-scripts/             pose model download (run automatically on Vercel builds)
+docs/                engine notes, cloud setup, offline and install
+e2e/                 Playwright end-to-end and accessibility tests (stubbed pose model, synthetic clip)
+public/pwa/          app icons generated from favicon.svg
+scripts/             pose model download (run automatically on Vercel builds), e2e clip and PWA icon generators
 supabase/            SQL for optional accounts, backup and account deletion
 ```
 
@@ -267,9 +271,11 @@ supabase/            SQL for optional accounts, backup and account deletion
 | Document | Covers |
 | --- | --- |
 | [docs/video-analysis.md](docs/video-analysis.md) | The video engine: pipeline, segmentation, audio, scoring, trimming, larger pose models, limits |
+| [docs/video-conversion.md](docs/video-conversion.md) | Converting a clip the browser cannot play to MP4 on the device: flow, ffmpeg settings, the self-hosted core, licence |
 | [docs/cloud-setup.md](docs/cloud-setup.md) | Optional AI review, accounts and backup, account deletion, imports, environment variables |
 | [docs/biomechanics.md](docs/biomechanics.md) | Live-engine measurement conventions (handedness, angle signs, normalisation) |
 | [docs/pose-intelligence.md](docs/pose-intelligence.md) | On-device MediaPipe setup and self-hosted assets |
+| [docs/pwa.md](docs/pwa.md) | Installing the app, what works offline and how it is cached, the update prompt, icons |
 | [src/video-analysis/fixtures/README.md](src/video-analysis/fixtures/README.md) | Turning real clips into regression tests |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each version |
 
@@ -282,6 +288,7 @@ npm test           # run the test suite
 npm run check      # lint + tests + production build
 npm run test:e2e   # Playwright end-to-end and accessibility tests (first: npx playwright install chromium)
 npm run models:pose  # optional: download the Full pose model (add `-- heavy` for Heavy)
+npm run build && npm run preview   # production build with the service worker (none in `npm run dev`)
 ```
 
 The end-to-end tests (`e2e/`) build the app with `VITE_E2E=1`, which swaps the MediaPipe pose model for a stub that returns a synthetic archer's landmarks, and upload `e2e/fixtures/synthetic-archer.webm`. That clip is generated from `src/video-analysis/testing/` by `npm run e2e:clip` (headless Chromium, no extra tools); regenerate and commit it after changing `e2e/support/scenario.ts`. Normal builds never include the stub.
@@ -354,6 +361,8 @@ These limitations are documented on purpose, as part of responsible engineering.
 ## License
 
 Released under the [MIT License](LICENSE). Bundled fonts are under the SIL Open Font License and MediaPipe assets under the Apache License 2.0.
+
+The optional "Convert to MP4 on this device" feature loads the ffmpeg.wasm core (`@ffmpeg/core`, in `public/ffmpeg/`), which is **GPL-2.0-or-later** because it includes libx264. It runs as a separate program in a Web Worker and is fetched only when an athlete asks to convert a video; the licence and where to get the source are in [`public/ffmpeg/NOTICE.txt`](public/ffmpeg/NOTICE.txt). The `@ffmpeg/ffmpeg` wrapper is MIT.
 
 ---
 

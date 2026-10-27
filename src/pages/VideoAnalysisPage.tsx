@@ -36,7 +36,7 @@ const BOW_TYPES: BowType[] = ['recurve', 'compound', 'barebow', 'traditional'];
 
 type View =
   | { kind: 'upload' }
-  | { kind: 'preview'; file: File; url: string }
+  | { kind: 'preview'; file: File; url: string; converted?: boolean }
   | { kind: 'processing'; file: File; url: string; range: TimeRange }
   | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' }
   | { kind: 'error'; message: string; file?: File };
@@ -73,9 +73,13 @@ type ReportViewState = Extract<View, { kind: 'report' }>;
 type VideoAnalysisPageProps = {
   /** Opens the clip's shots in Analytics and Replay. */
   onOpenInAnalytics?: (shots: ShotAnalysis[]) => void;
+  /** False while the device is offline: only the pose models already on it can run. */
+  online?: boolean;
+  /** Reports whether a clip is being analysed, so the app can hold a new version back until it is done. */
+  onProcessingChange?: (processing: boolean) => void;
 };
 
-export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps = {}) {
+export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessingChange }: VideoAnalysisPageProps = {}) {
   const { profile, save } = useAthleteProfile();
   const account = useCloudAccount();
   const [view, setView] = useState<View>({ kind: 'upload' });
@@ -120,7 +124,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       setOptions((current) => ({ ...current, model: chooseDefaultModel(variants, readModelChoice()) }));
     });
     return () => { cancelled = true; };
-  }, []);
+    // Again when the connection comes or goes: offline, only models already on this device can load.
+  }, [online]);
 
   const refreshHistory = useCallback(() => {
     listVideoReports().then(setHistory).catch(() => setHistory([]));
@@ -156,10 +161,16 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
   };
 
   // A chosen file is previewed first, so long videos can be trimmed before any tracking.
-  const chooseFile = (file: File) => {
+  const chooseFile = (file: File, converted = false) => {
     setNotice(null);
     setReportFileError(null);
-    setView({ kind: 'preview', file, url: makeUrl(file) });
+    setView({ kind: 'preview', file, url: makeUrl(file), converted });
+  };
+
+  // A converted clip goes the same way as a chosen one: straight to the trim and preview step.
+  const openConvertedFile = (file: File) => {
+    chooseFile(file, true);
+    setNotice(`Converted to ${file.name} (${formatBytes(file.size)}) on this device. Nothing was uploaded.`);
   };
 
   const startAnalysis = (file: File, url: string, range: TimeRange) => {
@@ -169,6 +180,11 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
   };
 
   useWakeLock(view.kind === 'processing');
+  const processing = view.kind === 'processing';
+  useEffect(() => {
+    onProcessingChange?.(processing);
+    return () => onProcessingChange?.(false);
+  }, [onProcessingChange, processing]);
 
   // Options, models and profile are read once, when the run starts, so changing them never restarts a run.
   const runInputsRef = useRef({ options, models, save, refreshHistory });
@@ -384,7 +400,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
 
       {view.kind === 'upload' ? (
         <>
-          <UploadPanel options={options} availableModels={models} onOptionsChange={changeOptions} onFile={chooseFile} />
+          <UploadPanel options={options} availableModels={models} offline={!online} onOptionsChange={changeOptions} onFile={chooseFile} />
           <div className="va-open-report">
             <input ref={reportFileRef} type="file" accept="application/json,.json" aria-label="Report file" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void openReportFile(file); }} />
             <ActionButton variant="ghost" type="button" onClick={() => reportFileRef.current?.click()}><AppIcon name="upload" size={16} /> Open report file (.json)</ActionButton>
@@ -421,7 +437,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       ) : null}
 
       {view.kind === 'preview' ? (
-        <TrimPreview file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => setView({ kind: 'upload' })} />
+        <TrimPreview key={view.url} file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => { setNotice(null); setView({ kind: 'upload' }); }} onConverted={view.converted ? undefined : openConvertedFile} online={online} />
       ) : null}
 
       {view.kind === 'processing' ? (

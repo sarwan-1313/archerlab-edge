@@ -1083,3 +1083,133 @@ body {
 .landing-scene__score text { font-family: var(--ath-display) !important; font-style: italic; }
 .landing-card__icon, .landing-flow__icon { transform: rotate(-6deg); border-radius: 10px !important; }
 .landing-flow__index { color: var(--ath-blaze) !important; }
+
+/* ==========================================================================
+   PWA: offline indicator and "Update available" toast
+   ========================================================================== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Offline: the same skewed mono badge as the status badges, in warning amber. */
+.offline-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 11px 0 9px;
+  border: 1px solid rgba(255, 176, 32, .45);
+  border-radius: 4px;
+  background: rgba(255, 176, 32, .1);
+  color: var(--ath-warn);
+  font: 700 11px/1 var(--ath-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: skewX(-8deg);
+}
+.offline-indicator > * { transform: skewX(8deg); }
+.offline-indicator-slot { display: flex; align-items: center; }
+
+/* Update toast: a scoreboard-style panel with a blaze-to-gold edge. */
+.update-toast-region {
+  position: fixed;
+  z-index: 70;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  justify-content: flex-end;
+  width: min(430px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.update-toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 10px 12px 22px;
+  overflow: hidden;
+  border: 1px solid var(--ath-line-strong);
+  border-radius: var(--ath-radius-lg);
+  background: linear-gradient(120deg, #0f141d, #070a10 70%);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55);
+  pointer-events: auto;
+  animation: update-toast-enter .22s ease both;
+}
+.update-toast::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--ath-blaze), var(--ath-gold));
+}
+.update-toast__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(46, 230, 255, .3);
+  border-radius: 10px;
+  background: rgba(46, 230, 255, .08);
+  color: var(--ath-volt);
+  transform: rotate(-6deg);
+}
+.update-toast__copy { flex: 1 1 auto; min-width: 0; }
+.update-toast__copy strong {
+  display: block;
+  color: var(--ath-text);
+  font: italic 800 21px/1 var(--ath-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.update-toast__copy span { display: block; margin-top: 4px; color: var(--ath-muted); font-size: 13px; line-height: 1.3; }
+.update-toast .button { flex: 0 0 auto; min-height: 40px; padding: 0 16px; }
+.update-toast__dismiss {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--ath-radius);
+  background: transparent;
+  color: var(--ath-muted);
+  cursor: pointer;
+}
+.update-toast__dismiss:hover { background: rgba(255, 255, 255, .06); color: var(--ath-text); }
+@keyframes update-toast-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 767px) {
+  /* Above the bottom navigation, including its raised Live Analysis button. */
+  .update-toast-region { right: 16px; bottom: calc(100px + env(safe-area-inset-bottom)); left: 16px; width: auto; }
+  .update-toast__copy span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-toast { animation: none; }
+}
+
+/* Guide: "Install on your phone" */
+.app-shell .guide-install { margin-top: 12px; }
+.guide-install__body { display: grid; gap: 16px; padding: 18px 20px 20px; }
+.guide-install__body p { margin: 0; color: var(--ath-muted); font-size: 14px; line-height: 1.6; }
+.guide-install__platforms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.guide-install__platforms > div { padding: 14px 16px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius); background: rgba(255, 255, 255, .02); }
+.guide-install__platforms h3 { margin: 0 0 8px; color: var(--ath-text); font: 700 18px/1.1 var(--ath-display); letter-spacing: .02em; text-transform: uppercase; }
+.guide-install__platforms ol { display: grid; gap: 6px; margin: 0; padding-left: 20px; color: var(--ath-muted); font-size: 14px; line-height: 1.5; }
+.guide-install__platforms strong { color: var(--ath-text); font-weight: 600; }
+.guide-install__body .guide-install__note { color: var(--ath-faint); font-size: 13px; }
+@media (max-width: 767px) {
+  .guide-install__platforms { grid-template-columns: 1fr; }
+}

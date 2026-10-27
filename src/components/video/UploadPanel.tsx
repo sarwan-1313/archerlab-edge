@@ -20,6 +20,8 @@ export interface UploadOptions {
 type UploadPanelProps = {
   options: UploadOptions;
   availableModels: PoseModelVariant[];
+  /** Offline, only the models already on this device are offered. */
+  offline?: boolean;
   onOptionsChange: (options: UploadOptions) => void;
   onFile: (file: File) => void;
 };
@@ -59,12 +61,13 @@ const MODEL_HINT: Record<PoseModelVariant, string> = {
   heavy: 'Heavy: the most accurate, but the slowest.',
 };
 
-function modelHint(model: PoseModelVariant, available: PoseModelVariant[]): string {
+function modelHint(model: PoseModelVariant, available: PoseModelVariant[], offline: boolean): string {
+  if (offline) return `${MODEL_HINT[model]} You are offline, so only models already used on this device can run. Full and Heavy are saved the first time you use them online.`;
   if (available.length <= 1) return 'The built-in model. Larger, more accurate models can be added to the deployment (see docs/video-analysis.md).';
   return model !== 'heavy' && available.includes('heavy') ? `${MODEL_HINT[model]} Heavy is the most accurate but slowest.` : MODEL_HINT[model];
 }
 
-export function UploadPanel({ options, availableModels, onOptionsChange, onFile }: UploadPanelProps) {
+export function UploadPanel({ options, availableModels, offline = false, onOptionsChange, onFile }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -148,7 +151,7 @@ export function UploadPanel({ options, availableModels, onOptionsChange, onFile 
             { value: 'fast', label: 'Fast' }, { value: 'standard', label: 'Standard' }, { value: 'max', label: 'Every frame' },
           ]} />
         </Field>
-        <Field label="Pose model" hint={modelHint(options.model, availableModels)}>
+        <Field label="Pose model" hint={modelHint(options.model, availableModels, offline)}>
           <Chips name="Pose model" value={options.model} onChange={(value) => set('model', value)} options={(['lite', 'full', 'heavy'] as const).map((variant) => ({
             value: variant, label: variant === 'lite' ? 'Lite' : variant === 'full' ? 'Full' : 'Heavy', disabled: !availableModels.includes(variant),
           }))} />

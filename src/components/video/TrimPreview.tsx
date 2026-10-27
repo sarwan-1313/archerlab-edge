@@ -7,19 +7,24 @@ import { defaultRange, rangeLength, rangeProblem } from '../../video-analysis/ra
 import type { TimeRange } from '../../video-analysis/types';
 import { ActionButton } from '../ActionButton';
 import { AppIcon } from '../AppIcon';
+import { ConvertPanel } from './ConvertPanel';
 
 type TrimPreviewProps = {
   file: File;
   url: string;
   onAnalyse: (range: TimeRange) => void;
   onCancel: () => void;
+  /** When given, a video that cannot be played offers a conversion to MP4, and the result replaces `file`. */
+  onConverted?: (file: File) => void;
+  /** False while the device is offline, which the conversion offer needs to know. */
+  online?: boolean;
 };
 
 const STEP_S = 0.1;
 const round = (t: number) => Math.round(t / STEP_S) * STEP_S;
 
 /** Shows the chosen clip and lets the athlete pick the part to analyse before any tracking starts. */
-export function TrimPreview({ file, url, onAnalyse, onCancel }: TrimPreviewProps) {
+export function TrimPreview({ file, url, onAnalyse, onCancel, onConverted, online }: TrimPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [range, setRange] = useState<TimeRange | null>(null);
@@ -28,6 +33,8 @@ export function TrimPreview({ file, url, onAnalyse, onCancel }: TrimPreviewProps
 
   const onLoadedMetadata = async () => {
     const video = videoRef.current;
+    // Some browsers open an HEVC .mov, and even play its sound, but cannot decode the picture.
+    if (video && video.videoWidth === 0) { setError(UNPLAYABLE_VIDEO_MESSAGE); return; }
     // Recorder files can report an infinite length until it is worked out.
     const length = video ? await resolveDuration(video) : NaN;
     if (!Number.isFinite(length) || length <= 0) { setError('The video length could not be read. Try exporting the clip again as an MP4.'); return; }
@@ -70,6 +77,7 @@ export function TrimPreview({ file, url, onAnalyse, onCancel }: TrimPreviewProps
         <span className="va-eyebrow">Step 1 of 2 · {file.name} · {formatBytes(file.size)}</span>
         <h2>Choose what to analyse</h2>
         {error ? <p className="va-callout" role="alert">{error}</p> : null}
+        {error && onConverted ? <ConvertPanel file={file} online={online} onConverted={onConverted} /> : null}
         {duration === null || !range ? (
           error ? null : <p className="va-muted">Loading the preview…</p>
         ) : (

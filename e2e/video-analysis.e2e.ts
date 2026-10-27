@@ -9,8 +9,8 @@ let context: BrowserContext;
 let page: Page;
 
 test.beforeAll(async ({ browser }) => {
-  const { baseURL, viewport, isMobile, hasTouch, deviceScaleFactor, userAgent } = test.info().project.use;
-  context = await browser.newContext({ baseURL, viewport, isMobile, hasTouch, deviceScaleFactor, userAgent });
+  const { baseURL, viewport, isMobile, hasTouch, deviceScaleFactor, userAgent, serviceWorkers } = test.info().project.use;
+  context = await browser.newContext({ baseURL, viewport, isMobile, hasTouch, deviceScaleFactor, userAgent, serviceWorkers });
   page = await context.newPage();
 });
 

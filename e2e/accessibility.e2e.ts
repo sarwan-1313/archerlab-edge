@@ -23,3 +23,20 @@ for (const { name, path, heading } of PAGES) {
     expect(await seriousViolations(page)).toEqual([]);
   });
 }
+
+test('Video Analysis has no serious accessibility violations while offering and after failing a conversion', async ({ page }) => {
+  test.setTimeout(120_000);
+  await openPage(page, '/video', 'Video Analysis');
+  // A file no browser can play, so the preview offers the conversion (and ffmpeg then cannot read it either).
+  await page.getByLabel('Video file').setInputFiles({ name: 'broken.mov', mimeType: 'video/quicktime', buffer: Buffer.from('not a video file '.repeat(60)) });
+  const convert = page.getByRole('button', { name: 'Convert to MP4 on this device' });
+  await expect(convert).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect(await seriousViolations(page)).toEqual([]);
+
+  await convert.click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Conversion failed.' })).toBeVisible({ timeout: 90_000 });
+  await page.getByText('What ffmpeg reported').click();
+  await page.waitForTimeout(500);
+  expect(await seriousViolations(page)).toEqual([]);
+});

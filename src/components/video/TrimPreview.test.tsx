@@ -9,6 +9,7 @@ let realDuration = 0;
 
 beforeEach(() => {
   currentTime = 0;
+  Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 1280, configurable: true });
   Object.defineProperty(HTMLMediaElement.prototype, 'duration', { get: () => duration, configurable: true });
   Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
     get: () => currentTime,
@@ -84,5 +85,46 @@ describe('TrimPreview', () => {
     fireEvent.error(screen.getByLabelText('Video preview'));
     expect(screen.getByRole('alert').textContent).toMatch(/cannot play this video/);
     expect((analyse() as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+  });
+
+  describe('with conversion available', () => {
+    const renderWithConversion = (online?: boolean) => {
+      duration = 10;
+      realDuration = 10;
+      const onConverted = vi.fn();
+      render(<TrimPreview file={new File(['x'], 'IMG_0042.MOV', { type: 'video/quicktime' })} url="blob:clip" onAnalyse={() => undefined} onCancel={() => undefined} onConverted={onConverted} online={online} />);
+      return onConverted;
+    };
+
+    it('offers to convert a video the browser cannot play', () => {
+      renderWithConversion();
+      expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+      fireEvent.error(screen.getByLabelText('Video preview'));
+      expect(screen.getByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
+    });
+
+    it('offers it when the file opens but the picture cannot be decoded', async () => {
+      Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 0, configurable: true });
+      renderWithConversion();
+      fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+      expect(await screen.findByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
+      expect(screen.getByText(/cannot play this video/)).toBeTruthy();
+    });
+
+    it('tells the offer when the device is offline, so it does not start a download that cannot happen', async () => {
+      renderWithConversion(false);
+      fireEvent.error(screen.getByLabelText('Video preview'));
+      // jsdom has no Cache API, so no converter is stored on this "device".
+      expect(await screen.findByText(/You are offline, and the converter has not been downloaded/)).toBeTruthy();
+      expect((screen.getByRole('button', { name: /Convert to MP4 on this device/ }) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('does not offer it for a video that plays', async () => {
+      renderWithConversion();
+      fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+      await screen.findByText(/Selected:/);
+      expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+    });
   });
 });
