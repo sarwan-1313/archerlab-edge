@@ -65,6 +65,44 @@ describe('runtime caching', () => {
     expect(FFMPEG_CORE_CACHE).toBe(`archerlab-ffmpeg-core-${version}`);
   });
 
+  describe('removing the caches of older ffmpeg cores', () => {
+    const script = readFileSync(new URL('./public/pwa/cache-cleanup.js', import.meta.url), 'utf8');
+
+    it('is imported by the worker, and uses the same cache name prefix as the converter\'s cache', () => {
+      expect(pwaOptions.workbox?.importScripts).toContain('pwa/cache-cleanup.js');
+      const prefix = /FFMPEG_CORE_CACHE_PREFIX = '([^']+)'/.exec(script)?.[1];
+      expect(prefix).toBeDefined();
+      expect(FFMPEG_CORE_CACHE.startsWith(prefix!)).toBe(true);
+    });
+
+    /** Runs the script against a fake worker, and returns the caches that are left after activation. */
+    async function activate(cacheNames: string[], manifest: Response | Error) {
+      const listeners: Record<string, (event: { waitUntil: (done: Promise<unknown>) => void }) => void> = {};
+      const left = new Set(cacheNames);
+      const fakeSelf = { registration: { scope: 'https://app.test/' }, addEventListener: (type: string, listener: (typeof listeners)[string]) => { listeners[type] = listener; } };
+      const fakeCaches = { keys: async () => [...left], delete: async (name: string) => left.delete(name) };
+      const fakeFetch = async () => { if (manifest instanceof Error) throw manifest; return manifest; };
+      new Function('self', 'caches', 'fetch', script)(fakeSelf, fakeCaches, fakeFetch);
+      let done: Promise<unknown> = Promise.resolve();
+      listeners.activate({ waitUntil: (promise) => { done = promise; } });
+      await done;
+      return [...left].sort();
+    }
+    const caches = ['archerlab-ffmpeg-core-0.12.9', 'archerlab-ffmpeg-core-0.12.10', 'archerlab-pose-models-v1', 'workbox-precache-v2-https://app.test/'];
+
+    it('deletes the older cores\' caches and nothing else', async () => {
+      const left = await activate(caches, new Response(JSON.stringify({ version: '0.12.10' })));
+      expect(left).toEqual(['archerlab-ffmpeg-core-0.12.10', 'archerlab-pose-models-v1', 'workbox-precache-v2-https://app.test/']);
+    });
+
+    it('deletes nothing when the current version cannot be read', async () => {
+      expect(await activate(caches, new Response('missing', { status: 404 }))).toHaveLength(4);
+      expect(await activate(caches, new Response('not json'))).toHaveLength(4);
+      expect(await activate(caches, new Response(JSON.stringify({ version: 12 })))).toHaveLength(4);
+      expect(await activate(caches, new TypeError('Failed to fetch'))).toHaveLength(4);
+    });
+  });
+
   it('does not touch what is precached, or anything else of the app\'s', () => {
     expect(handles('https://app.test/models/pose_landmarker_lite.task')).toBe(false);
     expect(handles('https://app.test/mediapipe/wasm/vision_wasm_internal.wasm')).toBe(false);

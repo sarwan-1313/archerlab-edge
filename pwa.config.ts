@@ -40,7 +40,7 @@ export const MAX_PRECACHE_FILE_BYTES = 16 * 1024 * 1024;
 /**
  * The pinned ffmpeg core's version, from the manifest `npm run ffmpeg:core` writes. It is part of the cache
  * name below, so a new core is downloaded instead of being answered with the old files (they keep the same
- * URLs). The cache of an older core stays until the site's data is cleared.
+ * URLs). public/pwa/cache-cleanup.js deletes the caches of older cores when a new worker activates.
  */
 function ffmpegCoreVersion(): string {
   try {
@@ -127,6 +127,8 @@ export const pwaOptions: Partial<VitePWAOptions> = {
     globIgnores: PRECACHE_IGNORES,
     maximumFileSizeToCacheInBytes: MAX_PRECACHE_FILE_BYTES,
     cleanupOutdatedCaches: true,
+    // Removes the caches of older ffmpeg cores on activation (see the file).
+    importScripts: ['pwa/cache-cleanup.js'],
     // Take over a first-time visitor's page straight away, so lazy chunks come from the cache even before a reload.
     clientsClaim: true,
     // Page navigations get the app shell. Paths with a file extension are files, not app routes.
