@@ -14,6 +14,8 @@ type ReportViewProps = {
   report: VideoAnalysisReport;
   videoUrl: string | null;
   cloudCoach?: ReactNode;
+  /** Share-with-a-coach controls, shown before the AI review. */
+  sharing?: ReactNode;
   actions: ReactNode;
   notice?: ReactNode;
   /** Re-score controls, shown under the score callouts. */
@@ -174,7 +176,7 @@ function Consistency({ report }: { report: VideoAnalysisReport }) {
   );
 }
 
-export function ReportView({ report, videoUrl, cloudCoach, actions, notice, settingsControl }: ReportViewProps) {
+export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, notice, settingsControl }: ReportViewProps) {
   const [seek, setSeek] = useState<SeekRequest | null>(null);
   const nonce = useRef(0);
   const show = (t: number, joints: SeekRequest['joints'] = []) => {
@@ -247,6 +249,7 @@ export function ReportView({ report, videoUrl, cloudCoach, actions, notice, sett
         </section>
       </div>
 
+      {sharing}
       {cloudCoach}
 
       <section className="va-panel">

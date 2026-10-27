@@ -9,6 +9,7 @@ import { LevelBadge } from '../components/video/LevelBadge';
 import { ProcessingView } from '../components/video/ProcessingView';
 import { RescorePanel } from '../components/video/RescorePanel';
 import { ReportView } from '../components/video/ReportView';
+import { ShareWithCoachPanel } from '../components/video/ShareWithCoachPanel';
 import { TrimPreview } from '../components/video/TrimPreview';
 import { UploadPanel, type UploadOptions } from '../components/video/UploadPanel';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
@@ -129,6 +130,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
 
   const sessionUserId = account.session?.user.id;
   const { client: cloudApi, freshSession } = account;
+  const [cloudRevision, setCloudRevision] = useState(0);
+  const refreshCloudHistory = useCallback(() => setCloudRevision((revision) => revision + 1), []);
   useEffect(() => {
     if (!cloudApi || !sessionUserId) { setCloudHistory([]); return; }
     let cancelled = false;
@@ -136,7 +139,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       .then((rows) => { if (!cancelled) setCloudHistory(rows); })
       .catch(() => { if (!cancelled) setCloudHistory([]); });
     return () => { cancelled = true; };
-  }, [cloudApi, freshSession, sessionUserId]);
+  }, [cloudApi, cloudRevision, freshSession, sessionUserId]);
 
   const makeUrl = (blob: Blob) => {
     const url = URL.createObjectURL(blob);
@@ -356,6 +359,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       const session = await account.freshSession();
       if (!session) { setNotice('Sign in on your Profile page to back up reports.'); return; }
       const result = await backupReport(account.client, session, report, blob);
+      refreshCloudHistory();
       setNotice(result.videoSkippedReason ?? (result.videoUploaded ? 'Report and video backed up to your account.' : 'Report backed up to your account.'));
     } catch (error) {
       setNotice(describeCloudError(error));
@@ -456,6 +460,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
             : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
           settingsControl={view.report.samples.length ? <RescorePanel key={view.report.id} report={view.report} busy={rescoring} onRescore={(changes) => void rescore(view, changes)} /> : undefined}
           cloudCoach={<CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
+          sharing={account.client && account.session && view.source !== 'file' ? (
+            <ShareWithCoachPanel key={view.report.id} report={view.report} videoBlob={view.videoBlob} client={account.client} freshSession={account.freshSession} onBackedUp={refreshCloudHistory} />
+          ) : undefined}
           actions={(
             <>
               {onOpenInAnalytics && view.report.samples.some((sample) => sample.image) && view.report.shots.some((shot) => shot.source !== 'audio-only') ? (
