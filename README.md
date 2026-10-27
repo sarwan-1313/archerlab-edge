@@ -156,6 +156,7 @@ A separate engine for recorded clips (`src/video-analysis`). Because it sees the
 - **3D view.** A tab next to the replay draws the tracked skeleton in 3D (world landmarks, metres), to orbit around the archer at any frame.
 - **Anchor on the face** (experimental). Face and hand models look at a few frames of each anchor, on a crop around the head, to measure where the index fingertip sits against the chin and mouth corner, and how much that changes between shots; a face diagram shows one dot per shot ([details](docs/video-analysis.md#anchor-on-the-face-experimental)).
 - **Convert to MP4 on this device.** A clip the browser cannot play, such as an iPhone HEVC `.mov` in Chrome, can be converted to H.264 with ffmpeg running in the browser; the converter downloads only when asked for ([docs/video-conversion.md](docs/video-conversion.md)).
+- **Coach tools** (off by default): label a clip shot by shot (release frame, false and missed shots, let-downs, 1–5 per area, a level) and export it as a fixture without the video; `npm run validate:fixtures` reports detection precision and recall, release timing error, Spearman correlation with the coach's ratings and level agreement ([docs/validation.md](docs/validation.md)).
 - **Real-clip fixtures.** Exported reports with an expected shot count and release times become regression tests ([how](src/video-analysis/fixtures/README.md)).
 
 ### 9. Optional second opinions, backup and imports
@@ -277,6 +278,7 @@ supabase/            SQL for optional accounts, backup, coach review and account
 | Document | Covers |
 | --- | --- |
 | [docs/video-analysis.md](docs/video-analysis.md) | The video engine: pipeline, segmentation, audio, scoring, trimming, larger pose models, limits |
+| [docs/validation.md](docs/validation.md) | Checking the scores against coaches: Coach tools labelling, fixture export, `npm run validate:fixtures`, consent and how to tune the rubric |
 | [docs/voice-notes.md](docs/voice-notes.md) | On-device voice notes with Whisper: score parsing, the model and runtime, download and caching, languages |
 | [docs/video-conversion.md](docs/video-conversion.md) | Converting a clip the browser cannot play to MP4 on the device: flow, ffmpeg settings, the self-hosted core, licence |
 | [docs/cloud-setup.md](docs/cloud-setup.md) | Optional AI review, accounts and backup, remote coach review, account deletion, imports, environment variables |

@@ -27,9 +27,11 @@ import { chooseDefaultModel, isPoseModelVariant } from '../video-analysis/modelC
 import { rangeLength } from '../video-analysis/range';
 import { applyReportToProfile, isFormStatus } from '../video-analysis/profileStatus';
 import { ReportFileError, inputFromReport, readReportFile, type ReportBundle, type RescoreSettings } from '../video-analysis/reportFile';
+import { carryOverAnnotations } from '../video-analysis/annotations';
+import { fixtureFromReport } from '../video-analysis/validation/labels';
 import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport, updateVideoReport } from '../video-analysis/storage';
 import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
-import type { BowType, PoseModelVariant, TimeRange, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
+import type { BowType, PoseModelVariant, ReportLabels, TimeRange, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
 import type { ShotAnalysis } from '../types/shotAnalysis';
 import '../styles/video.css';
 
@@ -330,7 +332,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
     // Let the button show its busy state before the synchronous engine run.
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     try {
-      const report = buildReport(inputFromReport(current.report, changes));
+      // Notes and a coach's labels are not engine output, so they are carried over to the new scoring.
+      const report = carryOverAnnotations(current.report, buildReport(inputFromReport(current.report, changes)));
       if (current.source !== 'file') {
         try {
           await updateVideoReport(report);
@@ -401,6 +404,27 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
     } catch (error) {
       setNotice(`The note could not be saved on this device: ${error instanceof Error ? error.message : String(error)}`);
     }
+  };
+
+  const saveLabels = async (current: ReportViewState, labels: ReportLabels) => {
+    const report = { ...current.report, labels };
+    setView({ ...current, report });
+    if (current.source === 'file' || current.source === 'cloud' || current.source === 'shared') return;
+    try {
+      await updateVideoReport(report);
+    } catch (error) {
+      setNotice(`The labels could not be saved on this device: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const exportFixture = (report: VideoAnalysisReport, labels: ReportLabels) => {
+    const blob = new Blob([fixtureFromReport(report, labels)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${report.source.fileName.replace(/\.[^.]+$/, '') || 'clip'}-fixture.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const saveFileReport = async (current: ReportViewState) => {
@@ -559,6 +583,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
             </p>
           ) : view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
             : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
+          onSaveLabels={(labels) => void saveLabels(view, labels)}
+          onExportFixture={(labels) => exportFixture(view.report, labels)}
           onShotNotes={view.source === 'cloud' ? undefined : (shotIndex, notes) => void saveShotNotes(view, shotIndex, notes)}
           comments={commentsReportId && account.session ? {
             comments: comments.comments,

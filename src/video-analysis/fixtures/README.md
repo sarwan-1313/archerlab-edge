@@ -4,7 +4,11 @@
 
 With no fixtures here, the test still passes.
 
-## Adding a fixture
+## From a coach's labels (recommended)
+
+With **Coach tools** on (Profile), label the clip in its video report and press **Export as fixture**: the file has the `expected` block already, with release times, let-downs, the coach's 1–5 ratings and level. `npm run validate:fixtures` uses all of it; see [docs/validation.md](../../../docs/validation.md).
+
+## Adding a fixture by hand
 
 1. Analyse the clip in the app (Video Analysis). Choose the settings you want the fixture to keep, such as drawing hand and bow type; they are stored in the report and used when it is re-scored.
 2. On the report, press **Export report (JSON)**. Reports opened from an account have no landmarks; export from the device that analysed the clip.

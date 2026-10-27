@@ -160,6 +160,26 @@ export interface AnchorFaceSummary {
   confidence: number;
 }
 
+/** What a coach saw for one shot (Coach tools → Label this clip). */
+export interface ShotLabel {
+  /** The engine shot this label corrects, or null for a shot the engine missed. */
+  engineIndex: number | null;
+  /** The release as the coach saw it, seconds of video time. */
+  release: number;
+  /** A real shot, something the engine reported that was not a shot, or a let-down (drawn, then let down). */
+  status: 'shot' | 'false' | 'let-down';
+  /** 1 (poor) to 5 (excellent) per area; areas left out were not rated. */
+  ratings: Partial<Record<CategoryId, 1 | 2 | 3 | 4 | 5>>;
+}
+
+/** A coach's labels for a whole clip, saved with the report and exported in fixtures (docs/validation.md). */
+export interface ReportLabels {
+  shots: ShotLabel[];
+  /** The coach's overall level for the archer in this clip. */
+  level: SkillLevel | null;
+  labelledAt: number;
+}
+
 export interface LetDown { start: number; end: number }
 
 export interface AudioOnset {
@@ -342,6 +362,8 @@ export interface VideoAnalysisReport {
   limitations: string[];
   /** Face and hand measurements from each shot's anchor window, kept so the report can be scored again. */
   anchorFrames?: AnchorObservation[];
+  /** A coach's labels (Coach tools); kept when the report is scored again. */
+  labels?: ReportLabels;
 }
 
 /** The small, list-friendly part of a report (for history, profile status and cloud sync). */

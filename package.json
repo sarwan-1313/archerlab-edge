@@ -17,7 +17,8 @@
     "models:whisper": "node scripts/fetch-whisper-model.mjs",
     "preview": "vite preview",
     "check": "npm run lint && npm test && npm run build",
-    "models:pose": "node scripts/fetch-pose-models.mjs"
+    "models:pose": "node scripts/fetch-pose-models.mjs",
+    "validate:fixtures": "vitest run src/video-analysis/validation/validateFixtures.test.ts --disable-console-intercept"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "0.12.15",

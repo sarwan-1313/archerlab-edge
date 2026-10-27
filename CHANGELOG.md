@@ -2,6 +2,18 @@
 
 All notable changes to ArcherLab Edge. Versions follow [semantic versioning](https://semver.org/); while the project is below 1.0, minor versions can change behaviour.
 
+## Unreleased
+
+### Added
+
+- **Coach tools** setting (Profile, off by default) and **Label this clip** in video reports: correct each release frame by frame, mark false shots, missed shots and let-downs, rate six areas 1–5 per shot and give a level. Labels are saved with the report and kept when it is scored again.
+- **Export as fixture**: the landmarks, sound onsets and an `expected` block from the labels, never the video or images.
+- `npm run validate:fixtures`: shot-detection precision and recall, release-timing error, Spearman correlation between area scores and coach ratings, and level agreement. Fails only when detection falls below the stored baseline. `docs/validation.md` covers consent, how many clips are useful and how to tune the rubric.
+
+### Fixed
+
+- Re-scoring a video report no longer drops the athlete's shot notes.
+
 ## 0.2.0 (2026-10-27)
 
 A second, offline engine for recorded video, plus privacy controls, optional cloud and on-device AI features, offline use and video conversion; also everything that reached `main` after the 0.1.0 tag (the guided training flow, user guide, sample session and redesign). The live engine's measurements are unchanged.

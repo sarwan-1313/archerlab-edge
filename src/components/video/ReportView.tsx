@@ -4,12 +4,14 @@ import { RESOURCE_LIBRARY } from '../../video-analysis/resources';
 import { CATEGORY_INFO, METRIC_RUBRIC, formatMetricShort } from '../../video-analysis/rubric';
 import { LEVEL_LABEL } from '../../video-analysis/scoring';
 import { BOW_LABEL, VIEW_LABEL, formatSeconds, scoreTone } from '../../video-analysis/format';
-import type { Finding, MetricKey, ResourceLink, ShotReport, VideoAnalysisReport } from '../../video-analysis/types';
+import type { Finding, MetricKey, ReportLabels, ResourceLink, ShotReport, VideoAnalysisReport } from '../../video-analysis/types';
 import { AppIcon, type AppIconName } from '../AppIcon';
 import { ActionButton } from '../ActionButton';
 import { StatusBadge } from '../StatusBadge';
 import { VoiceNotePanel } from '../VoiceNotePanel';
+import { useCoachTools } from '../../settings/coachTools';
 import { AnchorFaceDiagram } from './AnchorFaceDiagram';
+import { LabelPanel } from './LabelPanel';
 import { AnalysisPlayer, type PlayerHandle, type SeekRequest, type TimelineMarker } from './AnalysisPlayer';
 import { CommentsPanel, type CommentsPanelProps } from './CommentsPanel';
 import { LevelBadge } from './LevelBadge';
@@ -24,6 +26,9 @@ type ReportViewProps = {
   notice?: ReactNode;
   /** Re-score controls, shown under the score callouts. */
   settingsControl?: ReactNode;
+  /** Coach tools: saves a coach's labels for the clip, and exports them with the landmarks as a fixture. */
+  onSaveLabels?: (labels: ReportLabels) => void;
+  onExportFixture?: (labels: ReportLabels) => void;
   /** Saves the athlete's note for a shot; without it the notes are shown but cannot be changed. */
   onShotNotes?: (shotIndex: number, notes: string) => void;
   /** Comments, for a report in the cloud while signed in. `onAdd` gets the replay's moment, or null for the whole report. */
@@ -201,7 +206,8 @@ function Consistency({ report }: { report: VideoAnalysisReport }) {
   );
 }
 
-export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, notice, settingsControl, comments, onShotNotes }: ReportViewProps) {
+export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, notice, settingsControl, comments, onShotNotes, onSaveLabels, onExportFixture }: ReportViewProps) {
+  const coachTools = useCoachTools();
   const [seek, setSeek] = useState<SeekRequest | null>(null);
   const nonce = useRef(0);
   const playerRef = useRef<PlayerHandle>(null);
@@ -271,6 +277,9 @@ export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, not
       <Categories report={report} />
       <ShotTable report={report} onSeek={(t) => show(t)} onShotNotes={onShotNotes} />
       <AnchorFaceDiagram shots={report.shots} />
+      {coachTools && onSaveLabels && onExportFixture && report.samples.length ? (
+        <LabelPanel report={report} currentTime={() => playerRef.current?.currentTime() ?? 0} onSeek={(t) => show(t)} onSave={onSaveLabels} onExportFixture={onExportFixture} />
+      ) : null}
       <Consistency report={report} />
 
       <div className="va-two">
