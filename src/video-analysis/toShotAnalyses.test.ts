@@ -42,7 +42,22 @@ describe('toShotAnalyses', () => {
       // The detected release should land close to the scripted one.
       expect(Math.abs(shot.releaseTimestampMs - scenario.shots[index].release * 1000)).toBeLessThan(150);
     });
-    expect(shots.map((shot) => shot.capturedAt)).toEqual([...shots.map((shot) => shot.capturedAt)].sort((a, b) => a - b));
+    // In order, and never later than the analysis itself (release times can be minutes into a video).
+    expect(shots.map((shot) => shot.capturedAt)).toEqual([videoReport.createdAt, videoReport.createdAt + 1, videoReport.createdAt + 2]);
+  });
+
+  it('does not drop a release that comes soon after the previous one', () => {
+    // The live engine refuses a new release for 1.8 s after a shot; the video engine allows 1.5 s spacing.
+    const first = videoReport.shots[0];
+    const close = { ...first, index: 99, release: first.release + 1.6 };
+    const shots = toShotAnalyses({ ...videoReport, shots: [first, close, ...videoReport.shots.slice(1)] });
+    expect(shots.map((shot) => shot.id)).toEqual([
+      `video-shot_report-1_${first.index}`,
+      'video-shot_report-1_99',
+      `video-shot_report-1_${videoReport.shots[1].index}`,
+      `video-shot_report-1_${videoReport.shots[2].index}`,
+    ]);
+    expect(shots[1].releaseTimestampMs).toBe(close.release * 1000);
   });
 
   it('skips audio-only shots', () => {

@@ -29,12 +29,20 @@ export interface CaptureOptions {
   fps: number;
   signal: AbortSignal;
   onProgress?: (progress: CaptureProgress) => void;
+  /**
+   * When playback stops partway: true stops quietly with the frames so far
+   * (the optional precision pass); false keeps them only if enough of the clip
+   * was tracked, and fails otherwise.
+   */
+  allowPartial?: boolean;
 }
 
 export interface CaptureResult {
   samples: PoseSample[];
   nativeFps: number | null;
   method: 'playback' | 'seek';
+  /** Media time where playback stopped for good, or null when every range was read. */
+  stalledAt: number | null;
 }
 
 type FrameMetadata = { mediaTime: number; presentedFrames: number };
@@ -48,6 +56,35 @@ export class AnalysisCancelledError extends Error {
     super('Analysis cancelled');
     this.name = 'AnalysisCancelledError';
   }
+}
+
+export const VIDEO_STALLED_MESSAGE = 'The video stopped playing partway. The file may be damaged; try exporting it again as MP4.';
+export const VIDEO_READ_ERROR_MESSAGE = 'The video could not be read partway through. The file may be damaged; try exporting it again as MP4.';
+
+/**
+ * The clip's length in seconds. Files saved by MediaRecorder (screen and
+ * camera recorders) often report an infinite duration until their end has been
+ * read, so seek far past the end to make the browser work it out.
+ */
+export function resolveDuration(video: HTMLVideoElement, timeoutMs = 5000): Promise<number> {
+  if (video.duration !== Infinity) return Promise.resolve(video.duration);
+  return new Promise<number>((resolve) => {
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      video.removeEventListener('durationchange', onChange);
+      video.removeEventListener('timeupdate', onChange);
+    };
+    const done = () => {
+      cleanup();
+      video.currentTime = 0;
+      resolve(video.duration);
+    };
+    const onChange = () => { if (Number.isFinite(video.duration)) done(); };
+    const timer = window.setTimeout(done, timeoutMs);
+    video.addEventListener('durationchange', onChange);
+    video.addEventListener('timeupdate', onChange);
+    video.currentTime = Number.MAX_SAFE_INTEGER;
+  });
 }
 
 export function seekTo(video: HTMLVideoElement, t: number): Promise<void> {
@@ -135,14 +172,21 @@ export async function captureRanges(options: CaptureOptions): Promise<CaptureRes
 
   const usePlayback = typeof video.requestVideoFrameCallback === 'function';
   video.muted = true;
+  let stalledAt: number | null = null;
   for (const [start, end] of options.ranges) {
     if (options.signal.aborted) throw new AnalysisCancelledError();
     if (usePlayback) {
-      await playRange(video, start, end, options, (t, rate) => {
+      const outcome = await playRange(video, start, end, options, (t, rate) => {
         const sample = detect(t);
         samples.push(sample);
         report(sample, start, rate);
       }, frameIntervals);
+      if (outcome.stalledAt !== null) {
+        // Later ranges would stall the same way, so stop here.
+        if (!options.allowPartial && outcome.stalledAt - start < VIDEO_CONFIG.stallMinTrackedS) throw new Error(VIDEO_STALLED_MESSAGE);
+        stalledAt = outcome.stalledAt;
+        break;
+      }
     } else {
       for (let t = start; t <= end + 1e-6; t += 1 / options.fps) {
         if (options.signal.aborted) throw new AnalysisCancelledError();
@@ -157,7 +201,7 @@ export async function captureRanges(options: CaptureOptions): Promise<CaptureRes
   }
   video.pause();
   const interval = frameIntervals.length >= 5 ? median(frameIntervals) : null;
-  return { samples, nativeFps: interval ? Math.round(1 / interval) : null, method: usePlayback ? 'playback' : 'seek' };
+  return { samples, nativeFps: interval ? Math.round(1 / interval) : null, method: usePlayback ? 'playback' : 'seek', stalledAt };
 }
 
 function playRange(
@@ -167,8 +211,8 @@ function playRange(
   options: CaptureOptions,
   onFrame: (t: number, playbackRate: number) => void,
   frameIntervals: number[],
-): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+): Promise<{ stalledAt: number | null }> {
+  return new Promise((resolve, reject) => {
     const interval = 1 / options.fps;
     let nextDue = start;
     let rate = 1;
@@ -177,28 +221,43 @@ function playRange(
     let lastPresented = -1;
     let finished = false;
     let hiddenPaused = false;
+    // Watchdog: when the video should be playing but no frame arrives for a while, the file is stuck.
+    let lastProgressAt = 0;
+    const watchdog = window.setInterval(() => {
+      if (finished || !lastProgressAt || document.hidden || hiddenPaused) return;
+      if (Date.now() - lastProgressAt >= VIDEO_CONFIG.stallTimeoutS * 1000) finish(undefined, lastMediaTime >= start ? lastMediaTime : start);
+    }, 1000);
+    const markProgress = () => { lastProgressAt = Date.now(); };
 
-    const finish = (error?: unknown) => {
+    const finish = (error?: unknown, stalledAt: number | null = null) => {
       if (finished) return;
       finished = true;
+      window.clearInterval(watchdog);
       if (handle) video.cancelVideoFrameCallback?.(handle);
       video.removeEventListener('ended', onEnded);
+      video.removeEventListener('error', onError);
       document.removeEventListener('visibilitychange', onVisibility);
       options.signal.removeEventListener('abort', onAbort);
       video.pause();
       if (error) reject(error);
-      else resolve();
+      else resolve({ stalledAt });
     };
     const onEnded = () => finish();
+    const onError = () => finish(new Error(VIDEO_READ_ERROR_MESSAGE));
     const onAbort = () => finish(new AnalysisCancelledError());
     // Hidden tabs stop presenting frames; pause instead of silently skipping them.
     const onVisibility = () => {
       if (document.hidden) { hiddenPaused = true; video.pause(); }
-      else if (hiddenPaused) { hiddenPaused = false; void video.play().catch(() => undefined); }
+      else if (hiddenPaused) {
+        hiddenPaused = false;
+        markProgress();
+        void video.play().catch(() => undefined);
+      }
     };
 
     const onVideoFrame = (_now: number, metadata: FrameMetadata) => {
       if (finished) return;
+      markProgress();
       const mediaTime = metadata.mediaTime;
       if (lastPresented >= 0 && metadata.presentedFrames === lastPresented + 1 && mediaTime > lastMediaTime) {
         frameIntervals.push(mediaTime - lastMediaTime);
@@ -215,6 +274,8 @@ function playRange(
           finish(error);
           return;
         }
+        // A slow model run is not a stall.
+        markProgress();
         const spentMs = performance.now() - began;
         const budgetMs = (interval * 1000) / rate;
         if (missed > 0 || spentMs > budgetMs * 0.75) rate = Math.max(0.1, rate * 0.7);
@@ -225,13 +286,16 @@ function playRange(
       handle = video.requestVideoFrameCallback!(onVideoFrame);
     };
 
+    if (options.signal.aborted) { finish(new AnalysisCancelledError()); return; }
     options.signal.addEventListener('abort', onAbort);
     video.addEventListener('ended', onEnded);
+    video.addEventListener('error', onError);
     document.addEventListener('visibilitychange', onVisibility);
     seekTo(video, start).then(() => {
       if (finished) return;
       video.playbackRate = rate;
       handle = video.requestVideoFrameCallback!(onVideoFrame);
+      markProgress();
       return video.play();
     }).catch((error) => finish(error));
   });

@@ -121,11 +121,12 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
       <Section id="privacy-optional" icon="cloud" title="What the optional features send, and to whom">
         <p>These are off until you use them. Nothing is sent in the background.</p>
         <ul>
-          <li><strong>AI review</strong> (“Second opinion from AI coaches” in a report): after you tick the consent box, six annotated still frames and the measurements are sent to the AI providers you pick (Anthropic, OpenAI and/or Google), using your own API key. If you also allow it, Gemini receives the whole clip instead of stills. Each provider’s terms and privacy policy apply.</li>
+          <li><strong>AI review</strong> (“Second opinion from AI coaches” in a report): after you tick the consent box, the measurements are sent to the AI providers you pick (Anthropic, OpenAI and/or Google), using your own API key. While the video is open or kept on this device, six annotated still frames go with them; without the video, only the measurements are sent. If you also allow it, Gemini receives the whole clip instead of stills. Each provider’s terms and privacy policy apply.</li>
           <li>
             <strong>Account backup</strong>{accountsEnabled ? '' : ' (switched off in this copy of the app)'}: when you sign in and press a backup button, your profile (without the photo) and your video reports (without the frame-by-frame body positions) are stored in a Supabase database run by whoever deployed this copy of ArcherLab. Videos are uploaded only when you press “Back up report + video”. Each account can reach only its own data.
           </li>
           {storageImport ? <li><strong>Import from Dropbox or Google Drive</strong>: the file you pick is downloaded into this browser. Dropbox or Google see that you used their picker; nothing is uploaded to them.</li> : null}
+          <li><strong>Import from a link</strong>: this browser downloads the file from the link you paste, so the site that hosts it sees the request, as it would for any download. Nothing is uploaded.</li>
         </ul>
       </Section>
 
@@ -139,7 +140,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteVideo}><AppIcon name="trash" size={16} /> Delete all video analyses on this device</ActionButton>
           <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteEverything}><AppIcon name="trash" size={16} /> Delete everything on this device</ActionButton>
         </div>
-        <p className="va-faint">The export holds every video report with its tracked body positions, so treat it like the videos themselves. Deleting here never touches data in an account.</p>
+        <p className="va-faint">The export holds every video report with its tracked body positions, so treat it like the videos themselves. To restore it, use “Open report file” on the Video Analysis page. Deleting here never touches data in an account.</p>
       </Section>
 
       {account.configured ? (

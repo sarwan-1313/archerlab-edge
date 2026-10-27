@@ -105,6 +105,18 @@ class SnapshotStepper {
   }
 }
 
+/** Index of the first entry at or after `t`. */
+function firstAtOrAfter(entries: ReadonlyArray<{ t: number }>, t: number): number {
+  let low = 0;
+  let high = entries.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (entries[middle].t < t) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
 /**
  * Captures one ShotAnalysis per video-detected release. Audio-only shots (heard
  * but not tracked) are skipped, as are releases the engine cannot capture
@@ -116,40 +128,45 @@ export function toShotAnalyses(report: VideoAnalysisReport): ShotAnalysis[] {
     .filter((shot) => shot.source !== 'audio-only')
     .map((shot) => ({ index: shot.index, releaseMs: shot.release * 1000 }))
     .sort((a, b) => a.releaseMs - b.releaseMs);
+
+  // The biomechanics snapshot is computed once over the whole clip, as the live hook would see it.
   const stepper = new SnapshotStepper(handedness);
-  const engine = new ShotCaptureEngine(handedness);
-  engine.arm();
-  const captured: ShotAnalysis[] = [];
-  let next = 0;
-  let pendingIndex: number | null = null;
-
-  const collect = (shot: ShotAnalysis | null) => {
-    if (!shot || pendingIndex === null) return;
-    captured.push({
-      ...shot,
-      id: `${VIDEO_SHOT_PREFIX}${report.id}_${pendingIndex}`,
-      capturedAt: report.createdAt + shot.releaseTimestampMs,
-      videoSource: { reportId: report.id, fileName: report.source.fileName },
-    });
-    pendingIndex = null;
-  };
-
-  const samples = [...report.samples].sort((a, b) => a.t - b.t);
-  for (const sample of samples) {
+  const timeline = [...report.samples].sort((a, b) => a.t - b.t).map((sample) => {
     const pose = sampleToPoseResult(sample);
     const snapshot = stepper.step(pose);
-    const frame = snapshot ? createShotFrame(snapshot) : null;
-    // Frames without the archer still advance time, so a capture can finish through a dropout.
-    collect(frame ? engine.ingest(frame) : engine.advance(pose.timestamp));
-    // Mark each release once the tracked stream has passed it.
-    while (next < releases.length && releases[next].releaseMs <= engine.latestTimestampMs && engine.state !== 'capturing-post-release') {
-      const release = releases[next];
-      next += 1;
-      if (engine.markRelease(release.releaseMs, 'video-detected').ok) pendingIndex = release.index;
+    return { t: pose.timestamp, frame: snapshot ? createShotFrame(snapshot) : null };
+  });
+
+  // Each release gets its own capture engine, so a quick second shot never falls in the
+  // previous one's cooldown; the engine only needs the frames around its release.
+  const captured: ShotAnalysis[] = [];
+  for (const release of releases) {
+    const engine = new ShotCaptureEngine(handedness);
+    engine.arm();
+    let marked = false;
+    let shot: ShotAnalysis | null = null;
+    const latest = release.releaseMs + SHOT_CONFIG.bufferDurationMs;
+    for (let index = firstAtOrAfter(timeline, release.releaseMs - SHOT_CONFIG.bufferDurationMs); index < timeline.length && !shot; index += 1) {
+      const { t, frame } = timeline[index];
+      if (t > latest && !marked) break;
+      // Frames without the archer still advance time, so a capture can finish through a dropout.
+      shot = frame ? engine.ingest(frame) : engine.advance(t);
+      // Mark the release once the tracked stream has passed it.
+      if (!marked && engine.latestTimestampMs >= release.releaseMs) {
+        if (!engine.markRelease(release.releaseMs, 'video-detected').ok) break;
+        marked = true;
+      }
     }
+    // A clip that ends during the follow-through finishes on elapsed time, like a lost track.
+    if (marked && !shot) shot = engine.advance(release.releaseMs + SHOT_CONFIG.postReleaseMs);
+    if (!shot) continue;
+    captured.push({
+      ...shot,
+      id: `${VIDEO_SHOT_PREFIX}${report.id}_${release.index}`,
+      // Shots keep their order without dates in the future (release times can be far into a long video).
+      capturedAt: report.createdAt + captured.length,
+      videoSource: { reportId: report.id, fileName: report.source.fileName },
+    });
   }
-  // A clip that ends during the follow-through finishes on elapsed time, like a lost track.
-  const releaseMs = engine.releaseTimestampMs;
-  if (engine.state === 'capturing-post-release' && releaseMs !== null) collect(engine.advance(releaseMs + SHOT_CONFIG.postReleaseMs));
   return captured;
 }

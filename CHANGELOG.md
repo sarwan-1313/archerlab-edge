@@ -4,9 +4,15 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ## 0.2.0 (2026-10-26)
 
-A second, offline engine for recorded video, plus privacy controls and optional cloud features. The live engine is unchanged.
+A second, offline engine for recorded video, plus privacy controls and optional cloud features; also everything that reached `main` after the 0.1.0 tag (the guided training flow, user guide, sample session and redesign). The live engine's measurements are unchanged.
 
 ### Added
+
+- **Guided training flow** for live sessions: readiness check, shot review after each arrow, an end-session dialog and a session summary.
+- **User guide**: a ten-step manual from camera setup to analytics, with a deep link for each step (`/guide/camera-setup` and so on).
+- **Sample session** for visitors without a camera or bow, generated through the real capture engine.
+- **Scroll-driven landing page** and an athletic redesign across the app, including an Analytics scoreboard, a scorecard split into ends and arrow-by-arrow form charts, with self-hosted fonts, page metadata and a social preview image.
+- MIT license.
 
 - **Video analysis engine** (`src/video-analysis`). Upload a recorded clip from any camera angle. Every frame is tracked on the device, with a precision pass at the clip's native frame rate around each release. Shots are found automatically (release first, then anchor, draw and follow-through), let-downs are rejected, and the camera view and drawing hand are detected.
 - **Audio timing.** The sound of each release snaps its time to the millisecond, and clicker and arrow-impact sounds are picked up. Shots that are heard but not tracked are reported as audio-only.
@@ -29,6 +35,12 @@ A second, offline engine for recorded video, plus privacy controls and optional 
 
 - Video analysis reports state their limits, including trimmed ranges and audio that could not be used. Files longer than 30 minutes are analysed without their sound.
 - The README, `docs/video-analysis.md` and `docs/cloud-setup.md` cover the new engine and the optional features. All cloud features are off by default and appear only when a deployment configures them.
+- Development moved to GitHub Codespaces, with Vercel deploying production from `main`.
+
+### Fixed
+
+- Refreshing or opening a deep link such as `/guide/camera-setup` on Vercel no longer returns a 404.
+- Camera start-up, profile saving and the recording lifecycle are more reliable, and recording no longer loses telemetry silently.
 
 ## 0.1.0 (2026-08-17)
 
@@ -39,6 +51,6 @@ The live analysis prototype.
 - Shot-cycle capture around a manual release (automatic release detection is experimental), with draw, hold, release and follow-through phases and release metrics.
 - Touchless score entry by hand gesture, with manual and on-target entry as fallbacks.
 - Local session recording with synchronised telemetry, a Sessions library and replay.
-- Performance analytics: totals, scorecard by end, target grouping, consistency statistics and a descriptive comparison of high- and low-scoring arrows.
+- Performance analytics: totals, a target plot of where arrows landed, consistency statistics and a descriptive comparison of high- and low-scoring arrows.
 - An explicitly experimental shot-distribution simulator.
-- Guided camera setup and readiness checks, a ten-step user guide, an athlete profile, and a sample session generated through the real capture engine.
+- Camera calibration, a gesture guide, an athlete profile and an experimental multi-camera view.

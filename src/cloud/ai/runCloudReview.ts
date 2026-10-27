@@ -1,6 +1,6 @@
 import type { VideoAnalysisReport } from '../../video-analysis/types';
 import { buildCoachRequest, parseCoachReview, type CoachReview } from './coachReview';
-import { PROVIDERS, buildRequest, describeHttpError, extractText, type CloudProviderId, type MediaPart } from './providers';
+import { PROVIDERS, buildRequest, describeHttpError, describeStopIssue, extractText, stopIssue, type CloudProviderId, type MediaPart } from './providers';
 
 export interface ProviderSetting {
   provider: CloudProviderId;
@@ -29,6 +29,9 @@ async function callProvider(setting: ProviderSetting, report: VideoAnalysisRepor
     const response = await fetch(request.url, { ...request.init, signal: timeout.signal });
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) return { provider, status: 'failed', error: describeHttpError(provider, response.status, body) };
+    // A cut-off answer can still contain a valid-looking fragment of JSON, so check why it stopped first.
+    const issue = stopIssue(provider, body);
+    if (issue) return { provider, status: 'failed', error: describeStopIssue(provider, issue) };
     const text = extractText(provider, body);
     if (!text) return { provider, status: 'failed', error: `${PROVIDERS[provider].name} returned an empty answer.` };
     return { provider, status: 'ok', review: parseCoachReview(provider, setting.model, text, useVideo) };

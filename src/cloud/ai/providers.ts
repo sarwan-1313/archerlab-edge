@@ -35,6 +35,17 @@ export const PROVIDERS: Record<CloudProviderId, ProviderInfo> = {
 
 export const ANTHROPIC_VERSION = '2026-10-21';
 
+/**
+ * Output-token limits per request. Every default model thinks before it
+ * answers, and its thinking counts toward these limits, so they leave room for
+ * that plus a full JSON review.
+ */
+export const OUTPUT_TOKEN_LIMITS: Record<CloudProviderId, number> = {
+  anthropic: 8000,
+  openai: 8000,
+  gemini: 8192,
+};
+
 export interface MediaPart {
   kind: 'image' | 'video';
   mimeType: string;
@@ -71,7 +82,7 @@ export function buildRequest(provider: CloudProviderId, model: string, apiKey: s
           'anthropic-version': ANTHROPIC_VERSION,
           'anthropic-dangerous-direct-browser-access': 'true',
         },
-        body: JSON.stringify({ model, max_tokens: 2000, system: request.system, messages: [{ role: 'user', content }] }),
+        body: JSON.stringify({ model, max_tokens: OUTPUT_TOKEN_LIMITS.anthropic, system: request.system, messages: [{ role: 'user', content }] }),
       },
     };
   }
@@ -90,7 +101,7 @@ export function buildRequest(provider: CloudProviderId, model: string, apiKey: s
           model,
           messages: [{ role: 'system', content: request.system }, { role: 'user', content }],
           response_format: { type: 'json_object' },
-          max_completion_tokens: 6000,
+          max_completion_tokens: OUTPUT_TOKEN_LIMITS.openai,
         }),
       },
     };
@@ -109,7 +120,7 @@ export function buildRequest(provider: CloudProviderId, model: string, apiKey: s
       body: JSON.stringify({
         system_instruction: { parts: [{ text: request.system }] },
         contents: [{ role: 'user', parts }],
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 },
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: OUTPUT_TOKEN_LIMITS.gemini },
       }),
     },
   };
@@ -131,6 +142,54 @@ export function extractText(provider: CloudProviderId, body: unknown): string {
   }
   const candidates = Array.isArray(data.candidates) ? data.candidates as Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> : [];
   return (candidates[0]?.content?.parts ?? []).filter((part) => !part.thought && typeof part.text === 'string').map((part) => part.text).join('');
+}
+
+/** Why an answer is unusable even though the request succeeded. */
+export type StopIssue =
+  | { kind: 'cut-off' }
+  | { kind: 'refused'; detail?: string }
+  | { kind: 'blocked'; detail?: string };
+
+const GEMINI_CUT_OFF = new Set(['MAX_TOKENS', 'CONTINUATION']);
+const GEMINI_BLOCKED = new Set(['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'IMAGE_SAFETY', 'IMAGE_PROHIBITED_CONTENT', 'PUP_LIMITED_DISABLED', 'ESCALATION']);
+
+/** Reads each provider's stop reason: a review that was cut off, refused or blocked cannot be used. */
+export function stopIssue(provider: CloudProviderId, body: unknown): StopIssue | null {
+  const data = (body ?? {}) as Record<string, unknown>;
+  if (provider === 'anthropic') {
+    if (data.stop_reason === 'max_tokens' || data.stop_reason === 'model_context_window_exceeded') return { kind: 'cut-off' };
+    if (data.stop_reason === 'refusal') {
+      const details = data.stop_details as { category?: unknown; explanation?: unknown } | null | undefined;
+      const detail = typeof details?.explanation === 'string' ? details.explanation : typeof details?.category === 'string' ? details.category : undefined;
+      return { kind: 'refused', detail };
+    }
+    return null;
+  }
+  if (provider === 'openai') {
+    const choice = (Array.isArray(data.choices) ? data.choices[0] : undefined) as { finish_reason?: unknown; message?: { refusal?: unknown } } | undefined;
+    if (typeof choice?.message?.refusal === 'string' && choice.message.refusal.trim()) return { kind: 'refused', detail: choice.message.refusal.trim() };
+    if (choice?.finish_reason === 'length') return { kind: 'cut-off' };
+    if (choice?.finish_reason === 'content_filter') return { kind: 'blocked' };
+    return null;
+  }
+  const feedback = data.promptFeedback as { blockReason?: unknown } | undefined;
+  if (typeof feedback?.blockReason === 'string' && feedback.blockReason !== 'BLOCK_REASON_UNSPECIFIED') return { kind: 'blocked', detail: feedback.blockReason };
+  const candidate = (Array.isArray(data.candidates) ? data.candidates[0] : undefined) as { finishReason?: unknown } | undefined;
+  const reason = typeof candidate?.finishReason === 'string' ? candidate.finishReason : '';
+  if (GEMINI_CUT_OFF.has(reason)) return { kind: 'cut-off' };
+  if (GEMINI_BLOCKED.has(reason)) return { kind: 'blocked', detail: reason };
+  return null;
+}
+
+export const CUT_OFF_MESSAGE = 'The review was too long and got cut off. Try again or pick another model.';
+
+/** Message for a review that was cut off, refused or blocked. */
+export function describeStopIssue(provider: CloudProviderId, issue: StopIssue): string {
+  const name = PROVIDERS[provider].name;
+  const detail = issue.kind !== 'cut-off' && issue.detail ? ` (${issue.detail.slice(0, 160)})` : '';
+  if (issue.kind === 'cut-off') return CUT_OFF_MESSAGE;
+  if (issue.kind === 'refused') return `${name} declined to review this clip${detail}. Try again, or ask another coach.`;
+  return `${name} blocked this request for safety reasons${detail}. Try again with fewer frames, or ask another coach.`;
 }
 
 /** Error text from a failed provider response, kept short and human. */

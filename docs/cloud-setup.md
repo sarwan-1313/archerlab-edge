@@ -37,6 +37,8 @@ The model field is editable, so newer models can be used without a code change. 
 
 Each model answers as a coach in a fixed JSON shape; the app shows each review and a combined view (level vote including ArcherLab's own estimate, and advice that several coaches agree on).
 
+The default models think before they answer, and that thinking counts toward the output limit, so each request allows 8,000 output tokens (8,192 for Gemini). The app reads each provider's stop reason (`stop_reason`, `finish_reason`, `finishReason` / `promptFeedback.blockReason`) and says plainly when a review was cut off by the limit, declined, or blocked for safety, instead of failing to read it.
+
 > Keys entered in a browser can be read by anyone using that browser. Use keys with a spending limit, and do not share devices with saved keys.
 
 ## 2. Accounts and backup (Supabase)
@@ -67,6 +69,8 @@ If a project was set up before this function existed, **Delete my account** stil
 **Dropbox:** create an app at https://www.dropbox.com/developers/apps (Scoped access, App folder or Full Dropbox), add your domain under *Chooser/Saver domains*, and copy the **App key**.
 
 **Google Drive:** in Google Cloud Console, enable the **Google Picker API** and **Google Drive API**, create an **API key** and an **OAuth client ID** (Web application) with your domain as an authorised JavaScript origin, and note the project number (App ID). The app requests the narrow `drive.file` scope, which only grants access to files the athlete picks.
+
+Imported files are downloaded into the browser and held in memory until they are analysed, so imports over 2 GB are refused (before downloading when the size is known, and as soon as the download passes 2 GB otherwise).
 
 ## Environment variables
 

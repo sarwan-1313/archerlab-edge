@@ -24,6 +24,10 @@ export const VIDEO_CONFIG = {
   minLandmarkVisibility: 0.4,
   /** A frame counts as tracked when the key upper-body landmarks average at least this visibility. */
   minTrackedQuality: 0.35,
+  /** Playback that delivers no new frame for this long, while it should be playing, has stalled. */
+  stallTimeoutS: 8,
+  /** After a stall, keep the frames so far only if at least this much of the range was tracked (about one shot cycle). */
+  stallMinTrackedS: 10,
   /** Precision pass: re-track this much time either side of each release at the native frame rate. */
   refineWindowS: 0.6,
 

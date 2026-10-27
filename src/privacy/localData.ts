@@ -9,13 +9,21 @@ import { VIDEO_DB_NAME, listVideoReports, loadVideoReport, reportToJson } from '
  */
 
 export const APP_DATABASES = [PROFILE_DB_NAME, RECORDINGS_DB_NAME, VIDEO_DB_NAME] as const;
+
+const DATABASE_LABELS: Record<string, string> = {
+  [PROFILE_DB_NAME]: 'your profile',
+  [RECORDINGS_DB_NAME]: 'live session recordings',
+  [VIDEO_DB_NAME]: 'video analyses',
+};
 export const STORAGE_KEY_PREFIX = 'archerlab-edge:';
 
-/** A failure with a message for the athlete. */
+/** A failure with a message for the athlete. `blocked`: another tab holds the data open; the browser finishes the deletion once it closes. */
 export class LocalDataError extends Error {
-  constructor(message: string) {
+  readonly reason: 'blocked' | 'failed';
+  constructor(message: string, reason: 'blocked' | 'failed' = 'failed') {
     super(message);
     this.name = 'LocalDataError';
+    this.reason = reason;
   }
 }
 
@@ -25,9 +33,11 @@ export function deleteDatabase(name: string, factory: IDBFactory = indexedDB): P
     const request = factory.deleteDatabase(name);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(new LocalDataError('The browser could not delete the stored data. Try again, or clear this site’s data in the browser settings.'));
-    request.onblocked = () => reject(new LocalDataError('ArcherLab is open in another tab. Close the other tabs, then try again.'));
+    request.onblocked = () => reject(new LocalDataError('ArcherLab is open in another tab. Close the other tabs, then try again.', 'blocked'));
   });
 }
+
+const list = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}` : items[0]);
 
 /** Removes every key the app owns from a Storage area; returns how many were removed. */
 export function clearAppKeys(storage: Storage | undefined): number {
@@ -49,11 +59,30 @@ export function deleteAllVideoAnalyses(factory?: IDBFactory): Promise<void> {
   return deleteDatabase(VIDEO_DB_NAME, factory);
 }
 
-/** Profile, recordings, video analyses, settings, saved AI keys and the sign-in on this device. Cloud copies are not touched. */
+/**
+ * Profile, recordings, video analyses, settings, saved AI keys and the sign-in
+ * on this device. Cloud copies are not touched. Every store is attempted even
+ * if one fails, so a failure never leaves the rest half-deleted; the error
+ * names what is left.
+ */
 export async function deleteEverythingOnDevice(factory?: IDBFactory): Promise<void> {
-  for (const name of APP_DATABASES) await deleteDatabase(name, factory);
+  const blocked: string[] = [];
+  const failed: string[] = [];
+  for (const name of APP_DATABASES) {
+    try {
+      await deleteDatabase(name, factory);
+    } catch (error) {
+      (error instanceof LocalDataError && error.reason === 'blocked' ? blocked : failed).push(DATABASE_LABELS[name] ?? name);
+    }
+  }
   clearAppKeys(globalThis.localStorage);
   clearAppKeys(globalThis.sessionStorage);
+  if (failed.length) {
+    throw new LocalDataError(`Everything else was deleted, but ${list([...failed, ...blocked])} could not be. Try again, or clear this site’s data in the browser settings.`);
+  }
+  if (blocked.length) {
+    throw new LocalDataError(`Everything else was deleted. ${list(blocked).replace(/^./, (first) => first.toUpperCase())} will be deleted as soon as you close ArcherLab in your other tabs.`, 'blocked');
+  }
 }
 
 /** All video reports on this device, with landmarks, as one JSON file. Returns null when there are none. */

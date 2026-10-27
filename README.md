@@ -10,7 +10,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-0b1326?logo=typescript&logoColor=3178c6)
 ![Vite](https://img.shields.io/badge/Vite-8-0b1326?logo=vite&logoColor=ffc53d)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-on--device-0b1326?logo=google&logoColor=2ee6ff)
-![Tests](https://img.shields.io/badge/tests-240_cases-0b1326?logo=vitest&logoColor=3ddc84)
+![Tests](https://img.shields.io/badge/tests-270_cases-0b1326?logo=vitest&logoColor=3ddc84)
 ![Version](https://img.shields.io/badge/version-0.2.0-0b1326)
 ![License](https://img.shields.io/badge/license-MIT-0b1326)
 
@@ -222,7 +222,7 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 | Computer vision | MediaPipe Tasks Vision (Pose and Hand Landmarker), WebAssembly |
 | Browser APIs | MediaDevices camera capture, MediaRecorder, requestVideoFrameCallback, Web Audio, Screen Wake Lock, IndexedDB, Canvas and SVG |
 | Optional cloud | Claude, OpenAI and Gemini APIs (bring your own key); Supabase Auth, Postgres and Storage over REST |
-| Quality | Vitest + Testing Library (53 test files, 240 cases), oxlint, GitHub Actions CI |
+| Quality | Vitest + Testing Library (56 test files, 270 cases), oxlint, GitHub Actions CI |
 | Hosting | Vercel (production deploys from `main`; builds fetch the larger pose models), GitHub Codespaces for development |
 
 ## Repository structure

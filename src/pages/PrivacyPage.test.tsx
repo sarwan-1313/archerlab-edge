@@ -9,7 +9,8 @@ it('explains what stays on the device and what the optional features send', () =
   render(<PrivacyPage />);
   expect(screen.getByRole('heading', { name: /What runs on this device/ })).toBeTruthy();
   expect(screen.getByRole('heading', { name: /What is stored on this device/ })).toBeTruthy();
-  expect(screen.getByText(/six annotated still frames and the measurements/)).toBeTruthy();
+  expect(screen.getByText(/without the video, only the measurements are sent/)).toBeTruthy();
+  expect(screen.getByText(/Import from a link/)).toBeTruthy();
   expect(screen.getByText(/parent or guardian/)).toBeTruthy();
   expect(screen.getByRole('link', { name: 'GitHub issues' }).getAttribute('href')).toBe('https://github.com/sarwan-1313/archerlab-edge/issues');
   // This build has no accounts configured, so there are no account controls.

@@ -180,3 +180,6 @@ Other static hosts need the same step: run `npm run build:vercel` (or the fetch 
 - With several people in frame, the most prominent person is followed.
 - Long ranges take time. The screen is kept on where the browser allows it, but the tab must stay open and in front: browsers pause video in background tabs.
 - Files longer than 30 minutes are analysed without their sound.
+- If playback stops partway (a damaged file), tracking waits 8 seconds, then keeps what it has when at least 10 seconds were tracked, and says so in the report; otherwise it stops with an error suggesting an MP4 export. A read error stops it straight away.
+- Clips saved by screen or camera recorders (WebM from MediaRecorder) often report no length; the app seeks to the end once to work it out.
+- Imports from Dropbox, Google Drive or a link are limited to 2 GB, because the download is held in memory.

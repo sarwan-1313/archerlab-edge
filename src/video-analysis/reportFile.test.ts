@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { detectOnsets } from './audio';
 import { buildReport, type BuildReportInput } from './buildReport';
-import { ReportFileError, inputFromReport, parseReportFile, restoreReportInput } from './reportFile';
+import { ReportFileError, inputFromReport, parseReportFile, readReportFile, restoreReportInput } from './reportFile';
 import { reportToJson } from './storage';
 import { makeScenario, scriptShots, syntheticSamples } from './testing/syntheticArcher';
 import { synthesizeRangeAudio } from './testing/syntheticAudio';
@@ -116,5 +116,24 @@ describe('report files', () => {
     const back = buildReport(inputFromReport(rescored, { requestedHandedness: 'auto' }));
     expect(back.settings.handedness).toBe('right');
     expect(back.shots).toHaveLength(original.shots.length);
+  });
+
+  it('reads a full export of every report, skipping the ones without landmarks', () => {
+    const good = JSON.parse(reportToJson(analysed())) as Record<string, unknown>;
+    const cloudCopy = { ...good, id: 'video_2_cloud', samples: [] };
+    const bundle = JSON.stringify({ app: 'ArcherLab Edge', exportedAt: '2026-10-27T00:00:00.000Z', reports: [good, cloudCopy, { ...good, id: 'video_3_def' }] });
+    const contents = readReportFile(bundle);
+    expect('bundle' in contents).toBe(true);
+    if (!('bundle' in contents)) return;
+    expect(contents.bundle.inputs.map((input) => input.id)).toEqual(['video_1_abc', 'video_3_def']);
+    expect(contents.bundle.skipped).toBe(1);
+    expect(contents.bundle.inputs[0].samples[10].image).toBeInstanceOf(Float32Array);
+  });
+
+  it('still reads a single report, and explains an export with nothing usable', () => {
+    expect('report' in readReportFile(exported())).toBe(true);
+    expect(() => readReportFile(JSON.stringify({ reports: [] }))).toThrow(/no reports in it/);
+    expect(() => readReportFile(JSON.stringify({ reports: [{ hello: 1 }] }))).toThrow(/None of the reports/);
+    expect(() => readReportFile('nope')).toThrow(ReportFileError);
   });
 });

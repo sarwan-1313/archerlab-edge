@@ -53,13 +53,22 @@ describe('local data controls', () => {
     expect(sessionStorage.length).toBe(0);
   });
 
-  it('explains when another tab blocks the deletion, and keeps the settings', async () => {
+  it('still deletes everything else when another tab blocks one store, and says what is left', async () => {
     localStorage.setItem('archerlab-edge:video-options', '{}');
-    const { factory } = fakeFactory((name) => (name === 'archerlab-edge-video' ? 'blocked' : 'success'));
+    const { factory, deleted } = fakeFactory((name) => (name === 'archerlab-edge-profiles' ? 'blocked' : 'success'));
     const error = await deleteEverythingOnDevice(factory).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(LocalDataError);
-    expect((error as Error).message).toMatch(/another tab/);
-    expect(localStorage.getItem('archerlab-edge:video-options')).toBe('{}');
+    expect((error as LocalDataError).reason).toBe('blocked');
+    expect((error as Error).message).toBe('Everything else was deleted. Your profile will be deleted as soon as you close ArcherLab in your other tabs.');
+    expect(deleted).toEqual(['archerlab-edge-recordings', 'archerlab-edge-video']);
+    expect(localStorage.length).toBe(0);
+  });
+
+  it('names every store that could not be deleted', async () => {
+    const { factory } = fakeFactory((name) => (name === 'archerlab-edge-video' ? 'error' : name === 'archerlab-edge-recordings' ? 'blocked' : 'success'));
+    const error = await deleteEverythingOnDevice(factory).catch((caught: unknown) => caught) as LocalDataError;
+    expect(error.reason).toBe('failed');
+    expect(error.message).toMatch(/but video analyses and live session recordings could not be/);
   });
 
   it('reports a failed deletion', async () => {

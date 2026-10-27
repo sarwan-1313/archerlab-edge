@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { resolveDuration } from '../../video-analysis/browser/frameCapture';
 import { UNPLAYABLE_VIDEO_MESSAGE } from '../../video-analysis/browser/runVideoAnalysis';
 import { VIDEO_CONFIG } from '../../video-analysis/config';
 import { formatBytes, formatClock } from '../../video-analysis/format';
@@ -25,8 +26,10 @@ export function TrimPreview({ file, url, onAnalyse, onCancel }: TrimPreviewProps
   const [current, setCurrent] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const onLoadedMetadata = () => {
-    const length = videoRef.current?.duration ?? NaN;
+  const onLoadedMetadata = async () => {
+    const video = videoRef.current;
+    // Recorder files can report an infinite length until it is worked out.
+    const length = video ? await resolveDuration(video) : NaN;
     if (!Number.isFinite(length) || length <= 0) { setError('The video length could not be read. Try exporting the clip again as an MP4.'); return; }
     setDuration(length);
     setRange(defaultRange(length));
@@ -59,7 +62,7 @@ export function TrimPreview({ file, url, onAnalyse, onCancel }: TrimPreviewProps
     <section className="va-processing va-trim" aria-label="Preview and trim the video">
       <div className="va-stage">
         <video ref={videoRef} src={url} controls playsInline preload="metadata" aria-label="Video preview"
-          onLoadedMetadata={onLoadedMetadata}
+          onLoadedMetadata={() => void onLoadedMetadata()}
           onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)}
           onError={() => setError(UNPLAYABLE_VIDEO_MESSAGE)} />
       </div>

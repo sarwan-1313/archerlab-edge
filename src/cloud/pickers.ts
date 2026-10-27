@@ -9,6 +9,10 @@ import { CLOUD_CONFIG } from './config';
 
 export type ImportProgress = (loaded: number, total: number | null) => void;
 
+/** Largest file that can be imported: the download is held in memory until it is analysed. */
+export const MAX_IMPORT_BYTES = 2 * 1024 * 1024 * 1024;
+export const IMPORT_TOO_LARGE_MESSAGE = 'This file is larger than 2 GB, the most that can be imported. Trim the video, or download it and choose it from your device.';
+
 function loadScript(src: string, attributes: Record<string, string> = {}): Promise<void> {
   const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
   if (existing?.dataset.loaded === 'true') return Promise.resolve();
@@ -32,8 +36,8 @@ export function guessVideoType(name: string): string {
   return VIDEO_TYPES[extension] ?? 'video/mp4';
 }
 
-/** Downloads a URL into a File, reporting progress. */
-export async function downloadAsFile(url: string, name: string, init: RequestInit = {}, onProgress?: ImportProgress): Promise<File> {
+/** Downloads a URL into a File, reporting progress. Files over the limit (MAX_IMPORT_BYTES; lower in tests) are refused. */
+export async function downloadAsFile(url: string, name: string, init: RequestInit = {}, onProgress?: ImportProgress, maxBytes = MAX_IMPORT_BYTES): Promise<File> {
   let response: Response;
   try {
     response = await fetch(url, init);
@@ -42,9 +46,17 @@ export async function downloadAsFile(url: string, name: string, init: RequestIni
   }
   if (!response.ok) throw new Error(`The download failed (${response.status}).`);
   const total = Number(response.headers.get('content-length')) || null;
-  const type = response.headers.get('content-type')?.split(';')[0] || guessVideoType(name);
+  const tooLarge = () => new Error(IMPORT_TOO_LARGE_MESSAGE);
+  if (total !== null && total > maxBytes) {
+    await response.body?.cancel().catch(() => undefined);
+    throw tooLarge();
+  }
+  const served = response.headers.get('content-type')?.split(';')[0] ?? '';
+  // Storage services often send a generic type, so fall back to the file name.
+  const type = served.startsWith('video/') ? served : guessVideoType(name);
   if (!response.body) {
     const blob = await response.blob();
+    if (blob.size > maxBytes) throw tooLarge();
     return new File([blob], name, { type });
   }
   const reader = response.body.getReader();
@@ -53,11 +65,26 @@ export async function downloadAsFile(url: string, name: string, init: RequestIni
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    chunks.push(value as Uint8Array<ArrayBuffer>);
     loaded += value.byteLength;
+    // The size header can be missing or wrong, so count what actually arrives.
+    if (loaded > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw tooLarge();
+    }
+    chunks.push(value as Uint8Array<ArrayBuffer>);
     onProgress?.(loaded, total);
   }
-  return new File(chunks, name, { type: type.startsWith('video/') ? type : guessVideoType(name) });
+  return new File(chunks, name, { type });
+}
+
+/** The file name at the end of a link, or "video.mp4" when there is none or it cannot be decoded. */
+export function fileNameFromLink(url: URL): string {
+  const last = url.pathname.split('/').pop() ?? '';
+  try {
+    return decodeURIComponent(last).trim() || 'video.mp4';
+  } catch {
+    return 'video.mp4';
+  }
 }
 
 interface DropboxFile { name: string; link: string; bytes: number }
@@ -136,6 +163,5 @@ export async function importFromLink(url: string, onProgress?: ImportProgress): 
   if (/youtube\.com|youtu\.be|instagram\.com|tiktok\.com/i.test(parsed.hostname)) {
     throw new Error('Videos on YouTube, Instagram or TikTok cannot be downloaded by other sites. Use the original file from your phone or camera instead.');
   }
-  const name = decodeURIComponent(parsed.pathname.split('/').pop() || 'video.mp4');
-  return downloadAsFile(parsed.toString(), name, {}, onProgress);
+  return downloadAsFile(parsed.toString(), fileNameFromLink(parsed), {}, onProgress);
 }

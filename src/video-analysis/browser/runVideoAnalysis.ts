@@ -2,10 +2,11 @@ import type { ArcherHandedness } from '../../types/biomechanics';
 import { detectOnsets } from '../audio';
 import { buildReport, type AudioInput } from '../buildReport';
 import { QUALITY_FPS, VIDEO_CONFIG } from '../config';
+import { formatClock } from '../format';
 import { audioSkipReason, onsetsInRange, rangeLength, rangeProblem } from '../range';
 import type { AnalysisQuality, BowType, PoseModelVariant, PoseSample, TimeRange, VideoAnalysisReport } from '../types';
 import { decodeAudioTrack } from './audioDecode';
-import { AnalysisCancelledError, captureRanges } from './frameCapture';
+import { AnalysisCancelledError, captureRanges, resolveDuration } from './frameCapture';
 import { createVideoPoseModel } from './poseModel';
 
 export type AnalysisStage = 'loading' | 'audio' | 'model' | 'tracking' | 'refining' | 'scoring';
@@ -111,7 +112,7 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
   const checkAbort = () => { if (signal.aborted) throw new AnalysisCancelledError(); };
 
   progress('loading', 0, 'Reading the video…');
-  const duration = video.duration;
+  const duration = await resolveDuration(video);
   if (!Number.isFinite(duration) || duration <= 0) throw new VideoUnsupportedError('The video length could not be read. Try exporting the clip again as an MP4.');
   const range = options.range ?? { start: 0, end: duration };
   const problem = rangeProblem(range, duration);
@@ -154,13 +155,15 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
     first.landmarker.close();
   }
   checkAbort();
+  // A file that stopped playing partway is analysed up to that point (captureRanges fails when too little was tracked).
+  const analysed = pass1.stalledAt === null ? range : { start: range.start, end: pass1.stalledAt };
 
   const source = {
     fileName: options.file.name,
     fileSize: options.file.size,
     mimeType: options.file.type || 'video/*',
     durationS: duration,
-    range,
+    range: analysed,
     width: video.videoWidth,
     height: video.videoHeight,
     nativeFps: pass1.nativeFps,
@@ -189,7 +192,7 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
         checkAbort();
         const refined = await captureRanges({
           video, canvas: options.canvas, landmarker: second.landmarker,
-          ranges: mergeWindows(releases, VIDEO_CONFIG.refineWindowS, range), fps: Math.min(nativeFps, 60), signal,
+          ranges: mergeWindows(releases, VIDEO_CONFIG.refineWindowS, analysed), fps: Math.min(nativeFps, 60), signal, allowPartial: true,
           onProgress: (info) => progress('refining', info.fraction, `Precision pass — ${info.t.toFixed(1)} s`, { currentTime: info.t, sample: info.sample, framesProcessed: info.processed, playbackRate: info.playbackRate }),
         });
         refinedFrames = refined.samples.length;
@@ -207,6 +210,9 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
     samples, source, settings, profileHandedness: options.profileHandedness, audio,
     processingMs: performance.now() - started, refinedFrames,
   });
+  if (pass1.stalledAt !== null) {
+    report.limitations.unshift(`The video stopped playing at ${formatClock(pass1.stalledAt, 1)}, before the end of the selected part, so only what came before was analysed. The file may be damaged; exporting it again as MP4 may help.`);
+  }
   progress('scoring', 1, 'Done.');
   return report;
 }

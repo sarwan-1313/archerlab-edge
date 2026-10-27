@@ -151,13 +151,41 @@ export function restoreReportInput(value: unknown): BuildReportInput {
   });
 }
 
-/** Parses the text of an exported report file. Throws ReportFileError with a message for the athlete. */
-export function parseReportFile(text: string): BuildReportInput {
-  let value: unknown;
+function parseJson(text: string): unknown {
   try {
-    value = JSON.parse(text);
+    return JSON.parse(text);
   } catch {
     throw new ReportFileError('This file is not valid JSON. Choose a report exported with “Export report (JSON)”.');
   }
-  return restoreReportInput(value);
+}
+
+/** Parses the text of an exported report file. Throws ReportFileError with a message for the athlete. */
+export function parseReportFile(text: string): BuildReportInput {
+  return restoreReportInput(parseJson(text));
+}
+
+/** The reports in a full export (Privacy → "Export all video reports"), with how many could not be restored. */
+export interface ReportBundle { inputs: BuildReportInput[]; skipped: number }
+
+/**
+ * Reads either one exported report or a full export of every report. Throws
+ * ReportFileError for anything else, or for a full export with nothing usable in it.
+ */
+export function readReportFile(text: string): { report: BuildReportInput } | { bundle: ReportBundle } {
+  const value = parseJson(text);
+  if (!isRecord(value) || !Array.isArray(value.reports)) return { report: restoreReportInput(value) };
+  const inputs: BuildReportInput[] = [];
+  let skipped = 0;
+  for (const item of value.reports) {
+    try {
+      inputs.push(restoreReportInput(item));
+    } catch (error) {
+      if (!(error instanceof ReportFileError)) throw error;
+      skipped += 1;
+    }
+  }
+  if (!inputs.length) {
+    throw new ReportFileError(value.reports.length ? 'None of the reports in this export could be re-analysed: they have no pose landmarks or are malformed.' : 'This export has no reports in it.');
+  }
+  return { bundle: { inputs, skipped } };
 }

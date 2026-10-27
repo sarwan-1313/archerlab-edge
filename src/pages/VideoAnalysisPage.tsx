@@ -22,7 +22,7 @@ import { buildReport } from '../video-analysis/buildReport';
 import { chooseDefaultModel, isPoseModelVariant } from '../video-analysis/modelChoice';
 import { rangeLength } from '../video-analysis/range';
 import { applyReportToProfile, isFormStatus } from '../video-analysis/profileStatus';
-import { ReportFileError, inputFromReport, parseReportFile, type RescoreSettings } from '../video-analysis/reportFile';
+import { ReportFileError, inputFromReport, readReportFile, type ReportBundle, type RescoreSettings } from '../video-analysis/reportFile';
 import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, reportToJson, saveVideoReport, updateVideoReport } from '../video-analysis/storage';
 import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
 import type { BowType, PoseModelVariant, TimeRange, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
@@ -284,11 +284,32 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
     }
   };
 
+  // A full export (Privacy page) holds every report; they are scored again and saved here.
+  const importBundle = async ({ inputs, skipped }: ReportBundle) => {
+    const count = `${inputs.length} report${inputs.length === 1 ? '' : 's'}`;
+    if (!window.confirm(`Import ${count} to this device?\n\nEach one is scored again with the current engine and saved here. A report that is already on this device is replaced by the imported copy.`)) return;
+    let saved = 0;
+    for (const input of inputs) {
+      try {
+        await updateVideoReport(buildReport(input));
+        saved += 1;
+      } catch (error) {
+        console.error('Importing a report failed', error);
+      }
+    }
+    refreshHistory();
+    const missed = inputs.length - saved + skipped;
+    setReportFileError(null);
+    setNotice(`Imported ${saved} of ${inputs.length + skipped} reports. Open them from “Your video analyses” below.${missed ? ` ${missed} could not be imported (no pose landmarks, malformed, or storage full).` : ''}`);
+  };
+
   const openReportFile = async (file: File) => {
     setNotice(null);
     setReportFileError(null);
     try {
-      const report = buildReport(parseReportFile(await file.text()));
+      const contents = readReportFile(await file.text());
+      if ('bundle' in contents) { await importBundle(contents.bundle); return; }
+      const report = buildReport(contents.report);
       setView({ kind: 'report', report, videoUrl: null, videoBlob: null, source: 'file' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
