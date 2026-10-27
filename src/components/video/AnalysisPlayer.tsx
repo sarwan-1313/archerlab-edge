@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type Ref } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type Ref } from 'react';
 import { containRect, drawSkeleton } from '../../video-analysis/drawing';
 import { PHASE_LABEL, formatClock } from '../../video-analysis/format';
 import { sourceRange } from '../../video-analysis/range';
+import { hasWorldLandmarks } from '../../video-analysis/pose3d';
 import { indexAtTime } from '../../video-analysis/signal';
 import type { FrameReadout, JointName, VideoAnalysisReport } from '../../video-analysis/types';
 import { AppIcon } from '../AppIcon';
@@ -34,6 +35,12 @@ type AnalysisPlayerProps = {
 };
 
 const SPEEDS = [0.25, 0.5, 1] as const;
+const VIEWS = [{ id: 'replay', label: 'Replay' }, { id: '3d', label: '3D view' }] as const;
+type ViewId = (typeof VIEWS)[number]['id'];
+const NO_JOINTS: JointName[] = [];
+
+// three.js lives in this chunk, which is fetched the first time the 3D tab opens.
+const PoseViewer3D = lazy(() => import('./PoseViewer3D'));
 
 function readoutValue(value: number | null, digits: number, unit: string) {
   return value === null ? <dd>–</dd> : <dd>{value.toFixed(digits)}<small>{unit}</small></dd>;
@@ -81,6 +88,8 @@ export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }:
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(0.5);
   const [highlight, setHighlight] = useState<{ joints: JointName[]; until: number } | null>(null);
+  const [view, setView] = useState<ViewId>('replay');
+  const has3d = useMemo(() => hasWorldLandmarks(report.samples), [report.samples]);
   const timeRef = useRef(time);
   const sampleTimes = useMemo(() => report.samples.map((sample) => sample.t), [report.samples]);
   const frameTimes = useMemo(() => report.frames.map((frame) => frame.t), [report.frames]);
@@ -175,6 +184,11 @@ export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }:
     return () => window.removeEventListener('resize', redraw);
   }, [draw]);
 
+  // The 2D canvas has no size while its tab is hidden, so repaint when it comes back.
+  useEffect(() => {
+    if (view === 'replay') drawRef.current(timeRef.current);
+  }, [view]);
+
   const shotIndex = report.frames.length ? report.frames[indexAtTime(frameTimes, time)]?.shotIndex ?? null : null;
   const releaseTimes = report.shots.map((shot) => shot.release);
   const jumpShot = (direction: 1 | -1) => {
@@ -196,17 +210,43 @@ export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }:
     else if (event.key === 'ArrowLeft') { event.preventDefault(); setPlaying(false); goTo(time - step); }
   };
 
+  const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    const next = VIEWS[(VIEWS.findIndex((item) => item.id === view) + (event.key === 'ArrowRight' ? 1 : VIEWS.length - 1)) % VIEWS.length].id;
+    setView(next);
+    document.getElementById(`va-view-tab-${next}`)?.focus();
+  };
+
   const x = (t: number) => (end > start ? ((t - start) / (end - start)) * 1000 : 0);
   const frame = report.frames.length ? report.frames[indexAtTime(frameTimes, time)] ?? null : null;
 
   return (
     <section className="va-review" aria-label="Frame-by-frame review">
       <div className="va-player">
-        <div className="va-stage" tabIndex={0} onKeyDown={onKeyDown} onClick={() => setPlaying((value) => !value)} aria-label="Replay. Space plays or pauses; arrow keys step one frame.">
-          {videoUrl ? <video ref={videoRef} src={videoUrl} muted playsInline preload="auto" onLoadedData={() => goTo(timeRef.current)} /> : null}
-          <canvas ref={canvasRef} aria-hidden="true" />
-          <span className="va-stage__chip">{videoUrl ? (shotIndex ? `Shot ${shotIndex}` : 'Replay') : 'Skeleton replay · video not stored'}</span>
+        <div className="va-viewtabs" role="tablist" aria-label="Replay view" onKeyDown={onTabKeyDown}>
+          {VIEWS.map((item) => (
+            <button key={item.id} id={`va-view-tab-${item.id}`} type="button" role="tab" aria-selected={view === item.id} aria-controls={`va-view-panel-${item.id}`} tabIndex={view === item.id ? 0 : -1} className={view === item.id ? 'is-selected' : ''} onClick={() => setView(item.id)}>{item.label}</button>
+          ))}
         </div>
+        <div id="va-view-panel-replay" role="tabpanel" aria-labelledby="va-view-tab-replay" hidden={view !== 'replay'}>
+          <div className="va-stage" tabIndex={0} onKeyDown={onKeyDown} onClick={() => setPlaying((value) => !value)} aria-label="Replay. Space plays or pauses; arrow keys step one frame.">
+            {videoUrl ? <video ref={videoRef} src={videoUrl} muted playsInline preload="auto" onLoadedData={() => goTo(timeRef.current)} /> : null}
+            <canvas ref={canvasRef} aria-hidden="true" />
+            <span className="va-stage__chip">{videoUrl ? (shotIndex ? `Shot ${shotIndex}` : 'Replay') : 'Skeleton replay · video not stored'}</span>
+          </div>
+        </div>
+        {view === '3d' ? (
+          <div id="va-view-panel-3d" role="tabpanel" aria-labelledby="va-view-tab-3d" className="va-stage va-stage--3d" tabIndex={0} onKeyDown={onKeyDown} aria-label="3D view. Space plays or pauses; arrow keys step one frame.">
+            {has3d ? (
+              <Suspense fallback={<p className="va-viewer3d__message" role="status">Loading the 3D view…</p>}>
+                <PoseViewer3D report={report} time={time} highlight={highlight && time <= highlight.until ? highlight.joints : NO_JOINTS} />
+              </Suspense>
+            ) : (
+              <p className="va-viewer3d__message" role="status">No 3D landmarks in this report. Reports restored from the cloud keep scores and findings but not the per-frame landmarks, so the 3D view is only available on the device that analysed the clip.</p>
+            )}
+          </div>
+        ) : null}
         <div className="va-transport">
           <button type="button" className="icon-button" onClick={() => jumpShot(-1)} aria-label="Previous shot"><AppIcon name="skip-prev" size={18} /></button>
           <button type="button" className="icon-button" onClick={() => { setPlaying(false); goTo(time - step); }} aria-label="Previous frame"><AppIcon name="arrow-left" size={18} /></button>

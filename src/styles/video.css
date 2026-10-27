@@ -455,3 +455,16 @@
 @media (prefers-reduced-motion: reduce) {
   .va-progress__bar > div, .va-chip, .va-drop { transition: none; }
 }
+
+/* ---------- 3D view ---------- */
+.va-viewtabs { display: inline-flex; gap: 4px; justify-self: start; }
+.va-viewtabs button { min-height: 34px; padding: 0 14px; border: 1px solid var(--ath-line-strong); border-radius: 6px; color: var(--ath-muted); font: 700 12px/1 var(--ath-mono); letter-spacing: .08em; text-transform: uppercase; }
+.va-viewtabs button.is-selected { border-color: var(--ath-volt); color: var(--ath-volt); }
+.va-stage--3d { cursor: grab; }
+.va-stage--3d:active { cursor: grabbing; }
+.va-viewer3d, .va-viewer3d__canvas { position: absolute; inset: 0; }
+.va-stage .va-viewer3d__canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; touch-action: none; }
+.va-viewer3d__presets { position: absolute; right: 12px; bottom: 12px; display: inline-flex; gap: 4px; }
+.va-viewer3d__presets button { min-height: 32px; padding: 0 10px; border: 1px solid var(--ath-line-strong); border-radius: 6px; background: rgba(4, 6, 10, .78); color: var(--ath-muted); font: 700 12px/1 var(--ath-mono); backdrop-filter: blur(6px); }
+.va-viewer3d__presets button.is-selected { border-color: var(--ath-volt); color: var(--ath-volt); }
+.va-viewer3d__message { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; padding: 24px; color: var(--ath-muted); font-size: 14px; line-height: 1.5; text-align: center; }
