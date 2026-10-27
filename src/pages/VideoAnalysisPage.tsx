@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { backupReport, describeCloudError, listCloudReports, loadCloudReport } from '../cloud/account/cloudSync';
 import { listSharedWithMe, loadReviewReport, type ReportShare, type SharedReport } from '../cloud/account/coachReview';
 import { useCloudAccount } from '../cloud/account/useCloudAccount';
+import { useReportComments } from '../cloud/account/useReportComments';
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
@@ -302,6 +303,11 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
     if (`${window.location.pathname}${window.location.search}` !== path) window.history.replaceState(window.history.state, '', path);
   }, [openCloudId]);
 
+  // Comments need the report in the cloud: shared with this coach, or backed up by the athlete.
+  const commentsReportId = view.kind === 'report' && account.session && (view.source === 'shared' || view.source === 'cloud' || cloudHistory.some((item) => item.id === view.report.id))
+    ? view.report.id : null;
+  const comments = useReportComments(cloudApi, freshSession, commentsReportId);
+
   const rescore = async (current: ReportViewState, changes: RescoreSettings) => {
     setNotice(null);
     setRescoring(true);
@@ -524,6 +530,17 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
             </p>
           ) : view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
             : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
+          comments={commentsReportId && account.session ? {
+            comments: comments.comments,
+            currentUserId: account.session.user.id,
+            viewerIsOwner: view.source !== 'shared',
+            ownerEmail: view.source === 'shared' ? view.share?.owner_email ?? null : account.session.user.email?.toLowerCase() ?? null,
+            busy: comments.busy,
+            status: comments.status,
+            onAdd: comments.add,
+            onDelete: (id) => void comments.remove(id),
+            onRefresh: comments.refresh,
+          } : undefined}
           settingsControl={view.report.samples.length ? <RescorePanel key={view.report.id} report={view.report} busy={rescoring} onRescore={(changes) => void rescore(view, changes)} /> : undefined}
           cloudCoach={view.source === 'shared' ? undefined : <CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
           sharing={account.client && account.session && view.source !== 'file' && view.source !== 'shared' ? (

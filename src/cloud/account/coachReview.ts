@@ -1,4 +1,5 @@
 import { routeForPage } from '../../navigation/routes';
+import { formatClock } from '../../video-analysis/format';
 import type { ShotReport, VideoAnalysisReport, VideoReportSummary } from '../../video-analysis/types';
 import { CLOUD_CONFIG } from '../config';
 import { CloudError, type CloudSession, type SupabaseRest } from './supabaseRest';
@@ -69,6 +70,20 @@ export function shotAtTime(shots: ShotReport[], t: number): number | null {
     if (Math.abs(shot.release - t) <= 3 && (!nearest || Math.abs(shot.release - t) < Math.abs(nearest.release - t))) nearest = shot;
   }
   return nearest?.index ?? null;
+}
+
+/** How a comment's author is shown: "You", or their role and email. */
+export function commentAuthor(comment: ReportComment, currentUserId: string, viewerIsOwner: boolean, ownerEmail: string | null): string {
+  if (comment.author_id === currentUserId) return 'You';
+  const email = comment.author_email ?? 'someone';
+  if (viewerIsOwner) return `Coach · ${email}`;
+  return ownerEmail && comment.author_email === ownerEmail ? `Athlete · ${email}` : `Coach · ${email}`;
+}
+
+/** "Shot 2 · 0:04.50" for a comment pinned to a moment, or null for the whole report. */
+export function commentMoment(comment: ReportComment): string | null {
+  const parts = [comment.shot_index ? `Shot ${comment.shot_index}` : null, comment.time_s !== null ? formatClock(comment.time_s, 2) : null].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 }
 
 export async function shareReport(client: SupabaseRest, session: CloudSession, share: { reportId: string; coachEmail: string; includeVideo: boolean }): Promise<ReportShare> {

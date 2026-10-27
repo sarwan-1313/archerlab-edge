@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ShotReport } from '../../video-analysis/types';
 import { listCloudReports } from './cloudSync';
 import {
-  addComment, cloudReportState, deleteComment, listComments, listShares, listSharedWithMe, loadReviewReport,
+  addComment, cloudReportState, commentAuthor, commentMoment, deleteComment, listComments, listShares, listSharedWithMe, loadReviewReport,
   revokeShare, shareReport, sharedReportLink, shotAtTime,
 } from './coachReview';
 import { CloudError, createSupabaseRest, type CloudSession } from './supabaseRest';
@@ -182,5 +182,22 @@ describe('shotAtTime', () => {
     expect(shotAtTime(shots, 28)).toBe(2);
     expect(shotAtTime(shots, 20)).toBeNull();
     expect(shotAtTime([], 5)).toBeNull();
+  });
+});
+
+describe('comment labels', () => {
+  const base = { id: 'k', report_id: 'r1', author_id: 'c1', author_email: 'coach@club.org', shot_index: null, time_s: null, body: 'x', created_at: '' };
+
+  it('names the author by role from the viewer’s side', () => {
+    expect(commentAuthor({ ...base, author_id: 'u1' }, 'u1', true, null)).toBe('You');
+    expect(commentAuthor(base, 'u1', true, 'archer@example.com')).toBe('Coach · coach@club.org');
+    expect(commentAuthor({ ...base, author_id: 'u1', author_email: 'archer@example.com' }, 'c1', false, 'archer@example.com')).toBe('Athlete · archer@example.com');
+    expect(commentAuthor({ ...base, author_id: 'c2', author_email: 'other@club.org' }, 'c1', false, 'archer@example.com')).toBe('Coach · other@club.org');
+  });
+
+  it('describes the moment a comment is pinned to', () => {
+    expect(commentMoment({ ...base, shot_index: 3, time_s: 61.5 })).toBe('Shot 3 · 1:01.50');
+    expect(commentMoment({ ...base, time_s: 2 })).toBe('0:02.00');
+    expect(commentMoment(base)).toBeNull();
   });
 });

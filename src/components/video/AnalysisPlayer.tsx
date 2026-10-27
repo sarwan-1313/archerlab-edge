@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type Ref } from 'react';
 import { containRect, drawSkeleton } from '../../video-analysis/drawing';
 import { PHASE_LABEL, formatClock } from '../../video-analysis/format';
 import { sourceRange } from '../../video-analysis/range';
@@ -13,10 +13,24 @@ export interface SeekRequest {
   nonce: number;
 }
 
+/** Lets the report read where the replay is, e.g. to comment at this moment. */
+export interface PlayerHandle {
+  currentTime: () => number;
+}
+
+/** A comment pinned to a moment, drawn on the timeline. */
+export interface TimelineMarker {
+  id: string;
+  t: number;
+  label: string;
+}
+
 type AnalysisPlayerProps = {
   report: VideoAnalysisReport;
   videoUrl: string | null;
   seek: SeekRequest | null;
+  handle?: Ref<PlayerHandle>;
+  markers?: TimelineMarker[];
 };
 
 const SPEEDS = [0.25, 0.5, 1] as const;
@@ -57,7 +71,7 @@ function Readout({ frame, hasPose }: { frame: FrameReadout | null; hasPose: bool
   );
 }
 
-export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) {
+export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }: AnalysisPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timelineRef = useRef<SVGSVGElement>(null);
@@ -103,6 +117,8 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
     if (video && videoUrl) video.currentTime = clamped;
     draw(clamped);
   }, [draw, end, start, videoUrl]);
+
+  useImperativeHandle(handle, () => ({ currentTime: () => timeRef.current }), []);
 
   const goToRef = useRef(goTo);
   useEffect(() => { goToRef.current = goTo; }, [goTo]);
@@ -219,6 +235,9 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
           {(report.audio?.onsets ?? []).filter((onset) => onset.strength >= 0.12).map((onset) => (
             <line key={`o${onset.t}`} className="va-timeline__onset" x1={x(onset.t)} x2={x(onset.t)} y1={52 - onset.strength * 12} y2="54" vectorEffect="non-scaling-stroke" />
           ))}
+          {markers.filter((marker) => marker.t >= start && marker.t <= end).map((marker) => (
+            <line key={`c${marker.id}`} className="va-timeline__comment" x1={x(marker.t)} x2={x(marker.t)} y1="0" y2="12" vectorEffect="non-scaling-stroke"><title>{marker.label}</title></line>
+          ))}
           <line className="va-timeline__head" x1={x(time)} x2={x(time)} y1="0" y2="56" vectorEffect="non-scaling-stroke" />
         </svg>
         <div className="va-legend" aria-hidden="true">
@@ -227,6 +246,7 @@ export function AnalysisPlayer({ report, videoUrl, seek }: AnalysisPlayerProps) 
           <span><i style={{ background: 'var(--ath-gold)' }} />Release</span>
           <span><i style={{ background: 'rgba(255,107,26,.7)' }} />Follow-through</span>
           {report.audio?.available ? <span><i style={{ background: 'rgba(243,246,250,.5)' }} />Sounds</span> : null}
+          {markers.length ? <span><i style={{ background: '#c38cff' }} />Comments</span> : null}
           {releaseTimes.length ? null : <span>No shots found</span>}
         </div>
       </div>
