@@ -36,7 +36,7 @@ const BOW_TYPES: BowType[] = ['recurve', 'compound', 'barebow', 'traditional'];
 
 type View =
   | { kind: 'upload' }
-  | { kind: 'preview'; file: File; url: string }
+  | { kind: 'preview'; file: File; url: string; converted?: boolean }
   | { kind: 'processing'; file: File; url: string; range: TimeRange }
   | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' }
   | { kind: 'error'; message: string; file?: File };
@@ -161,15 +161,15 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
   };
 
   // A chosen file is previewed first, so long videos can be trimmed before any tracking.
-  const chooseFile = (file: File) => {
+  const chooseFile = (file: File, converted = false) => {
     setNotice(null);
     setReportFileError(null);
-    setView({ kind: 'preview', file, url: makeUrl(file) });
+    setView({ kind: 'preview', file, url: makeUrl(file), converted });
   };
 
   // A converted clip goes the same way as a chosen one: straight to the trim and preview step.
   const openConvertedFile = (file: File) => {
-    chooseFile(file);
+    chooseFile(file, true);
     setNotice(`Converted to ${file.name} (${formatBytes(file.size)}) on this device. Nothing was uploaded.`);
   };
 
@@ -450,7 +450,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
       ) : null}
 
       {view.kind === 'preview' ? (
-        <TrimPreview key={view.url} file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => setView({ kind: 'upload' })} onConverted={openConvertedFile} online={online} />
+        <TrimPreview key={view.url} file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => { setNotice(null); setView({ kind: 'upload' }); }} onConverted={view.converted ? undefined : openConvertedFile} online={online} />
       ) : null}
 
       {view.kind === 'processing' ? (
