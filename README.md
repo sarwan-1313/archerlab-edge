@@ -156,7 +156,7 @@ A separate engine for recorded clips (`src/video-analysis`). Because it sees the
 - **Real-clip fixtures.** Exported reports with an expected shot count and release times become regression tests ([how](src/video-analysis/fixtures/README.md)).
 
 ### 9. Optional second opinions, backup and imports
-From any video report, athletes can ask Claude, GPT and Gemini for a coaching review with **their own API keys** (six annotated stills plus the measurements, after an explicit consent tick; never the video unless they opt in). The coaches' views are combined to show where they agree. Accounts and cloud backup (Supabase) and Dropbox / Google Drive import can be switched on by whoever deploys the app. All of this is off by default: see [docs/cloud-setup.md](docs/cloud-setup.md).
+From any video report, athletes can ask Claude, GPT and Gemini for a coaching review with **their own API keys** (six annotated stills plus the measurements, after an explicit consent tick; never the video unless they opt in). The coaches' views are combined to show where they agree. Accounts and cloud backup (Supabase) and Dropbox / Google Drive import can be switched on by whoever deploys the app. With accounts on, a signed-in athlete can share a report read-only with a coach's email (the video only if they include it), and both can leave comments pinned to moments of the replay; shares can be revoked at any time. All of this is off by default: see [docs/cloud-setup.md](docs/cloud-setup.md).
 
 ### 10. Privacy controls
 The [Privacy page](https://archerlab-edge.vercel.app/privacy) explains in plain language what runs and is stored on the device and what each optional feature sends, and to whom. It lets athletes export all their video reports, delete their video analyses or everything the app stores on the device, and, when signed in, delete their cloud data or their account.
@@ -211,7 +211,7 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 - Installable and offline-capable: after the first visit the app and its models are kept in the browser's cache, which never holds athlete data or cloud (Supabase, AI provider) requests ([docs/pwa.md](docs/pwa.md)).
 - Voice notes are transcribed by Whisper in the browser; the audio is never uploaded or saved ([docs/voice-notes.md](docs/voice-notes.md)).
 - No account needed and no analytics trackers.
-- Optional and off by default: AI coach reviews (sent only to the provider the athlete picks, with their own key and explicit consent) and account backup when the deployment enables it.
+- Optional and off by default: AI coach reviews (sent only to the provider the athlete picks, with their own key and explicit consent), and account backup and sharing a report with a coach when the deployment enables accounts.
 - A [Privacy page](https://archerlab-edge.vercel.app/privacy) with export and delete controls for everything on the device, and for cloud data and the account when signed in.
 
 ---
@@ -233,7 +233,7 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 src/
 ├── analytics        session datasets and statistics
 ├── biomechanics     landmark geometry, smoothing, archery metrics
-├── cloud            optional AI coaches, accounts/backup (incl. cloud delete) and storage import
+├── cloud            optional AI coaches, accounts/backup (incl. cloud delete), coach review and storage import
 ├── components       shared UI (camera, overlays, metric cards, navigation, video report)
 ├── demo             sample session generated through the real capture engine
 ├── export           session JSON and CSV export
@@ -262,7 +262,7 @@ docs/                engine notes, cloud setup, offline and install
 e2e/                 Playwright end-to-end and accessibility tests (stubbed pose model, synthetic clip)
 public/pwa/          app icons generated from favicon.svg
 scripts/             pose model download (run automatically on Vercel builds), e2e clip and PWA icon generators
-supabase/            SQL for optional accounts, backup and account deletion
+supabase/            SQL for optional accounts, backup, coach review and account deletion
 ```
 
 ---
@@ -274,7 +274,7 @@ supabase/            SQL for optional accounts, backup and account deletion
 | [docs/video-analysis.md](docs/video-analysis.md) | The video engine: pipeline, segmentation, audio, scoring, trimming, larger pose models, limits |
 | [docs/voice-notes.md](docs/voice-notes.md) | On-device voice notes with Whisper: score parsing, the model and runtime, download and caching, languages |
 | [docs/video-conversion.md](docs/video-conversion.md) | Converting a clip the browser cannot play to MP4 on the device: flow, ffmpeg settings, the self-hosted core, licence |
-| [docs/cloud-setup.md](docs/cloud-setup.md) | Optional AI review, accounts and backup, account deletion, imports, environment variables |
+| [docs/cloud-setup.md](docs/cloud-setup.md) | Optional AI review, accounts and backup, remote coach review, account deletion, imports, environment variables |
 | [docs/biomechanics.md](docs/biomechanics.md) | Live-engine measurement conventions (handedness, angle signs, normalisation) |
 | [docs/pose-intelligence.md](docs/pose-intelligence.md) | On-device MediaPipe setup and self-hosted assets |
 | [docs/pwa.md](docs/pwa.md) | Installing the app, what works offline and how it is cached, the update prompt, icons |

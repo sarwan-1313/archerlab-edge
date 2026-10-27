@@ -25,7 +25,8 @@
     "@mediapipe/tasks-vision": "^1.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "workbox-window": "7.4.1"
+    "workbox-window": "7.4.1",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -36,6 +37,7 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.0.4",
     "jsdom": "^30.0.1",
     "oxlint": "^1.75.0",

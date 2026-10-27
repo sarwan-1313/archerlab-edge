@@ -5,7 +5,7 @@ ArcherLab Edge works fully on-device with no setup. Three optional features can 
 | Feature | Needs | Who pays |
 | --- | --- | --- |
 | AI coach second opinion (Claude, GPT, Gemini) | Nothing to deploy. Each athlete pastes their own API key in the report | The key's owner, per review |
-| Accounts and backup (profile, video reports, videos) | A free Supabase project + 2 environment variables | Supabase free tier is enough to start |
+| Accounts and backup (profile, video reports, videos), and sharing a report with a coach | A free Supabase project + 2 environment variables | Supabase free tier is enough to start |
 | Import from Dropbox / Google Drive on desktop | An app key from Dropbox and/or Google | Free |
 
 On phones, the normal **Choose video** button already opens Google Drive, iCloud, Dropbox and other storage apps through the system file picker, with no setup.
@@ -16,7 +16,8 @@ Many ArcherLab users are under 18. Before turning cloud features on for a club o
 
 - The AI coach panel requires an explicit consent tick ("a parent or guardian has agreed") before anything is sent. By default it sends **six annotated still frames plus the measurements**, not the video. Gemini can be allowed to watch the whole clip (under 14 MB), as a separate opt-in.
 - API keys stay in the browser (session storage, or local storage if "remember" is ticked) and go only to the chosen provider. ArcherLab has no server.
-- Account backup stores reports **without** per-frame landmarks. Videos are uploaded only when the athlete presses "Back up report + video". Row-level security keeps every row and file private to its owner.
+- Account backup stores reports **without** per-frame landmarks. Videos are uploaded only when the athlete presses "Back up report + video". Row-level security keeps every row and file private to its owner, except what the athlete shares read-only with a coach (see [Remote coach review](#remote-coach-review)).
+- Sharing with a coach asks the athlete to confirm "Only share with a coach you trust. If you're under 18, ask a parent or guardian first." The video is never shared unless the athlete ticks "Include the video".
 - The in-app **Privacy** page (`/privacy`, `src/pages/PrivacyPage.tsx`) explains all of this to athletes and lets them export or delete their data. Update it, and the README, if you change these defaults.
 
 ## 1. AI coaches
@@ -44,23 +45,44 @@ The default models think before they answer, and that thinking counts toward the
 ## 2. Accounts and backup (Supabase)
 
 1. Create a project at https://supabase.com.
-2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add the function to an existing project.
+2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, the `report_shares` and `report_comments` tables for [remote coach review](#remote-coach-review), and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add coach review to an existing project.
 3. In **Authentication → URL Configuration**, set the Site URL to your deployment (e.g. `https://archerlab-edge.vercel.app`) and add `https://archerlab-edge.vercel.app/profile` (plus `http://localhost:5173/profile` for development) to the redirect URLs.
-4. Email sign-in links work out of the box. To add Google sign-in, enable the Google provider in **Authentication → Providers**.
+4. Email sign-in links work out of the box. To add Google sign-in, enable the Google provider in **Authentication → Providers**. Coach review trusts the email in each user's sign-in token, so leave **Confirm email** switched on if you also enable password sign-up.
 5. Copy the project URL and the **anon** public key from **Project Settings → API** into environment variables (below). The anon key is safe to ship to browsers; row-level security protects the data.
 
 The app talks to Supabase over plain REST (`src/cloud/account/supabaseRest.ts`), so no extra npm package is needed.
 
 The free plan limits single uploads to 50 MB; the app checks this before uploading a video and backs up only the report when a video is larger. Set `VITE_SUPABASE_MAX_UPLOAD_MB` if your project allows more.
 
+### Remote coach review
+
+A signed-in athlete can share one report with a coach, who reviews it from anywhere. All of it appears only when accounts are configured and the athlete is signed in.
+
+- **Sharing.** In a report, **Share with a coach** backs the report up first if it is not in the account yet (and uploads the video if the athlete ticks **Include the video**, which is off by default). The athlete enters the coach's email and confirms they trust the coach. This adds a row to `report_shares` (stored in lower case, one per report and coach). Sharing again with the same coach updates the share and restores it if it was revoked.
+- **The link.** The app sends no email. The athlete copies `/video?report=<id>` and sends it to the coach themselves. The link only works for a coach who signs in with the email it was shared with. Shared reports also appear under **Shared with me** on the coach's Video Analysis page.
+- **What the coach sees.** The report row as backed up (scores, findings, shot timings, file name; no per-frame landmarks), the athlete's email, and the comments. The video only when the share includes it: the app then asks Storage for a signed URL, which lasts an hour. Coaches can never update or delete the report, re-share it, or run the AI review on it.
+- **Comments.** The athlete and every active coach can read and add comments (`report_comments`, 1–2000 characters). **Comment at this moment** stores the replay's current time and the shot it falls in; clicking a comment jumps the replay there, and timed comments are marked on the timeline. Authors can delete their own comments; there is no editing.
+- **Revoking.** **Revoke** next to a coach sets `revoked_at`. The coach loses access to the report, its comments and its video at once; a signed video URL they already opened keeps working until it expires (up to an hour). Comments they wrote stay with the report.
+
+How the policies enforce this (each one is commented in `schema.sql`):
+
+| Who | Can |
+| --- | --- |
+| Athlete (owner) | Create shares only for reports they own, under their own id and email; read, revoke and delete their own shares |
+| Coach | Read active shares where `coach_email = lower(auth.jwt() ->> 'email')`; read the shared `video_reports` row (select only); read the video file only when `include_video` is true on an active share |
+| Owner and active coaches | Read and add comments on the report, as themselves (`author_id = auth.uid()`, `author_email` from the token) |
+| Comment author | Delete their own comments |
+
+The policies call three small `security definer` functions (`owns_video_report`, `is_report_coach`, `can_read_shared_video`). They answer only yes/no questions about the caller, and they let the `video_reports` and `report_shares` policies check each other without recursing.
+
 ### Deleting cloud data and accounts
 
 Signed-in athletes can remove their data themselves from the Privacy page:
 
-- **Delete my cloud data** lists the athlete's own folder in the `videos` bucket (`<user id>/…`) and deletes every file in it, plus any file a report row points to. It then deletes all of their `video_reports` rows and their `athlete_profiles` row. The account stays. Row-level security limits every request to the athlete's own rows and files.
+- **Delete my cloud data** lists the athlete's own folder in the `videos` bucket (`<user id>/…`) and deletes every file in it, plus any file a report row points to. It then deletes the comments they wrote on reports shared with them, all of their `video_reports` rows (which removes every share of those reports and every comment on them) and their `athlete_profiles` row. The account stays. Row-level security limits every request to the athlete's own rows and files.
 - **Delete my account** does the same, then calls `POST /rest/v1/rpc/delete_my_account`, then signs out. Storage files are deleted first because stored objects can keep a user from being deleted.
 
-`delete_my_account()` is a `security definer` SQL function that runs `delete from auth.users where id = auth.uid()`, so it can only ever delete the caller. Its `search_path` is empty and every name is schema-qualified. Execution is revoked from `public` and `anon` and granted only to `authenticated`. Deleting the user cascades to their rows in `athlete_profiles` and `video_reports`.
+`delete_my_account()` is a `security definer` SQL function that runs `delete from auth.users where id = auth.uid()`, so it can only ever delete the caller. Its `search_path` is empty and every name is schema-qualified. Execution is revoked from `public` and `anon` and granted only to `authenticated`. Deleting the user cascades to their rows in `athlete_profiles` and `video_reports`, and from there to every share and comment on their reports, as well as to shares they created and comments they wrote anywhere.
 
 If a project was set up before this function existed, **Delete my account** still deletes the athlete's cloud data, then reports that the account could not be removed. Re-run `supabase/schema.sql` to add the function.
 

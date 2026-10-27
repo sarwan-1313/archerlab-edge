@@ -15,21 +15,26 @@ export function cloudClient(): SupabaseRest | null {
 const listeners = new Set<(session: CloudSession | null) => void>();
 let currentSession: CloudSession | null = null;
 let initialised = false;
+// Set once the stored session has been checked, so pages can tell "signed out" from "not known yet".
+let resolved = false;
 
 function publish(session: CloudSession | null) {
   currentSession = session;
+  resolved = true;
   listeners.forEach((listener) => listener(session));
 }
 
 /** Optional sign-in. Returns `configured: false` when the deployment has no cloud project. */
 export function useCloudAccount() {
   const [session, setSession] = useState<CloudSession | null>(currentSession);
+  const [ready, setReady] = useState(resolved);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const api = cloudClient();
 
   useEffect(() => {
-    listeners.add(setSession);
+    const listener = (next: CloudSession | null) => { setSession(next); setReady(true); };
+    listeners.add(listener);
     if (api && !initialised) {
       initialised = true;
       const hash = takePendingAuthRedirect();
@@ -43,10 +48,11 @@ export function useCloudAccount() {
           publish(await api.validSession());
         } catch (error) {
           setMessage(describeCloudError(error));
+          publish(currentSession);
         }
       })();
     }
-    return () => { listeners.delete(setSession); };
+    return () => { listeners.delete(listener); };
   }, [api]);
 
   const signInWithEmail = useCallback(async (email: string) => {
@@ -82,5 +88,5 @@ export function useCloudAccount() {
     return valid;
   }, [api]);
 
-  return { configured: Boolean(api), client: api, session, busy, message, setMessage, signInWithEmail, signInWithGoogle, signOut, freshSession };
+  return { configured: Boolean(api), client: api, session, ready, busy, message, setMessage, signInWithEmail, signInWithGoogle, signOut, freshSession };
 }

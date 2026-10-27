@@ -1,4 +1,5 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { commentAuthor, shotAtTime, type ReportComment } from '../../cloud/account/coachReview';
 import { RESOURCE_LIBRARY } from '../../video-analysis/resources';
 import { CATEGORY_INFO, METRIC_RUBRIC, formatMetricShort } from '../../video-analysis/rubric';
 import { LEVEL_LABEL } from '../../video-analysis/scoring';
@@ -9,19 +10,24 @@ import { ActionButton } from '../ActionButton';
 import { StatusBadge } from '../StatusBadge';
 import { VoiceNotePanel } from '../VoiceNotePanel';
 import { AnchorFaceDiagram } from './AnchorFaceDiagram';
-import { AnalysisPlayer, type SeekRequest } from './AnalysisPlayer';
+import { AnalysisPlayer, type PlayerHandle, type SeekRequest, type TimelineMarker } from './AnalysisPlayer';
+import { CommentsPanel, type CommentsPanelProps } from './CommentsPanel';
 import { LevelBadge } from './LevelBadge';
 
 type ReportViewProps = {
   report: VideoAnalysisReport;
   videoUrl: string | null;
   cloudCoach?: ReactNode;
+  /** Share-with-a-coach controls, shown before the AI review. */
+  sharing?: ReactNode;
   actions: ReactNode;
   notice?: ReactNode;
   /** Re-score controls, shown under the score callouts. */
   settingsControl?: ReactNode;
   /** Saves the athlete's note for a shot; without it the notes are shown but cannot be changed. */
   onShotNotes?: (shotIndex: number, notes: string) => void;
+  /** Comments, for a report in the cloud while signed in. `onAdd` gets the replay's moment, or null for the whole report. */
+  comments?: Omit<CommentsPanelProps, 'onAdd' | 'onJump'> & { onAdd: (body: string, at: { timeS: number; shotIndex: number | null } | null) => Promise<boolean> };
 };
 
 const RESOURCE_ICON: Record<ResourceLink['kind'], AppIconName> = {
@@ -195,15 +201,35 @@ function Consistency({ report }: { report: VideoAnalysisReport }) {
   );
 }
 
-export function ReportView({ report, videoUrl, cloudCoach, actions, notice, settingsControl, onShotNotes }: ReportViewProps) {
+export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, notice, settingsControl, comments, onShotNotes }: ReportViewProps) {
   const [seek, setSeek] = useState<SeekRequest | null>(null);
   const nonce = useRef(0);
+  const playerRef = useRef<PlayerHandle>(null);
   const show = (t: number, joints: SeekRequest['joints'] = []) => {
     nonce.current += 1;
     setSeek({ t, joints, nonce: nonce.current });
     document.querySelector('.va-review')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
   const others = report.findings.filter((finding) => !report.focusAreas.includes(finding));
+  const commentItems = comments?.comments;
+  const currentUserId = comments?.currentUserId;
+  const viewerIsOwner = comments?.viewerIsOwner;
+  const ownerEmail = comments?.ownerEmail ?? null;
+  const markers = useMemo<TimelineMarker[]>(() => (commentItems ?? [])
+    .filter((comment) => comment.time_s !== null)
+    .map((comment) => ({ id: comment.id, t: comment.time_s as number, label: `${commentAuthor(comment, currentUserId ?? '', viewerIsOwner ?? true, ownerEmail)}: ${comment.body.slice(0, 120)}` })), [commentItems, currentUserId, ownerEmail, viewerIsOwner]);
+  // Comments jump the replay like "Show me": to their moment, else to their shot.
+  const jumpToComment = (comment: ReportComment) => {
+    if (comment.time_s !== null) { show(comment.time_s); return; }
+    const shot = report.shots.find((item) => item.index === comment.shot_index);
+    if (shot) show(shot.anchorStart ?? Math.max(0, shot.release - 1));
+  };
+  const addComment = (body: string, atMoment: boolean) => {
+    if (!comments) return Promise.resolve(false);
+    if (!atMoment) return comments.onAdd(body, null);
+    const timeS = playerRef.current?.currentTime() ?? 0;
+    return comments.onAdd(body, { timeS, shotIndex: shotAtTime(report.shots, timeS) });
+  };
 
   return (
     <div className="va-report">
@@ -211,7 +237,8 @@ export function ReportView({ report, videoUrl, cloudCoach, actions, notice, sett
       <Scoreboard report={report} />
       <Callouts report={report} />
       {settingsControl}
-      <AnalysisPlayer report={report} videoUrl={videoUrl} seek={seek} />
+      <AnalysisPlayer report={report} videoUrl={videoUrl} seek={seek} handle={playerRef} markers={markers} />
+      {comments ? <CommentsPanel {...comments} onAdd={addComment} onJump={jumpToComment} /> : null}
 
       <section className="va-panel" aria-labelledby="va-focus-title">
         <h2 id="va-focus-title">What to work on <small>{report.focusAreas.length ? `top ${report.focusAreas.length}` : ''}</small></h2>
@@ -269,6 +296,7 @@ export function ReportView({ report, videoUrl, cloudCoach, actions, notice, sett
         </section>
       </div>
 
+      {sharing}
       {cloudCoach}
 
       <section className="va-panel">

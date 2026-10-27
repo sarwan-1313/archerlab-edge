@@ -259,6 +259,7 @@
 .va-timeline__release { stroke: var(--ath-gold); stroke-width: 2.5; }
 .va-timeline__onset { stroke: rgba(243, 246, 250, .45); stroke-width: 1.2; }
 .va-timeline__head { stroke: #fff; stroke-width: 2; }
+.va-timeline__comment { stroke: #c38cff; stroke-width: 5; }
 .va-timeline__label { fill: var(--ath-faint); font: 700 9px var(--ath-mono); }
 .va-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ath-faint); font: 600 11px/1 var(--ath-mono); letter-spacing: .04em; }
 .va-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
@@ -407,6 +408,25 @@
 .va-agreed span { color: var(--ath-muted); font-size: 13px; line-height: 1.5; }
 .va-agreed em { color: var(--ath-volt); font: 700 10px/1.2 var(--ath-mono); font-style: normal; letter-spacing: .1em; text-transform: uppercase; }
 
+/* ---------- Coach review: sharing and comments ---------- */
+.va-share, .va-comments { display: grid; gap: 14px; }
+.va-share__form { display: grid; gap: 12px; }
+.va-share input[type='email'], .va-share__link input { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--ath-line-strong); }
+.va-share__list, .va-comments__list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.va-share__list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius); background: rgba(0, 0, 0, .22); }
+.va-share__list span, .va-shared-row span { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.va-share__list small { color: var(--ath-faint); font-size: 12px; }
+.va-share__link { display: flex; flex-wrap: wrap; gap: 8px; }
+.va-share__link input { flex: 1 1 260px; font: 500 13px var(--ath-mono); }
+.va-comment { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--ath-line); border-left: 3px solid #c38cff; border-radius: var(--ath-radius); background: rgba(0, 0, 0, .22); }
+.va-comment header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ath-faint); font: 600 12px/1.3 var(--ath-mono); }
+.va-comment header strong { color: var(--ath-text); }
+.va-comment p { margin: 0; color: var(--ath-muted); font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.va-comment__jump { padding: 2px 8px; border: 1px solid rgba(195, 140, 255, .45); border-radius: 6px; background: rgba(195, 140, 255, .08); color: var(--ath-text); font: inherit; cursor: pointer; }
+.va-comment__jump:hover { border-color: #c38cff; }
+.va-comment__delete { margin-left: auto; padding: 0; border: 0; background: none; color: var(--ath-faint); font: inherit; text-decoration: underline; cursor: pointer; }
+.va-comments textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid var(--ath-line-strong); font: inherit; resize: vertical; }
+
 /* ---------- Profile: form status & account ---------- */
 .form-status { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 20px; margin-bottom: 20px; }
 .form-status__level { display: grid; align-content: center; gap: 8px; padding: 22px; border-radius: var(--ath-radius-lg); background: linear-gradient(135deg, #10202b, #070a10); border: 1px solid rgba(46, 230, 255, .25); }
@@ -462,3 +482,16 @@
 .va-anchor-face__dot--rough { fill: none; stroke: var(--ath-cyan, #2ee6ff); stroke-width: 3; }
 .va-anchor-face__num { fill: var(--ath-ink, #04060a); font-size: 13px; font-weight: 700; pointer-events: none; }
 .va-anchor-face__dot--rough + .va-anchor-face__num { fill: var(--ath-text, #fff); }
+
+/* ---------- 3D view ---------- */
+.va-viewtabs { display: inline-flex; gap: 4px; justify-self: start; }
+.va-viewtabs button { min-height: 34px; padding: 0 14px; border: 1px solid var(--ath-line-strong); border-radius: 6px; color: var(--ath-muted); font: 700 12px/1 var(--ath-mono); letter-spacing: .08em; text-transform: uppercase; }
+.va-viewtabs button.is-selected { border-color: var(--ath-volt); color: var(--ath-volt); }
+.va-stage--3d { cursor: grab; }
+.va-stage--3d:active { cursor: grabbing; }
+.va-viewer3d, .va-viewer3d__canvas { position: absolute; inset: 0; }
+.va-stage .va-viewer3d__canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; touch-action: none; }
+.va-viewer3d__presets { position: absolute; right: 12px; bottom: 12px; display: inline-flex; gap: 4px; }
+.va-viewer3d__presets button { min-height: 32px; padding: 0 10px; border: 1px solid var(--ath-line-strong); border-radius: 6px; background: rgba(4, 6, 10, .78); color: var(--ath-muted); font: 700 12px/1 var(--ath-mono); backdrop-filter: blur(6px); }
+.va-viewer3d__presets button.is-selected { border-color: var(--ath-volt); color: var(--ath-volt); }
+.va-viewer3d__message { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; padding: 24px; color: var(--ath-muted); font-size: 14px; line-height: 1.5; text-align: center; }

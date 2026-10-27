@@ -18,8 +18,9 @@ it('explains what stays on the device and what the optional features send', () =
   expect(screen.getByText(/Import from a link/)).toBeTruthy();
   expect(screen.getByText(/parent or guardian/)).toBeTruthy();
   expect(screen.getByRole('link', { name: 'GitHub issues' }).getAttribute('href')).toBe('https://github.com/sarwan-1313/archerlab-edge/issues');
-  // This build has no accounts configured, so there are no account controls.
+  // This build has no accounts configured, so there are no account controls and no coach sharing.
   expect(screen.queryByRole('button', { name: /Delete my account/ })).toBeNull();
+  expect(screen.queryByText(/Sharing with a coach/)).toBeNull();
 });
 
 it('asks before deleting and does nothing when cancelled', () => {
