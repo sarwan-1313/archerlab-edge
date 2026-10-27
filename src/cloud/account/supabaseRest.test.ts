@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildReport } from '../../video-analysis/buildReport';
 import { makeScenario, scriptShots, syntheticSamples } from '../../video-analysis/testing/syntheticArcher';
 import { cloudProfileData, toCloudReportRow, videoPathFor } from './cloudSync';
@@ -86,5 +86,58 @@ describe('cloud sync rows', () => {
     expect(JSON.stringify(row).length).toBeLessThan(JSON.stringify({ ...report, samples: report.samples.map((sample) => Array.from(sample.image ?? [])) }).length);
     expect(cloudProfileData({ name: 'A', profilePhotoBlob: new Blob(['x']), profilePhotoUrl: 'blob:1' })).toEqual({ name: 'A' });
     expect(videoPathFor('u', 'r', 'video/quicktime')).toBe('u/r.mov');
+  });
+});
+
+describe('validSession', () => {
+  const SESSION_KEY = 'archerlab-edge:cloud-session';
+  const expired = { accessToken: 'old', refreshToken: 'refresh-1', expiresAt: 1, user: { id: 'u1', email: 'a@b.co' } };
+  const stored = new Map<string, string>();
+
+  beforeEach(() => {
+    stored.clear();
+    stored.set(SESSION_KEY, JSON.stringify(expired));
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => { stored.set(key, value); },
+      removeItem: (key: string) => { stored.delete(key); },
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('refreshes an expired session and stores the new tokens', async () => {
+    const { fetcher } = fakeFetch([{ status: 200, body: { access_token: 'new', refresh_token: 'refresh-2', expires_in: 3600 } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    const session = await client.validSession();
+    expect(session?.accessToken).toBe('new');
+    expect(JSON.parse(stored.get(SESSION_KEY) as string).refreshToken).toBe('refresh-2');
+  });
+
+  it('keeps the stored session when the device is offline, so the athlete is not signed out at the range', async () => {
+    const offline = (async () => { throw new TypeError('Failed to fetch'); }) as typeof fetch;
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', offline);
+    expect(await client.validSession()).toBeNull();
+    expect(JSON.parse(stored.get(SESSION_KEY) as string)).toEqual(expired);
+  });
+
+  it('keeps the stored session while the service is down', async () => {
+    const { fetcher } = fakeFetch([{ status: 503, body: { message: 'unavailable' } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    expect(await client.validSession()).toBeNull();
+    expect(stored.has(SESSION_KEY)).toBe(true);
+  });
+
+  it.each([408, 429])('keeps the stored session when the refresh is only timed out or rate limited (HTTP %i)', async (status) => {
+    const { fetcher } = fakeFetch([{ status, body: { message: 'try again later' } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    expect(await client.validSession()).toBeNull();
+    expect(JSON.parse(stored.get(SESSION_KEY) as string)).toEqual(expired);
+  });
+
+  it.each([400, 401, 403])('ends the session when the server refuses the refresh token (HTTP %i)', async (status) => {
+    const { fetcher } = fakeFetch([{ status, body: { error_description: 'Invalid Refresh Token' } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    expect(await client.validSession()).toBeNull();
+    expect(stored.has(SESSION_KEY)).toBe(false);
   });
 });

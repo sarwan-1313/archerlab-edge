@@ -16,13 +16,15 @@ type TrimPreviewProps = {
   onCancel: () => void;
   /** When given, a video that cannot be played offers a conversion to MP4, and the result replaces `file`. */
   onConverted?: (file: File) => void;
+  /** False while the device is offline, which the conversion offer needs to know. */
+  online?: boolean;
 };
 
 const STEP_S = 0.1;
 const round = (t: number) => Math.round(t / STEP_S) * STEP_S;
 
 /** Shows the chosen clip and lets the athlete pick the part to analyse before any tracking starts. */
-export function TrimPreview({ file, url, onAnalyse, onCancel, onConverted }: TrimPreviewProps) {
+export function TrimPreview({ file, url, onAnalyse, onCancel, onConverted, online }: TrimPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [range, setRange] = useState<TimeRange | null>(null);
@@ -75,7 +77,7 @@ export function TrimPreview({ file, url, onAnalyse, onCancel, onConverted }: Tri
         <span className="va-eyebrow">Step 1 of 2 · {file.name} · {formatBytes(file.size)}</span>
         <h2>Choose what to analyse</h2>
         {error ? <p className="va-callout" role="alert">{error}</p> : null}
-        {error && onConverted ? <ConvertPanel file={file} onConverted={onConverted} /> : null}
+        {error && onConverted ? <ConvertPanel file={file} online={online} onConverted={onConverted} /> : null}
         {duration === null || !range ? (
           error ? null : <p className="va-muted">Loading the preview…</p>
         ) : (

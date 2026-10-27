@@ -114,6 +114,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Live session recordings</strong>: the video and movement data of sessions you record.</li>
           <li><strong>Video reports</strong>: measurements, scores and the tracked body positions of each analysed clip. The video itself only if you tick “Keep the video on this device”.</li>
           <li><strong>Settings</strong>: analysis options, onboarding progress and the shots of the current session.</li>
+          <li><strong>A copy of the app</strong>: its code, fonts and pose models, saved so ArcherLab opens and analyses without a connection, and so it can be installed on your phone. It holds none of your data, so “Delete everything on this device” leaves it in place; clear this site’s data in your browser to remove it.</li>
           <li><strong>Saved AI keys</strong>: only if you enter one. They are kept for this tab, or on this device if you tick “remember”.</li>
           {accountsEnabled ? <li><strong>Your sign-in</strong>, if you sign in to an account.</li> : null}
         </ul>

@@ -27,6 +27,8 @@ export class CloudError extends Error {
 }
 
 const SESSION_KEY = 'archerlab-edge:cloud-session';
+/** How the auth server answers a refresh token it does not accept (unknown, already used, expired or revoked). */
+const REFRESH_REFUSED = new Set([400, 401, 403]);
 type FetchLike = typeof fetch;
 
 /** Reads auth tokens from a redirect URL hash (magic link or OAuth, implicit flow). */
@@ -140,8 +142,10 @@ export function createSupabaseRest(baseUrl: string, anonKey: string, fetcher: Fe
       if (session.expiresAt - Math.floor(Date.now() / 1000) > 60) return session;
       try {
         return await refresh(session);
-      } catch {
-        storeSession(null);
+      } catch (error) {
+        // Only the server refusing the refresh token ends the session. Offline, a timeout, rate limiting or an
+        // outage just means it cannot be refreshed right now, and the athlete should not be signed out for that.
+        if (error instanceof CloudError && REFRESH_REFUSED.has(error.status)) storeSession(null);
         return null;
       }
     },

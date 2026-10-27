@@ -105,6 +105,26 @@ async function readManifest(signal: AbortSignal) {
 }
 
 /**
+ * Whether a conversion can start with no connection: the service worker holds the manifest (it is precached)
+ * and the core files the manifest points to (kept after the first conversion, see pwa.config.ts).
+ */
+export async function converterIsCached(): Promise<boolean> {
+  try {
+    if (typeof caches === 'undefined') return false;
+    // Precached files are stored under a key with a revision in the query string, so the search is ignored.
+    const stored = await caches.match(`${CORE_DIR}/manifest.json`, { ignoreSearch: true });
+    const manifest = stored ? parseCoreManifest(await stored.json()) : null;
+    if (!manifest) return false;
+    const { files } = chooseCore(manifest, globalThis.crossOriginIsolated === true, typeof SharedArrayBuffer !== 'undefined');
+    const paths = [files.js, files.wasm, ...(files.worker ? [files.worker] : [])];
+    const found = await Promise.all(paths.map((path) => caches.match(`${CORE_DIR}/${path}`, { ignoreSearch: true })));
+    return found.every(Boolean);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Downloads the self-hosted ffmpeg core (the first time this runs in a session; the browser cache serves it
  * after that) and reads the clip's length, size and codecs. Both @ffmpeg/ffmpeg and the core are only
  * loaded here, so athletes who never convert never download them.

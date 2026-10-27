@@ -36,7 +36,7 @@ Frame features (2D + 3D) ──► smoothed tracks ──► release-first shot 
 
 ### Choosing the range
 
-A chosen file is previewed first. The athlete sets the start and end of the part to analyse (sliders, or "Set start here" / "Set end here" at the current frame); clips up to 15 minutes are selected whole. The 15-minute limit applies to the selected range, not the file, so a long session recording can be analysed a stretch at a time.
+A chosen file is previewed first. If the browser cannot play it (typically an iPhone HEVC `.mov`), the preview offers to convert it to an H.264 MP4 on the device ([video-conversion.md](video-conversion.md)). The athlete sets the start and end of the part to analyse (sliders, or "Set start here" / "Set end here" at the current frame); clips up to 15 minutes are selected whole. The 15-minute limit applies to the selected range, not the file, so a long session recording can be analysed a stretch at a time.
 
 Only the selected range is tracked. Audio onsets outside it are dropped, so shots that were trimmed away cannot reappear as audio-only shots. The range is stored as `report.source.range`, in seconds of the original file: shot times, the replay timeline and segmentation all use the original media time, limited to the range, so a kept video stays in sync. Reports made before trimming have no range and cover the whole clip.
 

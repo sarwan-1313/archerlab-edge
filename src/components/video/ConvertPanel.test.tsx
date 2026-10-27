@@ -5,7 +5,11 @@ import type { Converter, OpenConverterOptions } from '../../video-analysis/brows
 import { ConvertCancelledError, ConvertError, type MediaInfo } from '../../video-analysis/convert';
 
 const openConverter = vi.fn<(file: File, options: OpenConverterOptions) => Promise<Converter>>();
-vi.mock('../../video-analysis/browser/convertVideo', () => ({ openConverter: (file: File, options: OpenConverterOptions) => openConverter(file, options) }));
+const converterIsCached = vi.fn<() => Promise<boolean>>();
+vi.mock('../../video-analysis/browser/convertVideo', () => ({
+  openConverter: (file: File, options: OpenConverterOptions) => openConverter(file, options),
+  converterIsCached: () => converterIsCached(),
+}));
 
 const { ConvertPanel } = await import('./ConvertPanel');
 
@@ -39,7 +43,7 @@ function fakeConverter(mediaInfo: MediaInfo): { control: () => Control; open: (f
   };
 }
 
-beforeEach(() => { openConverter.mockReset(); });
+beforeEach(() => { openConverter.mockReset(); converterIsCached.mockReset(); converterIsCached.mockResolvedValue(true); });
 afterEach(cleanup);
 
 describe('ConvertPanel', () => {
@@ -160,5 +164,52 @@ describe('ConvertPanel', () => {
     render(<ConvertPanel file={clip} onConverted={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: /Convert to MP4/ }));
     expect((await screen.findByRole('alert')).textContent).toContain('manifest.json is missing (HTTP 404)');
+  });
+});
+
+describe('ConvertPanel offline', () => {
+  const convertButton = () => screen.getByRole('button', { name: /Convert to MP4 on this device/ }) as HTMLButtonElement;
+
+  it('does not look for a stored converter while online', () => {
+    render(<ConvertPanel file={clip} onConverted={() => undefined} />);
+    expect(converterIsCached).not.toHaveBeenCalled();
+    expect(convertButton().disabled).toBe(false);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('says why, and does not start, when offline with no converter on this device', async () => {
+    converterIsCached.mockResolvedValue(false);
+    render(<ConvertPanel file={clip} online={false} onConverted={() => undefined} />);
+    expect((await screen.findByRole('status')).textContent).toMatch(/offline.*has not been downloaded.*Connect to the internet once/s);
+    expect(convertButton().disabled).toBe(true);
+    fireEvent.click(convertButton());
+    expect(openConverter).not.toHaveBeenCalled();
+  });
+
+  it('converts as usual when offline but the converter is already on this device', async () => {
+    converterIsCached.mockResolvedValue(true);
+    const fake = fakeConverter(info(60));
+    openConverter.mockImplementation(fake.open);
+    render(<ConvertPanel file={clip} online={false} onConverted={() => undefined} />);
+    await waitFor(() => expect(converterIsCached).toHaveBeenCalled());
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(convertButton().disabled).toBe(false);
+    fireEvent.click(convertButton());
+    await screen.findByRole('progressbar', { name: 'Conversion progress' });
+  });
+
+  it('never blocks the button while the check is still running', () => {
+    converterIsCached.mockReturnValue(new Promise(() => undefined));
+    render(<ConvertPanel file={clip} online={false} onConverted={() => undefined} />);
+    expect(convertButton().disabled).toBe(false);
+  });
+
+  it('offers the conversion again as soon as the connection returns', async () => {
+    converterIsCached.mockResolvedValue(false);
+    const { rerender } = render(<ConvertPanel file={clip} online={false} onConverted={() => undefined} />);
+    await screen.findByRole('status');
+    rerender(<ConvertPanel file={clip} online onConverted={() => undefined} />);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(convertButton().disabled).toBe(false);
   });
 });

@@ -6,6 +6,7 @@ import App from './App.tsx'
 import './styles/athletic.css'
 import { captureAuthRedirect } from './cloud/account/authRedirect'
 import { accountsEnabled } from './cloud/config'
+import { registerServiceWorker } from './pwa/serviceWorker'
 
 // Optional accounts: keep sign-in tokens from the URL before the router rewrites it.
 if (accountsEnabled) captureAuthRedirect()
@@ -15,3 +16,6 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Offline support and installability. A no-op in development; see pwa.config.ts.
+registerServiceWorker()

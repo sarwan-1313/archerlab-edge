@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { openConverter, type Converter } from '../../video-analysis/browser/convertVideo';
+import { converterIsCached, openConverter, type Converter } from '../../video-analysis/browser/convertVideo';
 import {
   CONVERT_CONFIG, ConvertCancelledError, describeConvertFailure, estimateConvertSeconds, formatDurationRough, remainingSeconds,
   type ConvertError, type MediaInfo,
@@ -18,6 +18,8 @@ type Phase =
 
 type ConvertPanelProps = {
   file: File;
+  /** False while the device is offline: the converter then only runs if an earlier conversion left it on the device. */
+  online?: boolean;
   /** Called with the converted MP4, which replaces the original for the rest of the flow. */
   onConverted: (file: File) => void;
 };
@@ -33,8 +35,10 @@ const sourceSummary = (info: MediaInfo) => [
  * 720 px H.264 MP4 with ffmpeg compiled to WebAssembly, on this device: the clip is never uploaded, and the
  * converter itself is only downloaded once the athlete asks for it.
  */
-export function ConvertPanel({ file, onConverted }: ConvertPanelProps) {
+export function ConvertPanel({ file, online = true, onConverted }: ConvertPanelProps) {
   const [phase, setPhase] = useState<Phase>({ kind: 'offer' });
+  // Whether the converter is already on this device. Only asked while offline; unknown (null) never blocks the button.
+  const [storedOffline, setStoredOffline] = useState<boolean | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const confirmRef = useRef<{ converter: Converter; info: MediaInfo; estimateS: number | null } | null>(null);
   const onConvertedRef = useRef(onConverted);
@@ -42,6 +46,14 @@ export function ConvertPanel({ file, onConverted }: ConvertPanelProps) {
 
   // Leaving the page, or choosing another video, stops the conversion and frees the converter.
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  useEffect(() => {
+    if (online) { setStoredOffline(null); return; }
+    let cancelled = false;
+    void converterIsCached().then((stored) => { if (!cancelled) setStoredOffline(stored); });
+    return () => { cancelled = true; };
+  }, [online]);
+  const unavailableOffline = !online && storedOffline === false;
 
   const runConversion = async (converter: Converter, info: MediaInfo, estimateS: number | null, signal: AbortSignal) => {
     const startedAt = performance.now();
@@ -134,8 +146,13 @@ export function ConvertPanel({ file, onConverted }: ConvertPanelProps) {
           Convert it to an H.264 MP4 (long edge {CONVERT_CONFIG.longEdgePx} px, sound kept) with ffmpeg running in this browser. The video is not uploaded.
           The first time, this downloads the converter, about {formatBytes(CONVERT_CONFIG.approxDownloadBytes)}.
         </p>
+        {unavailableOffline ? (
+          <p className="va-callout" role="status">
+            You are offline, and the converter has not been downloaded to this device yet. Connect to the internet once to convert this video; the converter is kept on this device afterwards, so later conversions also work offline.
+          </p>
+        ) : null}
         <div className="va-actions">
-          <ActionButton variant="primary" type="button" onClick={() => void start()}>
+          <ActionButton variant="primary" type="button" disabled={unavailableOffline} onClick={() => void start()}>
             <AppIcon name="film" size={16} /> {phase.kind === 'failed' ? 'Try again' : 'Convert to MP4 on this device'}
           </ActionButton>
         </div>

@@ -18,7 +18,10 @@ export default defineConfig({
   reporter: CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    trace: 'retain-on-failure',
+    trace: 'on-first-retry',
+    // The app registers a service worker. Specs that are not about it run without one, so nothing is
+    // cached between their steps; e2e/pwa.e2e.ts turns it back on.
+    serviceWorkers: 'block',
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },

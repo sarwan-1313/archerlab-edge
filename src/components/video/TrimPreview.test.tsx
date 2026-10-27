@@ -89,11 +89,11 @@ describe('TrimPreview', () => {
   });
 
   describe('with conversion available', () => {
-    const renderWithConversion = () => {
+    const renderWithConversion = (online?: boolean) => {
       duration = 10;
       realDuration = 10;
       const onConverted = vi.fn();
-      render(<TrimPreview file={new File(['x'], 'IMG_0042.MOV', { type: 'video/quicktime' })} url="blob:clip" onAnalyse={() => undefined} onCancel={() => undefined} onConverted={onConverted} />);
+      render(<TrimPreview file={new File(['x'], 'IMG_0042.MOV', { type: 'video/quicktime' })} url="blob:clip" onAnalyse={() => undefined} onCancel={() => undefined} onConverted={onConverted} online={online} />);
       return onConverted;
     };
 
@@ -110,6 +110,14 @@ describe('TrimPreview', () => {
       fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
       expect(await screen.findByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
       expect(screen.getByText(/cannot play this video/)).toBeTruthy();
+    });
+
+    it('tells the offer when the device is offline, so it does not start a download that cannot happen', async () => {
+      renderWithConversion(false);
+      fireEvent.error(screen.getByLabelText('Video preview'));
+      // jsdom has no Cache API, so no converter is stored on this "device".
+      expect(await screen.findByText(/You are offline, and the converter has not been downloaded/)).toBeTruthy();
+      expect((screen.getByRole('button', { name: /Convert to MP4 on this device/ }) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it('does not offer it for a video that plays', async () => {
