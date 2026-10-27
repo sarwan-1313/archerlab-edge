@@ -1,3 +1,4 @@
+import { modelWasDownloaded, removeLocalModel } from '../local-coach/engine';
 import { PROFILE_DB_NAME } from '../profile/profileStorage';
 import { RECORDINGS_DB_NAME } from '../recording/recordingStorage';
 import { VIDEO_DB_NAME, listVideoReports, loadVideoReport, reportToJson } from '../video-analysis/storage';
@@ -15,6 +16,7 @@ const DATABASE_LABELS: Record<string, string> = {
   [RECORDINGS_DB_NAME]: 'live session recordings',
   [VIDEO_DB_NAME]: 'video analyses',
 };
+const LOCAL_MODEL_LABEL = 'the private coach’s downloaded model';
 export const STORAGE_KEY_PREFIX = 'archerlab-edge:';
 
 /** A failure with a message for the athlete. `blocked`: another tab holds the data open; the browser finishes the deletion once it closes. */
@@ -60,8 +62,8 @@ export function deleteAllVideoAnalyses(factory?: IDBFactory): Promise<void> {
 }
 
 /**
- * Profile, recordings, video analyses, settings, saved AI keys and the sign-in
- * on this device. Cloud copies are not touched. Every store is attempted even
+ * Profile, recordings, video analyses, settings, saved AI keys, the sign-in and
+ * the private coach's downloaded model on this device. Cloud copies are not touched. Every store is attempted even
  * if one fails, so a failure never leaves the rest half-deleted; the error
  * names what is left.
  */
@@ -74,6 +76,10 @@ export async function deleteEverythingOnDevice(factory?: IDBFactory): Promise<vo
     } catch (error) {
       (error instanceof LocalDataError && error.reason === 'blocked' ? blocked : failed).push(DATABASE_LABELS[name] ?? name);
     }
+  }
+  // Checked before the storage keys go, because the flag that says it was downloaded is one of them.
+  if (modelWasDownloaded()) {
+    try { await removeLocalModel(); } catch { failed.push(LOCAL_MODEL_LABEL); }
   }
   clearAppKeys(globalThis.localStorage);
   clearAppKeys(globalThis.sessionStorage);

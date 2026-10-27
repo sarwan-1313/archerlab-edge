@@ -2,6 +2,12 @@
 
 All notable changes to ArcherLab Edge. Versions follow [semantic versioning](https://semver.org/); while the project is below 1.0, minor versions can change behaviour.
 
+## Unreleased
+
+### Added
+
+- **Private coach.** An optional on-device AI coach in the video report (WebLLM, Qwen2.5-1.5B-Instruct, Apache-2.0). It is offered only where WebGPU works, shows the model's size and asks before the one-time 886 MB download, then reviews the measurements and answers follow-up questions about the report. Nothing is sent anywhere. It counts in the combined consensus, has a Stop button, and frees graphics memory when the report is left. The Privacy page describes it, and "Delete everything" removes the saved model.
+
 ## 0.2.0 (2026-10-26)
 
 A second, offline engine for recorded video, plus privacy controls and optional cloud features; also everything that reached `main` after the 0.1.0 tag (the guided training flow, user guide, sample session and redesign). The live engine's measurements are unchanged.

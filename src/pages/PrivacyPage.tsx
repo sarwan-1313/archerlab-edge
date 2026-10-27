@@ -5,6 +5,7 @@ import { accountsEnabled, dropboxEnabled, googleDriveEnabled } from '../cloud/co
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
+import { LOCAL_MODEL, LOCAL_MODEL_SIZE_LABEL } from '../local-coach/model';
 import { LocalDataError, deleteAllVideoAnalyses, deleteEverythingOnDevice, exportAllVideoReports } from '../privacy/localData';
 import '../styles/video.css';
 
@@ -63,7 +64,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteEverything = () => {
-    if (!window.confirm('Delete everything ArcherLab stores on this device?\n\nYour profile and photo, live session recordings, video analyses, settings, saved AI keys and your sign-in will be removed from this browser. This cannot be undone. Data in an account is not affected.')) return;
+    if (!window.confirm('Delete everything ArcherLab stores on this device?\n\nYour profile and photo, live session recordings, video analyses, settings, saved AI keys, the private coach’s downloaded model and your sign-in will be removed from this browser. This cannot be undone. Data in an account is not affected.')) return;
     void run('delete-all', async () => {
       await deleteEverythingOnDevice();
       // Start afresh so nothing still in memory is written back.
@@ -103,6 +104,9 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Live analysis.</strong> Camera frames go to a pose model that runs in this browser. They are measured and then discarded; they are never uploaded.</li>
           <li><strong>Video analysis.</strong> The video you choose is read and tracked frame by frame in this browser, including its sound. The file is not uploaded.</li>
           <li>The pose models are served by this website itself, not loaded from another company’s servers. ArcherLab has no server that receives your data.</li>
+          <li>
+            <strong>Private coach</strong> (optional, in a video report): a small AI model that runs on your device’s graphics chip. It never sends data anywhere: your measurements, your questions and its answers stay in this browser tab, and there is no key, account or server involved. The only network use is the one-time download of the model itself ({LOCAL_MODEL_SIZE_LABEL}, {LOCAL_MODEL.name}, {LOCAL_MODEL.licence}) from Hugging Face and GitHub, which see an ordinary download request and nothing about you or your reports. It asks before downloading, and frees the graphics memory when you leave the report.
+          </li>
         </ul>
       </Section>
 
@@ -113,6 +117,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Live session recordings</strong>: the video and movement data of sessions you record.</li>
           <li><strong>Video reports</strong>: measurements, scores and the tracked body positions of each analysed clip. The video itself only if you tick “Keep the video on this device”.</li>
           <li><strong>Settings</strong>: analysis options, onboarding progress and the shots of the current session.</li>
+          <li><strong>The private coach’s model</strong> ({LOCAL_MODEL_SIZE_LABEL}): only if you chose to download it. It holds none of your data. Remove it from the private coach in a report, or with “Delete everything on this device”.</li>
           <li><strong>Saved AI keys</strong>: only if you enter one. They are kept for this tab, or on this device if you tick “remember”.</li>
           {accountsEnabled ? <li><strong>Your sign-in</strong>, if you sign in to an account.</li> : null}
         </ul>
@@ -121,6 +126,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
       <Section id="privacy-optional" icon="cloud" title="What the optional features send, and to whom">
         <p>These are off until you use them. Nothing is sent in the background.</p>
         <ul>
+          <li><strong>Private coach</strong>: sends nothing. Its one download is described under “What runs on this device”.</li>
           <li><strong>AI review</strong> (“Second opinion from AI coaches” in a report): after you tick the consent box, the measurements are sent to the AI providers you pick (Anthropic, OpenAI and/or Google), using your own API key. While the video is open or kept on this device, six annotated still frames go with them; without the video, only the measurements are sent. If you also allow it, Gemini receives the whole clip instead of stills. Each provider’s terms and privacy policy apply.</li>
           <li>
             <strong>Account backup</strong>{accountsEnabled ? '' : ' (switched off in this copy of the app)'}: when you sign in and press a backup button, your profile (without the photo) and your video reports (without the frame-by-frame body positions) are stored in a Supabase database run by whoever deployed this copy of ArcherLab. Videos are uploaded only when you press “Back up report + video”. Each account can reach only its own data.

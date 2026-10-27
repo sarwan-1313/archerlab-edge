@@ -2,7 +2,16 @@ import { rangeLength, sourceRange } from '../../video-analysis/range';
 import { CATEGORY_INFO, METRIC_RUBRIC, formatMetric } from '../../video-analysis/rubric';
 import { LEVEL_LABEL } from '../../video-analysis/scoring';
 import type { MetricKey, SkillLevel, VideoAnalysisReport } from '../../video-analysis/types';
-import type { CloudProviderId, CoachRequest, MediaPart } from './providers';
+import { PROVIDERS, type CloudProviderId, type CoachRequest, type MediaPart } from './providers';
+
+/** Who wrote a review: one of the cloud providers, or the private coach that runs on the athlete's device. */
+export type CoachId = CloudProviderId | 'local';
+
+export const LOCAL_COACH_NAME = 'Private coach';
+
+export function coachName(id: CoachId): string {
+  return id === 'local' ? LOCAL_COACH_NAME : PROVIDERS[id].name;
+}
 
 export interface CoachImprovement {
   title: string;
@@ -12,7 +21,7 @@ export interface CoachImprovement {
 }
 
 export interface CoachReview {
-  provider: CloudProviderId;
+  provider: CoachId;
   model: string;
   level: SkillLevel | null;
   confidence: number | null;
@@ -81,7 +90,9 @@ export function buildCoachRequest(report: VideoAnalysisReport, media: MediaPart[
   }
   lines.push('', media.some((part) => part.kind === 'video')
     ? 'The full video is attached. Review the whole shot cycle.'
-    : `${media.length} still frame(s) are attached, captioned with the shot and moment.`);
+    : media.length
+      ? `${media.length} still frame(s) are attached, captioned with the shot and moment.`
+      : 'No images are attached. Review from the measurements alone.');
   return { system: SYSTEM, prompt: lines.join('\n'), media };
 }
 
@@ -103,7 +114,7 @@ const strings = (value: unknown, limit: number): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()).slice(0, limit) : [];
 
 /** Validates a model's JSON into a CoachReview, dropping anything malformed. */
-export function parseCoachReview(provider: CloudProviderId, model: string, text: string, usedVideo: boolean): CoachReview {
+export function parseCoachReview(provider: CoachId, model: string, text: string, usedVideo: boolean): CoachReview {
   const data = extractJsonObject(text) as Record<string, unknown> | null;
   if (!data || typeof data !== 'object') throw new Error('The model did not return a readable review.');
   const level = typeof data.level === 'string' && LEVELS.includes(data.level.toLowerCase() as SkillLevel) ? data.level.toLowerCase() as SkillLevel : null;
@@ -135,7 +146,7 @@ export function parseCoachReview(provider: CloudProviderId, model: string, text:
 export interface Consensus {
   level: SkillLevel | null;
   levelVotes: Partial<Record<SkillLevel, number>>;
-  agreed: Array<{ title: string; detail: string; drill: string; votes: number; providers: CloudProviderId[] }>;
+  agreed: Array<{ title: string; detail: string; drill: string; votes: number; providers: CoachId[] }>;
 }
 
 const STOP = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'to', 'your', 'at', 'in', 'on', 'with', 'is', 'too', 'more', 'during', 'after', 'before', 'keep']);
@@ -159,7 +170,7 @@ export function buildConsensus(reviews: readonly CoachReview[], onDeviceLevel: S
     const ordinals = ranked.flatMap(([name, count]) => Array(count).fill(LEVELS.indexOf(name)) as number[]).sort((a, b) => a - b);
     level = LEVELS[ordinals[Math.floor((ordinals.length - 1) / 2)]];
   }
-  const clusters: Array<{ title: string; detail: string; drill: string; keys: Set<string>; providers: Set<CloudProviderId>; priority: number }> = [];
+  const clusters: Array<{ title: string; detail: string; drill: string; keys: Set<string>; providers: Set<CoachId>; priority: number }> = [];
   for (const review of reviews) {
     for (const item of review.improvements) {
       const keys = words(`${item.title} ${item.detail}`);
