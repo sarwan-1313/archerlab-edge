@@ -149,6 +149,8 @@ export async function deleteCloudAccount(client: SupabaseRest, session: CloudSes
 export function describeCloudError(error: unknown): string {
   if (error instanceof CloudError) {
     if (error.status === 401) return 'Your sign-in has expired. Sign in again.';
+    // Row-level security refused it, e.g. a coach whose share was revoked.
+    if (error.status === 403) return 'You do not have access to this any more. If the report was shared with you, the athlete may have stopped sharing it.';
     if (error.status === 404) return 'The cloud project is missing a table or bucket. Run the setup SQL in docs/cloud-setup.md.';
     if (error.status === 413) return 'The file is larger than the storage upload limit.';
     return error.message;

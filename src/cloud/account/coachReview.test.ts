@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ShotReport } from '../../video-analysis/types';
-import { listCloudReports } from './cloudSync';
+import { describeCloudError, listCloudReports } from './cloudSync';
 import {
   addComment, cloudReportState, commentAuthor, commentMoment, deleteComment, listComments, listShares, listSharedWithMe, loadReviewReport,
   revokeShare, shareReport, sharedReportLink, shotAtTime,
@@ -158,6 +158,7 @@ describe('comments', () => {
     const { client } = fakeFetch([{ status: 403, body: { message: 'new row violates row-level security policy for table "report_comments"' } }]);
     const error = await addComment(client, coach, { reportId: 'r1', body: 'Hi', shotIndex: null, timeS: 1 }).catch((caught: unknown) => caught);
     expect(error instanceof CloudError && error.status).toBe(403);
+    expect(describeCloudError(error)).toMatch(/stopped sharing/);
   });
 });
 
