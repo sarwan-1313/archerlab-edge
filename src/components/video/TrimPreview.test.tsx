@@ -9,6 +9,7 @@ let realDuration = 0;
 
 beforeEach(() => {
   currentTime = 0;
+  Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 1280, configurable: true });
   Object.defineProperty(HTMLMediaElement.prototype, 'duration', { get: () => duration, configurable: true });
   Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
     get: () => currentTime,
@@ -84,5 +85,38 @@ describe('TrimPreview', () => {
     fireEvent.error(screen.getByLabelText('Video preview'));
     expect(screen.getByRole('alert').textContent).toMatch(/cannot play this video/);
     expect((analyse() as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+  });
+
+  describe('with conversion available', () => {
+    const renderWithConversion = () => {
+      duration = 10;
+      realDuration = 10;
+      const onConverted = vi.fn();
+      render(<TrimPreview file={new File(['x'], 'IMG_0042.MOV', { type: 'video/quicktime' })} url="blob:clip" onAnalyse={() => undefined} onCancel={() => undefined} onConverted={onConverted} />);
+      return onConverted;
+    };
+
+    it('offers to convert a video the browser cannot play', () => {
+      renderWithConversion();
+      expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+      fireEvent.error(screen.getByLabelText('Video preview'));
+      expect(screen.getByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
+    });
+
+    it('offers it when the file opens but the picture cannot be decoded', async () => {
+      Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 0, configurable: true });
+      renderWithConversion();
+      fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+      expect(await screen.findByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
+      expect(screen.getByText(/cannot play this video/)).toBeTruthy();
+    });
+
+    it('does not offer it for a video that plays', async () => {
+      renderWithConversion();
+      fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+      await screen.findByText(/Selected:/);
+      expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+    });
   });
 });

@@ -9,6 +9,8 @@ it('explains what stays on the device and what the optional features send', () =
   render(<PrivacyPage />);
   expect(screen.getByRole('heading', { name: /What runs on this device/ })).toBeTruthy();
   expect(screen.getByRole('heading', { name: /What is stored on this device/ })).toBeTruthy();
+  expect(screen.getByText(/Converting a video/)).toBeTruthy();
+  expect(screen.getByText(/downloaded from this website only when you ask for it/)).toBeTruthy();
   expect(screen.getByText(/without the video, only the measurements are sent/)).toBeTruthy();
   expect(screen.getByText(/Import from a link/)).toBeTruthy();
   expect(screen.getByText(/parent or guardian/)).toBeTruthy();

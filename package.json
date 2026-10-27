@@ -11,17 +11,20 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "e2e:clip": "node scripts/make-e2e-clip.mjs",
+    "ffmpeg:core": "node scripts/copy-ffmpeg-core.mjs",
     "preview": "vite preview",
     "check": "npm run lint && npm test && npm run build",
     "models:pose": "node scripts/fetch-pose-models.mjs"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "0.12.15",
     "@mediapipe/tasks-vision": "^1.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@ffmpeg/core": "0.12.10",
     "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",

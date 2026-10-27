@@ -102,6 +102,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
         <ul>
           <li><strong>Live analysis.</strong> Camera frames go to a pose model that runs in this browser. They are measured and then discarded; they are never uploaded.</li>
           <li><strong>Video analysis.</strong> The video you choose is read and tracked frame by frame in this browser, including its sound. The file is not uploaded.</li>
+          <li><strong>Converting a video.</strong> If your browser cannot play a clip, you can convert it to an MP4 in this browser. The converter (ffmpeg) is downloaded from this website only when you ask for it, and the video is not uploaded.</li>
           <li>The pose models are served by this website itself, not loaded from another company’s servers. ArcherLab has no server that receives your data.</li>
         </ul>
       </Section>

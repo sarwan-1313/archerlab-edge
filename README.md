@@ -355,6 +355,8 @@ These limitations are documented on purpose, as part of responsible engineering.
 
 Released under the [MIT License](LICENSE). Bundled fonts are under the SIL Open Font License and MediaPipe assets under the Apache License 2.0.
 
+The optional "Convert to MP4 on this device" feature loads the ffmpeg.wasm core (`@ffmpeg/core`, in `public/ffmpeg/`), which is **GPL-2.0-or-later** because it includes libx264. It runs as a separate program in a Web Worker and is fetched only when an athlete asks to convert a video; the licence and where to get the source are in [`public/ffmpeg/NOTICE.txt`](public/ffmpeg/NOTICE.txt). The `@ffmpeg/ffmpeg` wrapper is MIT.
+
 ---
 
 ## Why I built this

@@ -162,6 +162,12 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
     setView({ kind: 'preview', file, url: makeUrl(file) });
   };
 
+  // A converted clip goes the same way as a chosen one: straight to the trim and preview step.
+  const openConvertedFile = (file: File) => {
+    chooseFile(file);
+    setNotice(`Converted to ${file.name} (${formatBytes(file.size)}) on this device. Nothing was uploaded.`);
+  };
+
   const startAnalysis = (file: File, url: string, range: TimeRange) => {
     setNotice(null);
     setProgress(null);
@@ -421,7 +427,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       ) : null}
 
       {view.kind === 'preview' ? (
-        <TrimPreview file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => setView({ kind: 'upload' })} />
+        <TrimPreview key={view.url} file={view.file} url={view.url} onAnalyse={(range) => startAnalysis(view.file, view.url, range)} onCancel={() => setView({ kind: 'upload' })} onConverted={openConvertedFile} />
       ) : null}
 
       {view.kind === 'processing' ? (
