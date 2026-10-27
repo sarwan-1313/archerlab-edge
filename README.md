@@ -280,8 +280,11 @@ npm ci
 npm run dev        # start the dev server on http://localhost:5173
 npm test           # run the test suite
 npm run check      # lint + tests + production build
+npm run test:e2e   # Playwright end-to-end and accessibility tests (first: npx playwright install chromium)
 npm run models:pose  # optional: download the Full pose model (add `-- heavy` for Heavy)
 ```
+
+The end-to-end tests (`e2e/`) build the app with `VITE_E2E=1`, which swaps the MediaPipe pose model for a stub that returns a synthetic archer's landmarks, and upload `e2e/fixtures/synthetic-archer.webm`. That clip is generated from `src/video-analysis/testing/` by `npm run e2e:clip` (headless Chromium, no extra tools); regenerate and commit it after changing `e2e/support/scenario.ts`. Normal builds never include the stub.
 
 Vercel builds run `npm run build:vercel`, which downloads the Full and Heavy pose models before building; locally they are optional, and the downloaded `.task` files are not committed.
 

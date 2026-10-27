@@ -70,7 +70,7 @@ export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPri
                 Analyse a Video
               </ActionButton>
             ) : null}
-            <ActionButton variant="ghost" className="landing-ghost" aria-label="User Guide" onClick={onGuide}>Explore User Guide</ActionButton>
+            <ActionButton variant="ghost" className="landing-ghost" onClick={onGuide}>Explore User Guide</ActionButton>
           </div>
           {onSample ? (
             <button type="button" className="landing-sample-link" onClick={onSample}>

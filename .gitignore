@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-e2e
 dist-ssr
 *.local
 
@@ -49,3 +50,6 @@ build-output*.txt
 public/models/pose_landmarker_full.task
 public/models/pose_landmarker_heavy.task
 public/models/*.download
+# Playwright output
+test-results/
+playwright-report/

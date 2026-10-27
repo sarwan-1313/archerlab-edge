@@ -390,7 +390,7 @@
   gap: 10px;
   padding: 26px var(--l-gutter) 34px;
   border-top: 1px solid var(--l-line);
-  color: #66778b;
+  color: var(--l-muted);
   font-size: 12px;
 }
 .landing-footer span { display: inline-flex; align-items: center; gap: 8px; }

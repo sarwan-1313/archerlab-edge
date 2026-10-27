@@ -444,7 +444,7 @@ function App() {
               <div className="app-topbar__inner">
                 <div className="app-topbar__leading">
                   {canGoBack ? <button type="button" className="app-back" onClick={goBack} aria-label="Go back"><AppIcon name="arrow-left" size={18} /><span>Back</span></button> : null}
-                  <button type="button" className="app-brand" onClick={() => requestNavigation('home')} aria-label="Go to Home"><span className="app-brand__mark"><AppIcon name="target" size={18} /></span><span>ArcherLab <strong>Edge</strong></span></button>
+                  <button type="button" className="app-brand" onClick={() => requestNavigation('home')} aria-label="ArcherLab Edge: go to Home"><span className="app-brand__mark"><AppIcon name="target" size={18} /></span><span>ArcherLab <strong>Edge</strong></span></button>
                 </div>
                 <div className="app-topbar__privacy"><PrivacyBadge /></div>
                 <button type="button" className="app-topbar__profile" onClick={() => requestNavigation('profile')} aria-label="Open athlete profile"><AppIcon name="sensors" size={18} /></button>
