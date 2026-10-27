@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccountPanel } from '../components/account/AccountPanel';
 import { PageHeader } from '../components/PageHeader';
+import { CoachToolsSetting } from '../components/profile/CoachToolsSetting';
 import { FormStatusCard } from '../components/profile/FormStatusCard';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
 import '../styles/video.css';
@@ -74,6 +75,7 @@ export function ProfilePage({ onAnalyzeVideo, onPrivacy }: { onAnalyzeVideo?: ()
       {saved ? <p role="status">Profile saved on this device.</p> : null}
     </form>
     <AccountPanel profile={profile} onRestoreProfile={onRestoreProfile} />
+    <CoachToolsSetting />
     {onPrivacy ? <p className="va-faint profile-privacy">What is stored, what is sent, and how to export or delete it: <button type="button" className="privacy-link" onClick={onPrivacy}>Privacy</button></p> : null}
   </div>);
 }
