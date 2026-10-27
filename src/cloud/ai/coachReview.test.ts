@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildReport } from '../../video-analysis/buildReport';
 import { makeScenario, scriptShots, syntheticSamples } from '../../video-analysis/testing/syntheticArcher';
-import { buildCoachRequest, buildConsensus, extractJsonObject, parseCoachReview, type CoachReview } from './coachReview';
+import { buildCoachRequest, buildConsensus, coachName, extractJsonObject, parseCoachReview, type CoachReview } from './coachReview';
 
 function sampleReport() {
   const scenario = makeScenario({ shots: scriptShots(2, { faults: { bowElbowBend: 30 } }) });
@@ -20,6 +20,12 @@ describe('buildCoachRequest', () => {
     expect(request.prompt).toContain('Bow-arm angle at anchor');
     expect(request.prompt).toContain('Shots detected: 2');
     expect(request.prompt).toContain('1 still frame');
+  });
+
+  it('does not claim images are attached when there are none', () => {
+    const request = buildCoachRequest(sampleReport(), []);
+    expect(request.prompt).toContain('No images are attached');
+    expect(request.prompt).not.toContain('0 still frame');
   });
 });
 
@@ -52,6 +58,17 @@ describe('buildConsensus', () => {
     expect(consensus.level).toBe('intermediate');
     const clear = buildConsensus([review('anthropic', 'advanced', []), review('openai', 'advanced', [])], 'intermediate');
     expect(clear.level).toBe('advanced');
+  });
+
+  it('counts the private coach like any other coach', () => {
+    const consensus = buildConsensus([
+      review('local', 'advanced', ['Straighten the bow arm']),
+      review('openai', 'advanced', ['Bow arm is bent at anchor']),
+    ], 'intermediate');
+    expect(consensus.level).toBe('advanced');
+    expect(consensus.agreed[0].providers.sort()).toEqual(['local', 'openai']);
+    expect(coachName('local')).toBe('Private coach');
+    expect(coachName('anthropic')).toBe('Claude');
   });
 
   it('merges the same advice from different coaches', () => {

@@ -402,6 +402,28 @@
 .va-review-card p, .va-review-card li { margin: 0; color: var(--ath-muted); font-size: 13.5px; line-height: 1.5; }
 .va-review-card ul { display: grid; gap: 6px; margin: 0; padding-left: 18px; }
 .va-review-card--error { border-color: rgba(255, 77, 94, .35); }
+.va-callout--danger { border-left-color: var(--ath-bad); background: rgba(255, 77, 94, .06); }
+
+/* ---------- Private coach (on-device model) ---------- */
+.va-local p { margin: 0; font-size: 13px; line-height: 1.5; }
+.va-local header strong small { color: var(--ath-faint); font: 600 11px var(--ath-mono); text-transform: none; }
+.va-local__confirm { display: grid; gap: 10px; padding: 14px; border: 1px solid rgba(255, 197, 61, .3); border-radius: var(--ath-radius); background: rgba(255, 197, 61, .05); }
+.va-local__confirm > strong { color: var(--ath-text); font: 700 18px/1.1 var(--ath-display); text-transform: uppercase; }
+.va-local__confirm > div > p + p { margin-top: 8px; }
+.va-local__progress { display: grid; gap: 6px; color: var(--ath-muted); font: 600 12px var(--ath-mono); }
+.va-local__progress progress { width: 100%; height: 8px; accent-color: var(--ath-volt); }
+.va-chat { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--ath-line); }
+.va-chat h4 { margin: 0; color: var(--ath-faint); font: 700 10px/1.2 var(--ath-mono); letter-spacing: .12em; text-transform: uppercase; }
+.va-chat__log { display: grid; gap: 8px; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; list-style: none; }
+.va-chat__turn { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius); color: var(--ath-muted); font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.va-chat__turn--user { border-color: rgba(46, 230, 255, .3); background: rgba(46, 230, 255, .04); color: var(--ath-text); }
+.va-chat__who { color: var(--ath-faint); font: 700 10px/1.2 var(--ath-mono); letter-spacing: .1em; text-transform: uppercase; }
+.va-chat__ideas { display: flex; flex-wrap: wrap; gap: 8px; }
+.va-chat__idea { min-height: 36px; padding: 0 12px; border: 1px solid var(--ath-line-strong); border-radius: 999px; background: transparent; color: var(--ath-muted); font-size: 12.5px; cursor: pointer; }
+.va-chat__idea:hover:not(:disabled) { border-color: var(--ath-volt); color: var(--ath-text); }
+.va-chat__idea:disabled { opacity: .5; cursor: default; }
+.va-chat__form { display: flex; gap: 8px; }
+.va-chat__form input { flex: 1 1 auto; min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--ath-line-strong); font-size: 14px; }
 .va-agreed { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .va-agreed li { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--ath-line); border-left: 3px solid var(--ath-volt); border-radius: var(--ath-radius); background: rgba(46, 230, 255, .04); }
 .va-agreed strong { color: var(--ath-text); font-size: 14.5px; }

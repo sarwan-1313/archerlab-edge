@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as engine from '../local-coach/engine';
+import { LOCAL_MODEL_FLAG } from '../local-coach/model';
 import { APP_DATABASES, LocalDataError, clearAppKeys, deleteDatabase, deleteEverythingOnDevice } from './localData';
 
 type Outcome = 'success' | 'error' | 'blocked';
@@ -51,6 +53,29 @@ describe('local data controls', () => {
     expect(deleted).toEqual([...APP_DATABASES]);
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
+  });
+
+  it('removes the private coach’s downloaded model, but only when there is one', async () => {
+    const remove = vi.spyOn(engine, 'removeLocalModel').mockResolvedValue();
+    const { factory } = fakeFactory();
+    await deleteEverythingOnDevice(factory);
+    expect(remove).not.toHaveBeenCalled();
+    localStorage.setItem(LOCAL_MODEL_FLAG, '1');
+    await deleteEverythingOnDevice(factory);
+    expect(remove).toHaveBeenCalledOnce();
+    expect(localStorage.length).toBe(0);
+    remove.mockRestore();
+  });
+
+  it('names the model when it could not be removed, after deleting everything else', async () => {
+    const remove = vi.spyOn(engine, 'removeLocalModel').mockRejectedValue(new Error('cache busy'));
+    localStorage.setItem(LOCAL_MODEL_FLAG, '1');
+    const { factory, deleted } = fakeFactory();
+    const error = await deleteEverythingOnDevice(factory).catch((caught: unknown) => caught) as LocalDataError;
+    expect(error.message).toMatch(/but the private coach’s downloaded model could not be/);
+    expect(deleted).toEqual([...APP_DATABASES]);
+    expect(localStorage.length).toBe(0);
+    remove.mockRestore();
   });
 
   it('still deletes everything else when another tab blocks one store, and says what is left', async () => {

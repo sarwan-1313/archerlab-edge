@@ -17,6 +17,10 @@ it('explains what stays on the device and what the optional features send', () =
   expect(screen.getByText(/opens and analyses without a connection/)).toBeTruthy();
   expect(screen.getByText(/Import from a link/)).toBeTruthy();
   expect(screen.getByText(/parent or guardian/)).toBeTruthy();
+  // The private coach is described as sending nothing, with its one download named.
+  expect(screen.getByText(/It never sends data anywhere/)).toBeTruthy();
+  expect(screen.getByText(/886 MB, Qwen2\.5 1\.5B Instruct, Apache License 2\.0/)).toBeTruthy();
+  expect(screen.getByText(/sends nothing\. Its one download/)).toBeTruthy();
   expect(screen.getByRole('link', { name: 'GitHub issues' }).getAttribute('href')).toBe('https://github.com/sarwan-1313/archerlab-edge/issues');
   // This build has no accounts configured, so there are no account controls and no coach sharing.
   expect(screen.queryByRole('button', { name: /Delete my account/ })).toBeNull();

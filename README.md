@@ -156,7 +156,7 @@ A separate engine for recorded clips (`src/video-analysis`). Because it sees the
 - **Real-clip fixtures.** Exported reports with an expected shot count and release times become regression tests ([how](src/video-analysis/fixtures/README.md)).
 
 ### 9. Optional second opinions, backup and imports
-From any video report, athletes can ask Claude, GPT and Gemini for a coaching review with **their own API keys** (six annotated stills plus the measurements, after an explicit consent tick; never the video unless they opt in). The coaches' views are combined to show where they agree. Accounts and cloud backup (Supabase) and Dropbox / Google Drive import can be switched on by whoever deploys the app. With accounts on, a signed-in athlete can share a report read-only with a coach's email (the video only if they include it), and both can leave comments pinned to moments of the replay; shares can be revoked at any time. All of this is off by default: see [docs/cloud-setup.md](docs/cloud-setup.md).
+From any video report, athletes can ask Claude, GPT and Gemini for a coaching review with **their own API keys** (six annotated stills plus the measurements, after an explicit consent tick; never the video unless they opt in). The coaches' views are combined to show where they agree. A **private coach** can instead run on the athlete's own device with WebLLM (one-time model download, asked first; nothing is sent anywhere) and answer follow-up questions about the report: see [docs/local-coach.md](docs/local-coach.md). Accounts and cloud backup (Supabase) and Dropbox / Google Drive import can be switched on by whoever deploys the app. With accounts on, a signed-in athlete can share a report read-only with a coach's email (the video only if they include it), and both can leave comments pinned to moments of the replay; shares can be revoked at any time. All of this is off by default: see [docs/cloud-setup.md](docs/cloud-setup.md).
 
 ### 10. Privacy controls
 The [Privacy page](https://archerlab-edge.vercel.app/privacy) explains in plain language what runs and is stored on the device and what each optional feature sends, and to whom. It lets athletes export all their video reports, delete their video analyses or everything the app stores on the device, and, when signed in, delete their cloud data or their account.
@@ -224,7 +224,8 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 | Computer vision | MediaPipe Tasks Vision (Pose and Hand Landmarker), WebAssembly |
 | Browser APIs | MediaDevices camera capture, MediaRecorder, requestVideoFrameCallback, Web Audio, Screen Wake Lock, IndexedDB, Service Worker and Cache Storage (offline, installable), Canvas and SVG |
 | Optional cloud | Claude, OpenAI and Gemini APIs (bring your own key); Supabase Auth, Postgres and Storage over REST |
-| Quality | Vitest + Testing Library (56 test files, 270 cases), oxlint, GitHub Actions CI |
+| Optional on-device AI | WebLLM (WebGPU) running Qwen2.5-1.5B-Instruct (Apache-2.0) |
+| Quality | Vitest + Testing Library (63 test files, 327 cases), oxlint, GitHub Actions CI |
 | Hosting | Vercel (production deploys from `main`; builds fetch the larger pose models), GitHub Codespaces for development |
 
 ## Repository structure
@@ -240,6 +241,7 @@ src/
 ├── gesture-entry    hand-gesture score recognition
 ├── hooks            camera, pose, recording, shot-analysis and wake-lock hooks
 ├── landing          scroll-driven landing animation
+├── local-coach      optional on-device AI coach (WebLLM model, review and follow-up chat)
 ├── navigation       page ↔ URL routes
 ├── pages            Live Analysis, Video Analysis, Analytics, Replay, Sessions, Guide, Profile, Privacy
 ├── privacy          export and delete everything stored on the device
@@ -275,6 +277,7 @@ supabase/            SQL for optional accounts, backup, coach review and account
 | [docs/voice-notes.md](docs/voice-notes.md) | On-device voice notes with Whisper: score parsing, the model and runtime, download and caching, languages |
 | [docs/video-conversion.md](docs/video-conversion.md) | Converting a clip the browser cannot play to MP4 on the device: flow, ffmpeg settings, the self-hosted core, licence |
 | [docs/cloud-setup.md](docs/cloud-setup.md) | Optional AI review, accounts and backup, remote coach review, account deletion, imports, environment variables |
+| [docs/local-coach.md](docs/local-coach.md) | The on-device private coach: model, licence, download size, memory and how to update it |
 | [docs/biomechanics.md](docs/biomechanics.md) | Live-engine measurement conventions (handedness, angle signs, normalisation) |
 | [docs/pose-intelligence.md](docs/pose-intelligence.md) | On-device MediaPipe setup and self-hosted assets |
 | [docs/pwa.md](docs/pwa.md) | Installing the app, what works offline and how it is cached, the update prompt, icons |

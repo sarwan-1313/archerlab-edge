@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { buildConsensus, type CoachReview } from '../../cloud/ai/coachReview';
+import { Suspense, lazy, useRef, useState } from 'react';
+import { buildConsensus, coachName, type CoachReview } from '../../cloud/ai/coachReview';
 import { forgetProviderSetting, isRemembered, loadProviderSetting, saveProviderSetting } from '../../cloud/ai/keyStore';
 import { PROVIDERS, type CloudProviderId, type MediaPart } from '../../cloud/ai/providers';
 import { runCloudReview, type ProviderOutcome } from '../../cloud/ai/runCloudReview';
@@ -11,6 +11,9 @@ import { ActionButton } from '../ActionButton';
 import { AppIcon } from '../AppIcon';
 import { StatusBadge } from '../StatusBadge';
 import { LevelBadge } from './LevelBadge';
+
+// Loaded when a report is shown; the model and its runtime load only after the athlete asks for the private coach.
+const LocalCoachCard = lazy(() => import('./LocalCoachCard'));
 
 const ORDER: CloudProviderId[] = ['anthropic', 'openai', 'gemini'];
 const INLINE_VIDEO_LIMIT = 14 * 1024 * 1024;
@@ -25,12 +28,11 @@ function initialState(): Record<CloudProviderId, ProviderState> {
 }
 
 function ReviewCard({ review }: { review: CoachReview }) {
-  const info = PROVIDERS[review.provider];
   return (
     <article className="va-review-card">
       <header>
-        <strong>{info.name}</strong>
-        <small className="va-faint">{review.model}{review.usedVideo ? ' · watched the video' : ''}</small>
+        <strong>{coachName(review.provider)}</strong>
+        <small className="va-faint">{review.model}{review.provider === 'local' ? ' · ran on this device' : ''}{review.usedVideo ? ' · watched the video' : ''}</small>
         <LevelBadge level={review.level} />
       </header>
       {review.summary ? <p>{review.summary}</p> : null}
@@ -61,6 +63,7 @@ export function CloudCoachPanel({ report, videoUrl, videoBlob }: CloudCoachPanel
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [outcomes, setOutcomes] = useState<ProviderOutcome[]>([]);
+  const [localReview, setLocalReview] = useState<CoachReview | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const enabled = ORDER.filter((id) => providers[id].enabled && providers[id].apiKey.trim());
@@ -111,14 +114,15 @@ export function CloudCoachPanel({ report, videoUrl, videoBlob }: CloudCoachPanel
     }
   };
 
-  const reviews = outcomes.filter((outcome): outcome is Extract<ProviderOutcome, { status: 'ok' }> => outcome.status === 'ok').map((outcome) => outcome.review);
+  const cloudReviews = outcomes.filter((outcome): outcome is Extract<ProviderOutcome, { status: 'ok' }> => outcome.status === 'ok').map((outcome) => outcome.review);
+  const reviews = localReview ? [...cloudReviews, localReview] : cloudReviews;
   const consensus = reviews.length ? buildConsensus(reviews, report.scores.level) : null;
 
   return (
     <section className="va-panel va-cloud" aria-labelledby="va-cloud-title">
       <h2 id="va-cloud-title"><AppIcon name="sparkles" size={20} /> Second opinion from AI coaches <small>optional · your own API keys</small></h2>
       <p className="va-muted">
-        Ask up to three AI models to review the same shots. Each gets the measurements above plus {videoUrl ? 'six annotated still frames' : 'no images (the video is not stored)'}, and answers as a coach. Their views are combined so you can see where they agree. Keys stay in this browser and go only to the provider you choose; ArcherLab has no server.
+        Ask up to three AI models to review the same shots, or the private coach below, which runs on this device and sends nothing. Each gets the measurements above plus {videoUrl ? 'six annotated still frames' : 'no images (the video is not stored)'}, and answers as a coach. Their views are combined so you can see where they agree. Keys stay in this browser and go only to the provider you choose; ArcherLab has no server.
       </p>
       <div className="va-cloud__providers">
         {ORDER.map((id) => {
@@ -158,6 +162,10 @@ export function CloudCoachPanel({ report, videoUrl, videoBlob }: CloudCoachPanel
       </div>
       {status ? <p className="va-import-status" role="status">{status}</p> : null}
 
+      <Suspense fallback={<p className="va-faint" role="status">Loading the private coach…</p>}>
+        <LocalCoachCard key={report.id} report={report} review={localReview} onReview={setLocalReview} />
+      </Suspense>
+
       {consensus ? (
         <div className="va-cloud">
           <div className="va-callouts">
@@ -170,7 +178,7 @@ export function CloudCoachPanel({ report, videoUrl, videoBlob }: CloudCoachPanel
             <ul className="va-agreed">
               {consensus.agreed.map((item) => (
                 <li key={item.title}>
-                  <em>{item.votes > 1 ? `${item.votes} of ${reviews.length} coaches agree` : `${PROVIDERS[item.providers[0]].name} only`}</em>
+                  <em>{item.votes > 1 ? `${item.votes} of ${reviews.length} coaches agree` : `${coachName(item.providers[0])} only`}</em>
                   <strong>{item.title}</strong>
                   {item.detail ? <span>{item.detail}</span> : null}
                   {item.drill ? <span>Drill: {item.drill}</span> : null}
@@ -180,8 +188,9 @@ export function CloudCoachPanel({ report, videoUrl, videoBlob }: CloudCoachPanel
           ) : null}
         </div>
       ) : null}
-      {outcomes.length ? (
+      {outcomes.length || localReview ? (
         <div className="va-review-grid">
+          {localReview ? <ReviewCard review={localReview} /> : null}
           {outcomes.map((outcome) => outcome.status === 'ok'
             ? <ReviewCard key={outcome.provider} review={outcome.review} />
             : (
