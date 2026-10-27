@@ -53,11 +53,19 @@ test('an unplayable video is converted to MP4 on this device and goes on to the 
     if (!mp4) return null;
     const bytes = new Uint8Array(await mp4.arrayBuffer());
     const text = new TextDecoder('latin1').decode(bytes);
-    return { size: bytes.length, ftyp: text.slice(4, 8), avc1: text.includes('avc1'), aac: text.includes('mp4a'), width: bytes.length ? text.includes('avcC') : false };
+    const video = document.createElement('video');
+    video.src = URL.createObjectURL(mp4);
+    await new Promise((resolve, reject) => { video.onloadedmetadata = resolve; video.onerror = () => reject(new Error('the converted MP4 does not play')); });
+    // The coded size is in the avc1 sample entry (a 2-byte width and height 28 bytes after its tag). The player's
+    // videoWidth is not used: 406 is not exactly 16:9 of 720, so ffmpeg adds a pixel aspect ratio that the player applies (722).
+    const entry = text.lastIndexOf('avc1'); // the first one is a brand in the ftyp header
+    const sizes = new DataView(bytes.buffer);
+    return { size: bytes.length, ftyp: text.slice(4, 8), avc1: entry > 0, aac: text.includes('mp4a'), width: sizes.getUint16(entry + 28), height: sizes.getUint16(entry + 30) };
   });
   expect(converted).not.toBeNull();
   expect(converted!.size).toBeGreaterThan(10_000);
-  expect(converted).toMatchObject({ ftyp: 'ftyp', avc1: true, aac: true });
+  // The 1280x720 source is scaled down to a 720 px long edge, keeping its proportions and even sides (coded size).
+  expect(converted).toMatchObject({ ftyp: 'ftyp', avc1: true, aac: true, width: 720, height: 406 });
 });
 
 test('a file ffmpeg cannot read shows the real reason, with its output', async ({ page }) => {

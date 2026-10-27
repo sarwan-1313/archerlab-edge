@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import manifestJson from '../../public/ffmpeg/manifest.json?raw';
 import {
   CONVERT_CONFIG, ConvertError, buildConvertArgs, chooseCore, convertedFileName, describeConvertFailure, describeNoVideo, estimateConvertSeconds,
   formatDurationRough, parseCoreManifest, parseProbe, pickReasonLine, remainingSeconds,
@@ -33,6 +34,15 @@ describe('core manifest and choice', () => {
   it('explains when only the multi-thread core is deployed but the page is not isolated', () => {
     const onlyMulti = parseCoreManifest({ version: '1', cores: { multi } })!;
     expect(() => chooseCore(onlyMulti, false, false)).toThrow(/cross-origin isolation/);
+  });
+});
+
+describe('the deployed converter manifest', () => {
+  it('lists the single-thread core, and the download size shown up front matches it', () => {
+    const manifest = parseCoreManifest(JSON.parse(manifestJson));
+    const single = manifest?.cores.single;
+    expect(single).toBeDefined();
+    expect(single!.bytes.js + single!.bytes.wasm).toBe(CONVERT_CONFIG.approxDownloadBytes);
   });
 });
 

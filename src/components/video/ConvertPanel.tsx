@@ -169,7 +169,7 @@ export function ConvertPanel({ file, online = true, onConverted }: ConvertPanelP
   const left = phase.kind === 'converting' ? (phase.fraction === null ? null : remainingSeconds(phase.elapsedS, phase.fraction, phase.estimateS)) : null;
 
   return (
-    <div className="va-convert" role="group" aria-label="Converting the video" aria-live="polite">
+    <div className="va-convert" role="group" aria-label="Converting the video">
       {phase.kind === 'confirm' ? (
         <>
           <p className="va-callout" role="alert">
@@ -186,7 +186,8 @@ export function ConvertPanel({ file, online = true, onConverted }: ConvertPanelP
       ) : (
         <>
           <p className="va-convert__title">
-            {phase.kind === 'downloading' ? 'Downloading the converter…' : phase.kind === 'reading' ? 'Reading the video…' : 'Converting to MP4…'}
+            {/* Only the step is announced; the percentage and countdown change every second and stay silent. */}
+            <span role="status">{phase.kind === 'downloading' ? 'Downloading the converter…' : phase.kind === 'reading' ? 'Reading the video…' : 'Converting to MP4…'}</span>
             {percent !== null ? <strong> {percent}%</strong> : null}
           </p>
           <div

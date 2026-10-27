@@ -78,6 +78,18 @@ describe('ConvertPanel', () => {
     expect(fake.control().close).toHaveBeenCalled();
   });
 
+  it('announces only the step to screen readers, not the countdown that changes every second', async () => {
+    const fake = fakeConverter(info(60));
+    openConverter.mockImplementation(fake.open);
+    const { container } = render(<ConvertPanel file={clip} onConverted={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: /Convert to MP4/ }));
+    await screen.findByRole('progressbar', { name: 'Conversion progress' });
+    expect(container.querySelector('[aria-live]')).toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('Converting to MP4…');
+    act(() => fake.control().progress(0.5));
+    expect(screen.getByRole('status').textContent).toBe('Converting to MP4…');
+  });
+
   it('shows the converter download as its own progress bar', async () => {
     let release: (c: Converter) => void = () => undefined;
     openConverter.mockImplementation(async (_file, options) => {
