@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { backupReport, describeCloudError, listCloudReports, loadCloudReport } from '../cloud/account/cloudSync';
+import { listSharedWithMe, loadReviewReport, type ReportShare, type SharedReport } from '../cloud/account/coachReview';
 import { useCloudAccount } from '../cloud/account/useCloudAccount';
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
@@ -14,6 +15,7 @@ import { TrimPreview } from '../components/video/TrimPreview';
 import { UploadPanel, type UploadOptions } from '../components/video/UploadPanel';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
 import { isWakeLockSupported, useWakeLock } from '../hooks/useWakeLock';
+import { readReportParam, routeForPage } from '../navigation/routes';
 import { AnalysisCancelledError } from '../video-analysis/browser/frameCapture';
 import { availableModels } from '../video-analysis/browser/poseModel';
 import { loadVideo, runVideoAnalysis, type AnalysisProgress } from '../video-analysis/browser/runVideoAnalysis';
@@ -39,7 +41,7 @@ type View =
   | { kind: 'upload' }
   | { kind: 'preview'; file: File; url: string }
   | { kind: 'processing'; file: File; url: string; range: TimeRange }
-  | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' }
+  | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' | 'shared'; share?: ReportShare }
   | { kind: 'error'; message: string; file?: File };
 
 function readOptions(): Partial<UploadOptions> {
@@ -87,6 +89,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
   const [progress, setProgress] = useState<AnalysisProgress | null>(null);
   const [history, setHistory] = useState<VideoReportSummary[]>([]);
   const [cloudHistory, setCloudHistory] = useState<VideoReportSummary[]>([]);
+  const [sharedWithMe, setSharedWithMe] = useState<SharedReport[]>([]);
+  // A /video?report=<id> link, opened once the sign-in state is known.
+  const pendingReportRef = useRef(account.configured ? readReportParam(window.location.search) : undefined);
   const [notice, setNotice] = useState<string | null>(null);
   const [backingUp, setBackingUp] = useState(false);
   const [rescoring, setRescoring] = useState(false);
@@ -140,6 +145,16 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       .catch(() => { if (!cancelled) setCloudHistory([]); });
     return () => { cancelled = true; };
   }, [cloudApi, cloudRevision, freshSession, sessionUserId]);
+
+  useEffect(() => {
+    if (!cloudApi || !sessionUserId) { setSharedWithMe([]); return; }
+    let cancelled = false;
+    // Projects set up before coach review have no shares table; the list then stays empty.
+    void freshSession().then((session) => (session ? listSharedWithMe(cloudApi, session) : []))
+      .then((rows) => { if (!cancelled) setSharedWithMe(rows); })
+      .catch(() => { if (!cancelled) setSharedWithMe([]); });
+    return () => { cancelled = true; };
+  }, [cloudApi, freshSession, sessionUserId]);
 
   const makeUrl = (blob: Blob) => {
     const url = URL.createObjectURL(blob);
@@ -254,6 +269,38 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
       setNotice(describeCloudError(error));
     }
   };
+
+  /** Opens a report from the cloud by id: one shared with this coach, or the athlete's own. */
+  const openReview = useCallback(async (reportId: string) => {
+    if (!cloudApi) return;
+    setNotice(null);
+    try {
+      const session = await freshSession();
+      if (!session) { setNotice('Sign in on your Profile page to open a report shared with you, then come back here.'); return; }
+      const loaded = await loadReviewReport(cloudApi, session, reportId);
+      if (!loaded) { setNotice('That report could not be opened. The athlete may have stopped sharing it or deleted it, or it was shared with a different email than the one you signed in with.'); return; }
+      setView({ kind: 'report', report: loaded.report, videoUrl: loaded.videoUrl, videoBlob: null, source: loaded.share ? 'shared' : 'cloud', share: loaded.share ?? undefined });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      setNotice(describeCloudError(error));
+    }
+  }, [cloudApi, freshSession]);
+
+  useEffect(() => {
+    const reportId = pendingReportRef.current;
+    if (!reportId || !account.ready) return;
+    pendingReportRef.current = undefined;
+    if (!sessionUserId) { setNotice('This link opens a report shared with you. Sign in on your Profile page with the email it was shared with, then come back to Video Analysis: it will be under “Shared with me”.'); return; }
+    void openReview(reportId);
+  }, [account.ready, openReview, sessionUserId]);
+
+  // Keep the address bar on the cloud report that is open, so it can be reloaded or bookmarked.
+  const openCloudId = view.kind === 'report' && (view.source === 'shared' || view.source === 'cloud') ? view.report.id : undefined;
+  useEffect(() => {
+    if (pendingReportRef.current) return;
+    const path = routeForPage('video-analysis', { reportId: openCloudId });
+    if (`${window.location.pathname}${window.location.search}` !== path) window.history.replaceState(window.history.state, '', path);
+  }, [openCloudId]);
 
   const rescore = async (current: ReportViewState, changes: RescoreSettings) => {
     setNotice(null);
@@ -421,6 +468,21 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
               </div>
             </section>
           ) : null}
+          {sharedWithMe.length ? (
+            <section className="va-panel" aria-labelledby="va-shared-title">
+              <h2 id="va-shared-title">Shared with me <small>{sharedWithMe.length} report{sharedWithMe.length === 1 ? '' : 's'} from athletes · read-only</small></h2>
+              <div className="va-history">
+                {sharedWithMe.map((item) => (
+                  <button key={item.id} type="button" className="va-history-row" onClick={() => void openReview(item.report_id)}>
+                    <span className="va-history-score">{item.summary && item.summary.overall !== null ? Math.round(item.summary.overall) : '–'}</span>
+                    <span><strong>{item.summary?.fileName ?? 'Video report'}</strong><small>from {item.owner_email ?? 'an athlete'} · shared {formatDate(Date.parse(item.created_at))}{item.summary ? ` · ${item.summary.shots} shot${item.summary.shots === 1 ? '' : 's'}` : ''}{item.include_video ? ' · with video' : ''}</small></span>
+                    <LevelBadge level={item.summary?.level ?? null} />
+                    <AppIcon name="arrow-right" size={16} />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </>
       ) : null}
 
@@ -456,11 +518,15 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
         <ReportView
           report={view.report}
           videoUrl={view.videoUrl}
-          notice={view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
+          notice={view.source === 'shared' ? (
+            <p className="va-callout va-callout--info">
+              <strong>Shared with you by {view.share?.owner_email ?? 'an athlete'}.</strong> You can read this report and comment on it; only the athlete can change, share or delete it. {view.videoUrl ? '' : 'The video was not shared, so the replay shows the timeline without footage. '}Frame-by-frame landmarks stay on the athlete’s device.
+            </p>
+          ) : view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
             : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
           settingsControl={view.report.samples.length ? <RescorePanel key={view.report.id} report={view.report} busy={rescoring} onRescore={(changes) => void rescore(view, changes)} /> : undefined}
-          cloudCoach={<CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
-          sharing={account.client && account.session && view.source !== 'file' ? (
+          cloudCoach={view.source === 'shared' ? undefined : <CloudCoachPanel report={view.report} videoUrl={view.videoUrl} videoBlob={view.videoBlob} />}
+          sharing={account.client && account.session && view.source !== 'file' && view.source !== 'shared' ? (
             <ShareWithCoachPanel key={view.report.id} report={view.report} videoBlob={view.videoBlob} client={account.client} freshSession={account.freshSession} onBackedUp={refreshCloudHistory} />
           ) : undefined}
           actions={(
@@ -468,9 +534,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
               {onOpenInAnalytics && view.report.samples.some((sample) => sample.image) && view.report.shots.some((shot) => shot.source !== 'audio-only') ? (
                 <ActionButton variant="secondary" type="button" onClick={() => openInAnalytics(view.report)}><AppIcon name="grid" size={16} /> Open in Analytics</ActionButton>
               ) : null}
-              <ActionButton variant="secondary" type="button" onClick={() => exportJson(view.report)}><AppIcon name="download" size={16} /> Export report (JSON)</ActionButton>
+              {view.source !== 'shared' ? <ActionButton variant="secondary" type="button" onClick={() => exportJson(view.report)}><AppIcon name="download" size={16} /> Export report (JSON)</ActionButton> : null}
               {view.source === 'file' ? <ActionButton variant="primary" type="button" onClick={() => void saveFileReport(view)}><AppIcon name="check" size={16} /> Save to this device</ActionButton> : null}
-              {account.configured && view.source !== 'cloud' && view.source !== 'file' ? (
+              {account.configured && view.source !== 'cloud' && view.source !== 'file' && view.source !== 'shared' ? (
                 <>
                   <ActionButton variant="secondary" type="button" disabled={backingUp || !account.session} title={account.session ? undefined : 'Sign in on your Profile page first'} onClick={() => void backup(view.report, null)}>
                     <AppIcon name="cloud" size={16} /> {backingUp ? 'Backing up…' : account.session ? 'Back up report' : 'Sign in to back up'}
@@ -482,7 +548,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics }: VideoAnalysisPageProps 
                   ) : null}
                 </>
               ) : null}
-              {view.source !== 'cloud' && view.source !== 'file' ? <ActionButton variant="danger" type="button" onClick={() => void removeReport(view.report)}><AppIcon name="trash" size={16} /> Delete</ActionButton> : null}
+              {view.source !== 'cloud' && view.source !== 'file' && view.source !== 'shared' ? <ActionButton variant="danger" type="button" onClick={() => void removeReport(view.report)}><AppIcon name="trash" size={16} /> Delete</ActionButton> : null}
               <ActionButton variant="primary" type="button" onClick={() => setView({ kind: 'upload' })}><AppIcon name="upload" size={16} /> Analyse another video</ActionButton>
             </>
           )}

@@ -63,7 +63,8 @@ it('backs the report up, then shares it after the trust confirmation, and revoke
   await screen.findByText(/Shared with coach@club.org/);
   const writes = project.requests.filter((request) => request.method === 'POST').map((request) => request.path);
   expect(writes).toEqual(['/rest/v1/video_reports', '/rest/v1/report_shares']);
-  expect((project.requests.find((request) => request.path === '/rest/v1/report_shares' && request.method === 'POST')?.body as unknown[])[0]).toMatchObject({ coach_email: 'coach@club.org', include_video: false });
+  const shareWrite = project.requests.find((request) => request.path === '/rest/v1/report_shares' && request.method === 'POST');
+  expect((shareWrite?.body as unknown[] | undefined)?.[0]).toMatchObject({ coach_email: 'coach@club.org', include_video: false });
   expect((screen.getByRole('textbox', { name: /Link for your coach/ }) as HTMLInputElement).value).toBe(`${window.location.origin}/video?report=r1`);
   expect(screen.getByText(/report only/)).toBeTruthy();
 
