@@ -10,7 +10,7 @@ The service worker only exists in production builds. `npm run dev` registers non
 | --- | --- | --- |
 | The app shell, every page chunk, the self-hosted fonts, the icons | Precached at install | The app opens offline from the first visit on |
 | MediaPipe's SIMD runtime (`mediapipe/wasm/vision_wasm_internal.*`) | Precached | Loaded by every browser with WebAssembly SIMD |
-| The Lite pose model, the hand model, `models/models.json` | Precached | Live Analysis (pose and gesture scoring) and Video Analysis start with these |
+| The Lite pose model, the hand and face models, `models/models.json` | Precached | Live Analysis (pose and gesture scoring) and Video Analysis (including anchor detail) start with these |
 | Full and Heavy pose models (9 MB and 30 MB) | Cached the first time they are used | Too large to download for every install |
 | MediaPipe's non-SIMD runtime (`vision_wasm_nosimd_internal.*`) | Cached the first time it is used | About 11 MB, for browsers without WebAssembly SIMD |
 | The converter's manifest (`ffmpeg/manifest.json`) | Precached | A few hundred bytes; lets Convert to MP4 start offline |

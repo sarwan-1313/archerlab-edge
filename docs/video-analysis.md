@@ -116,14 +116,38 @@ Every threshold below is a **coaching heuristic** for this prototype, kept in `r
 | Rhythm & consistency | Aiming-time consistency | ≤ 0.08 / 0.15 / 0.25 / 0.4 CV | needs 2+ shots |
 | Rhythm & consistency | Draw-time consistency | ≤ 0.1 / 0.18 / 0.3 / 0.45 CV | needs 2+ shots |
 | Rhythm & consistency | Bow-arm consistency | ≤ 1.5 / 3 / 5 / 8° | needs 2+ shots |
+| Rhythm & consistency | Anchor contact point (fingertip to chin or mouth corner) | ≤ 0.06 / 0.1 / 0.16 / 0.25 FH | experimental; face and hand models |
+| Rhythm & consistency | Anchor consistency (face) | ≤ 0.03 / 0.06 / 0.1 / 0.16 FH | experimental; needs 2+ shots with the face seen |
 
-SW = shoulder widths (3D); % torso = percent of 2D torso length; CV = coefficient of variation.
+SW = shoulder widths (3D); % torso = percent of 2D torso length; CV = coefficient of variation; FH = face heights (forehead to chin).
 
 **Areas** are confidence-weighted averages of their measurements. The **form score** is `0.7 × weighted average of the areas + 0.3 × the weakest area`, because skill is limited by the weakest phase of the shot. The same formula gives each shot its own score.
 
 **Level**: Beginner < 50 ≤ Intermediate < 68 ≤ Advanced < 82 ≤ Elite-level form. A clear fault in a fundamental area (stance, alignment, stability or release) **caps** the level: a measurement scoring below 45 caps it at Intermediate, below 60 at Advanced. The report says when a cap applied and what lifts it.
 
 **Confidence** (low / medium / high) combines how many areas could be measured, the number of shots (3+ for full confidence), how much of the clip was tracked, and how clear the camera angle was. The reasons are listed in the report.
+
+## Anchor on the face (experimental)
+
+The pose model sees the hand and the head, but not where on the face the hand rests. After the precision pass, the engine runs **MediaPipe Face Landmarker** and the **Hand Landmarker** only on frames inside each shot's anchor window: up to 1.5 s before release, at 8 frames per second, so about a dozen frames a shot instead of the whole clip. Each frame is cropped to a square around the head (from the pose: centred on the nose, about 2.2 shoulder widths), so the face is large enough for the face model even in full-body footage.
+
+| File | Role |
+| --- | --- |
+| `anchor.ts` | Pure geometry: the draw hand's index fingertip in a face-aligned frame, per frame and per shot, and the spread across shots |
+| `browser/anchorDetail.ts` | Seeks the anchor frames, crops the head and runs both models (CPU). Any failure leaves the report without these metrics |
+| `components/video/AnchorFaceDiagram.tsx` | The face diagram in the report, one dot per shot |
+
+**Measurement frame.** Everything is in face heights (forehead to chin), from the chin: y up the face, x across it toward the draw-hand side (the mouth corner nearest the fingertip). So the numbers do not depend on distance to the camera, head tilt or which hand draws. The draw hand is the one whose index fingertip is nearest the chin, and it must be within 1.4 face heights.
+
+**Per shot** (`shot.anchorFace`): the median fingertip position over the window, its distances to the chin, the nearer mouth corner and the nose tip, and how much it wobbles. **Anchor contact point** is the distance to the nearer of chin and mouth corner, so it suits both an under-the-chin anchor and a corner-of-the-mouth one.
+
+**Across shots:** **Anchor consistency (face)** is the mean distance of the shots' points from their centre, from shots with confidence ≥ 0.3.
+
+**Confidence** follows how well the draw side of the face is seen. When the head turns that side away from the camera (common in side-on footage, where the camera is on the bow side), the draw-side cheek comes close to the nose in the image and that half of the face mesh is a guess. Visibility is `2 × near ÷ (near + far)` of the nose-to-cheek distances (1 when frontal or turned toward the camera), averaged over the frames and scaled by the frame count (full at 6 frames). The diagram draws low-confidence shots hollow.
+
+Both metrics are **experimental**: they never cap the level, their findings carry an Experimental badge and count for less, and the thresholds are guesses until checked against real footage. The per-frame measurements are stored with the report (`anchorFrames`), so re-scoring keeps them; a report file exported before this keeps working without them.
+
+The face model (`public/models/face_landmarker.task`, MediaPipe Face Landmarker float16 version 1, 3.6 MB, Apache-2.0) is self-hosted next to the hand model and loaded only when a clip is analysed. In the e2e build the MediaPipe stub finds no face, so those reports have no face metrics.
 
 ## Coaching output
 

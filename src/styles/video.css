@@ -450,3 +450,15 @@
 .va-link-button { padding: 0; border: 0; background: none; color: var(--ath-cyan, inherit); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 .va-shot-note { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ath-line, rgba(255,255,255,.12)); }
 .va-shot-note h3 { margin: 0; font-size: 15px; }
+
+/* Anchor on the face (experimental) */
+.va-anchor-face h2 { display: flex; align-items: center; gap: 8px; }
+.va-anchor-face__body { display: grid; gap: 8px; justify-items: center; }
+.va-anchor-face svg { width: 100%; max-width: 320px; height: auto; }
+.va-anchor-face__outline { fill: none; stroke: var(--ath-muted, #8a93a6); stroke-width: 3; }
+.va-anchor-face__feature { fill: none; stroke: var(--ath-muted, #8a93a6); stroke-width: 2.5; opacity: .7; }
+.va-anchor-face__label { fill: var(--ath-muted, #8a93a6); font-size: 22px; }
+.va-anchor-face__dot { fill: var(--ath-cyan, #2ee6ff); stroke: var(--ath-ink, #04060a); stroke-width: 2; }
+.va-anchor-face__dot--rough { fill: none; stroke: var(--ath-cyan, #2ee6ff); stroke-width: 3; }
+.va-anchor-face__num { fill: var(--ath-ink, #04060a); font-size: 13px; font-weight: 700; pointer-events: none; }
+.va-anchor-face__dot--rough + .va-anchor-face__num { fill: var(--ath-text, #fff); }

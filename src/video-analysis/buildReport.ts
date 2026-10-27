@@ -1,17 +1,19 @@
 import type { ArcherHandedness } from '../types/biomechanics';
+import { anchorFaceSpread, anchorWindow, contactDistance, summarizeShotAnchor } from './anchor';
 import { buildCoaching, buildPlan } from './coaching';
 import { VIDEO_ENGINE_VERSION } from './config';
 import { detectCameraView, detectDrawSide } from './detection';
 import { computeFrameFeatures } from './frameFeatures';
 import { measureSession, measureShot } from './metrics';
 import { recommendResources } from './resources';
+import { METRIC_RUBRIC } from './rubric';
 import { aggregateMetrics, scoreMetrics, scoreSession } from './scoring';
 import { formatClock } from './format';
 import { onsetsInRange, rangeLength, sourceRange } from './range';
 import { phaseAt, segmentShots } from './segmentation';
 import { buildFeatureTrack } from './track';
 import type {
-  AnalysisSettings, AudioOnset, AudioSummary, FrameReadout, PoseSample, ShotReport,
+  AnalysisSettings, AnchorObservation, AudioOnset, AudioSummary, FrameReadout, PoseSample, ShotReport,
   VideoAnalysisReport, VideoReportSummary, VideoSourceInfo,
 } from './types';
 
@@ -29,6 +31,8 @@ export interface BuildReportInput {
   audio: AudioInput | null;
   processingMs?: number;
   refinedFrames?: number;
+  /** Face and hand measurements from the anchor windows (browser/anchorDetail.ts); absent when not measured. */
+  anchorFrames?: AnchorObservation[];
 }
 
 export function createReportId(now = Date.now()): string {
@@ -74,8 +78,21 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
   const view = detectCameraView(features, segmentation.fullDrawMask);
   const bowType = input.settings.bowType;
 
-  const measured = segmentation.shots.map((shot) => ({ shot, result: measureShot(track, shot, view.kind) }));
-  const shots: ShotReport[] = measured.map(({ shot, result }, index) => {
+  const anchorFrames = input.anchorFrames ?? [];
+  const measured = segmentation.shots.map((shot) => {
+    const result = measureShot(track, shot, view.kind);
+    const window = anchorWindow(shot);
+    const anchorFace = shot.source === 'audio-only' ? null
+      : summarizeShotAnchor(anchorFrames.filter((observation) => observation.t >= window.start - 1e-6 && observation.t <= window.end + 1e-6));
+    if (anchorFace) {
+      result.metrics = {
+        ...result.metrics,
+        anchorContactPoint: { value: contactDistance(anchorFace), confidence: anchorFace.confidence * METRIC_RUBRIC.anchorContactPoint.view[view.kind] },
+      };
+    }
+    return { shot, result, anchorFace };
+  });
+  const shots: ShotReport[] = measured.map(({ shot, result, anchorFace }, index) => {
     const { scores, formScore } = scoreMetrics(result.metrics, bowType);
     const quality = result.trackedRatio >= 0.85 && result.meanVisibility >= 0.65 ? 'good' : result.trackedRatio >= 0.6 ? 'limited' : 'poor';
     const audio = shot.audio.release || shot.audio.clicker || shot.audio.impact
@@ -100,11 +117,19 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
       quality: { trackedRatio: result.trackedRatio, meanVisibility: result.meanVisibility, label: quality },
       audio,
       anchorVector: result.anchorVector,
+      ...(anchorFace ? { anchorFace } : {}),
       posture: result.posture,
     };
   });
 
   const session = measureSession(measured.map(({ result }) => result));
+  // Anchor point on the face across shots (experimental), from shots whose face was seen well enough.
+  const faced = measured.map(({ anchorFace }) => anchorFace).filter((face): face is NonNullable<typeof face> => Boolean(face && face.confidence >= 0.3));
+  const faceSpread = anchorFaceSpread(faced);
+  if (faceSpread !== null) {
+    const confidence = (faced.reduce((sum, face) => sum + face.confidence, 0) / faced.length) * Math.min(1, (faced.length - 1) / 4) * METRIC_RUBRIC.anchorFaceSpread.view[view.kind];
+    session.anchorFaceSpread = { value: faceSpread, confidence };
+  }
   const aggregated = aggregateMetrics(shots.filter((shot) => shot.source !== 'audio-only').map((shot) => shot.metrics), session);
   const trackedFrames = features.filter((frame) => frame.tracked);
   const trackedRatio = features.length ? trackedFrames.length / features.length : 0;
@@ -194,6 +219,7 @@ export function buildReport(input: BuildReportInput): VideoAnalysisReport {
     plan,
     resources,
     limitations,
+    ...(input.anchorFrames ? { anchorFrames: input.anchorFrames } : {}),
   };
 }
 

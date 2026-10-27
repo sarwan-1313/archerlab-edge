@@ -125,6 +125,18 @@ export const METRIC_RUBRIC: Record<MetricKey, MetricRubric> = {
     band: { kind: 'lower', excellent: 0.03, good: 0.06, fair: 0.1, poor: 0.16 },
     view: { broadside: 1, oblique: 0.9, 'down-the-line': 0.8, unknown: 0.7 }, joints: ['drawWrist', 'head'], showAt: -0.3,
   },
+  anchorContactPoint: {
+    label: 'Anchor contact point', short: 'Anchor contact', unit: 'FH', decimals: 2, category: 'rhythm', weight: 0.6,
+    // Distance from the draw hand's index fingertip to the nearer of chin and mouth corner, in face heights.
+    band: { kind: 'lower', excellent: 0.06, good: 0.1, fair: 0.16, poor: 0.25 },
+    view: allViews(0.8), joints: ['drawWrist', 'head'], showAt: -0.3, experimental: true,
+  },
+  anchorFaceSpread: {
+    label: 'Anchor consistency (face)', short: 'Anchor on face', unit: 'FH', decimals: 3, category: 'rhythm', weight: 0.8,
+    // Mean distance of each shot's fingertip point from their centre, in face heights.
+    band: { kind: 'lower', excellent: 0.03, good: 0.06, fair: 0.1, poor: 0.16 },
+    view: allViews(0.8), joints: ['drawWrist', 'head'], showAt: -0.3, experimental: true,
+  },
   holdTimeCv: {
     label: 'Aiming-time consistency', short: 'Rhythm', unit: 'CV', decimals: 2, category: 'rhythm', weight: 1,
     band: { kind: 'lower', excellent: 0.08, good: 0.15, fair: 0.25, poor: 0.4 },
@@ -142,7 +154,7 @@ export const METRIC_RUBRIC: Record<MetricKey, MetricRubric> = {
   },
 };
 
-export const SESSION_METRICS: MetricKey[] = ['anchorSpread', 'holdTimeCv', 'drawTimeCv', 'elbowAngleSd'];
+export const SESSION_METRICS: MetricKey[] = ['anchorSpread', 'anchorFaceSpread', 'holdTimeCv', 'drawTimeCv', 'elbowAngleSd'];
 
 export const CATEGORY_INFO: Record<CategoryId, { label: string; weight: number; blurb: string }> = {
   posture: { label: 'Stance & posture', weight: 0.14, blurb: 'Upright torso and level, settled shoulders.' },

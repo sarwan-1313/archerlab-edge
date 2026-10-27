@@ -4,12 +4,13 @@ import { buildReport, type AudioInput } from '../buildReport';
 import { QUALITY_FPS, VIDEO_CONFIG } from '../config';
 import { formatClock } from '../format';
 import { audioSkipReason, onsetsInRange, rangeLength, rangeProblem } from '../range';
-import type { AnalysisQuality, BowType, PoseModelVariant, PoseSample, TimeRange, VideoAnalysisReport } from '../types';
+import type { AnalysisQuality, AnchorObservation, BowType, PoseModelVariant, PoseSample, TimeRange, VideoAnalysisReport } from '../types';
+import { measureAnchorDetail } from './anchorDetail';
 import { decodeAudioTrack } from './audioDecode';
 import { AnalysisCancelledError, captureRanges, resolveDuration } from './frameCapture';
 import { createVideoPoseModel } from './poseModel';
 
-export type AnalysisStage = 'loading' | 'audio' | 'model' | 'tracking' | 'refining' | 'scoring';
+export type AnalysisStage = 'loading' | 'audio' | 'model' | 'tracking' | 'refining' | 'anchor' | 'scoring';
 
 export interface AnalysisProgress {
   stage: AnalysisStage;
@@ -43,8 +44,9 @@ const STAGE_SPAN: Record<AnalysisStage, [number, number]> = {
   audio: [0.02, 0.08],
   model: [0.08, 0.12],
   tracking: [0.12, 0.85],
-  refining: [0.85, 0.97],
-  scoring: [0.97, 1],
+  refining: [0.85, 0.94],
+  anchor: [0.94, 0.98],
+  scoring: [0.98, 1],
 };
 
 function overall(stage: AnalysisStage, fraction: number): number {
@@ -204,11 +206,24 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
     }
   }
 
-  // 4. Report.
+  // 4. Anchor on the face (experimental): face and hand models on a few frames of each anchor window only.
+  const tracked = buildReport({ samples, source, settings, profileHandedness: options.profileHandedness, audio })
+    .shots.filter((shot) => shot.source !== 'audio-only');
+  let anchorFrames: AnchorObservation[] | undefined;
+  if (tracked.length) {
+    progress('anchor', 0, 'Measuring the anchor on the face…');
+    anchorFrames = await measureAnchorDetail({
+      video, samples, shots: tracked, signal,
+      onProgress: (fraction) => progress('anchor', fraction, 'Measuring the anchor on the face…'),
+    });
+    checkAbort();
+  }
+
+  // 5. Report.
   progress('scoring', 0.5, 'Scoring form and building your coaching report…');
   const report = buildReport({
     samples, source, settings, profileHandedness: options.profileHandedness, audio,
-    processingMs: performance.now() - started, refinedFrames,
+    processingMs: performance.now() - started, refinedFrames, anchorFrames,
   });
   if (pass1.stalledAt !== null) {
     report.limitations.unshift(`The video stopped playing at ${formatClock(pass1.stalledAt, 1)}, before the end of the selected part, so only what came before was analysed. The file may be damaged; exporting it again as MP4 may help.`);

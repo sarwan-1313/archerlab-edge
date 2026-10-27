@@ -101,7 +101,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
       <Section id="privacy-device" icon="shield" title="What runs on this device">
         <ul>
           <li><strong>Live analysis.</strong> Camera frames go to a pose model that runs in this browser. They are measured and then discarded; they are never uploaded.</li>
-          <li><strong>Video analysis.</strong> The video you choose is read and tracked frame by frame in this browser, including its sound. The file is not uploaded.</li>
+          <li><strong>Video analysis.</strong> The video you choose is read and tracked frame by frame in this browser, including its sound. Around each anchor, a face and hand model also look at a few frames to see where your hand sits on your face; only those measurements are kept, not the frames. The file is not uploaded.</li>
           <li><strong>Converting a video.</strong> If your browser cannot play a clip, you can convert it to an MP4 in this browser. The converter (ffmpeg) is downloaded from this website only when you ask for it, and the video is not uploaded.</li>
           <li><strong>Voice notes.</strong> Your voice is recorded only while you record a note, turned into text by a speech model (Whisper) running in this browser, and then discarded: the audio never leaves this device and is never saved. Only the text you confirm is kept, with the shot. The speech model and its runtime (about 70 MB) is downloaded from this website once, after you agree.</li>
           <li>The pose models are served by this website itself, not loaded from another company’s servers. ArcherLab has no server that receives your data.</li>

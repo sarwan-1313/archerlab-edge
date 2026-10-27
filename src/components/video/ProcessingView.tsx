@@ -10,9 +10,10 @@ const STEPS: Array<{ stage: AnalysisStage; label: string }> = [
   { stage: 'model', label: 'Load the pose model' },
   { stage: 'tracking', label: 'Track every frame' },
   { stage: 'refining', label: 'Precision pass at each release' },
+  { stage: 'anchor', label: 'Anchor on the face' },
   { stage: 'scoring', label: 'Score form and coach' },
 ];
-const ORDER: AnalysisStage[] = ['loading', 'audio', 'model', 'tracking', 'refining', 'scoring'];
+const ORDER: AnalysisStage[] = ['loading', 'audio', 'model', 'tracking', 'refining', 'anchor', 'scoring'];
 
 type ProcessingViewProps = {
   fileName: string;

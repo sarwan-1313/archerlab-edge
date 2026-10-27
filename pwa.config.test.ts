@@ -19,6 +19,7 @@ describe('precache', () => {
       'mediapipe/wasm/vision_wasm_internal.{js,wasm}',
       'models/pose_landmarker_lite.task',
       'models/hand_landmarker.task',
+      'models/face_landmarker.task',
       'models/models.json',
     ]));
   });

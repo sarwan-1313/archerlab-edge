@@ -92,6 +92,8 @@ export type MetricKey =
   | 'holdDuration'
   | 'clickerReaction'
   | 'anchorSpread'
+  | 'anchorContactPoint'
+  | 'anchorFaceSpread'
   | 'holdTimeCv'
   | 'drawTimeCv'
   | 'elbowAngleSd';
@@ -123,10 +125,39 @@ export interface ShotReport extends ShotTiming {
   quality: { trackedRatio: number; meanVisibility: number; label: 'good' | 'limited' | 'poor' };
   audio?: { releaseOnset?: number; clickerOnset?: number; impactOnset?: number; flightTime?: number };
   anchorVector?: Vec3;
+  /** Anchor point on the face (experimental; from Face and Hand Landmarker). */
+  anchorFace?: AnchorFaceSummary;
   /** The athlete's own note for this shot (a voice note transcribed on the device, or typed). */
   notes?: string;
   /** Direction notes used to word posture findings. */
   posture?: { bowShoulderHigher: boolean | null; leanTowardTarget: boolean | null };
+}
+
+/** Where the draw hand's index fingertip sat on the face in one anchor frame (see anchor.ts). Face heights, from the chin. */
+export interface AnchorObservation {
+  t: number;
+  /** Across the face, positive toward the draw-hand side. */
+  x: number;
+  /** Up the face, toward the forehead. */
+  y: number;
+  toChin: number;
+  toMouthCorner: number;
+  toNose: number;
+  /** 0–1: how well the draw side of the face is seen (side-on footage often hides it). */
+  visibility: number;
+}
+
+/** A shot's anchor point on the face, from the frames of its anchor window. */
+export interface AnchorFaceSummary {
+  x: number;
+  y: number;
+  toChin: number;
+  toMouthCorner: number;
+  toNose: number;
+  /** Median movement of the fingertip within the anchor, face heights. */
+  wobble: number;
+  frames: number;
+  confidence: number;
 }
 
 export interface LetDown { start: number; end: number }
@@ -309,6 +340,8 @@ export interface VideoAnalysisReport {
   plan: PlanStep[];
   resources: ResourceLink[];
   limitations: string[];
+  /** Face and hand measurements from each shot's anchor window, kept so the report can be scored again. */
+  anchorFrames?: AnchorObservation[];
 }
 
 /** The small, list-friendly part of a report (for history, profile status and cloud sync). */

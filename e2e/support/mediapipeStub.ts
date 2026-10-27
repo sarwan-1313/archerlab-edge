@@ -59,5 +59,22 @@ export class HandLandmarker {
     return { landmarks: [], worldLandmarks: [], handedness: [], handednesses: [] };
   }
 
+  detect(_image: unknown) {
+    return { landmarks: [], worldLandmarks: [], handedness: [], handednesses: [] };
+  }
+
+  close() {}
+}
+
+/** The synthetic archer has no face, so anchor detail finds none and the report has no face-based metrics. */
+export class FaceLandmarker {
+  static async createFromOptions(_fileset?: unknown, _options?: unknown) {
+    return new FaceLandmarker();
+  }
+
+  detect(_image: unknown) {
+    return { faceLandmarks: [], faceBlendshapes: [], facialTransformationMatrixes: [] };
+  }
+
   close() {}
 }

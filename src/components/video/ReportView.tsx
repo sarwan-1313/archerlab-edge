@@ -8,6 +8,7 @@ import { AppIcon, type AppIconName } from '../AppIcon';
 import { ActionButton } from '../ActionButton';
 import { StatusBadge } from '../StatusBadge';
 import { VoiceNotePanel } from '../VoiceNotePanel';
+import { AnchorFaceDiagram } from './AnchorFaceDiagram';
 import { AnalysisPlayer, type SeekRequest } from './AnalysisPlayer';
 import { LevelBadge } from './LevelBadge';
 
@@ -242,6 +243,7 @@ export function ReportView({ report, videoUrl, cloudCoach, actions, notice, sett
 
       <Categories report={report} />
       <ShotTable report={report} onSeek={(t) => show(t)} onShotNotes={onShotNotes} />
+      <AnchorFaceDiagram shots={report.shots} />
       <Consistency report={report} />
 
       <div className="va-two">

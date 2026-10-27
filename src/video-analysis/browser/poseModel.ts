@@ -18,7 +18,8 @@ export const MODEL_PATHS: Record<PoseModelVariant, string> = {
 
 let visionPromise: ReturnType<typeof FilesetResolver.forVisionTasks> | null = null;
 
-function vision() {
+/** The shared MediaPipe vision runtime (self-hosted wasm), loaded once. */
+export function vision() {
   if (!visionPromise) {
     visionPromise = FilesetResolver.forVisionTasks(POSE_CONFIG.wasmRoot).catch((error: unknown) => {
       visionPromise = null;

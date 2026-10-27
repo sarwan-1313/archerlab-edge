@@ -12,8 +12,8 @@ export const THEME_COLOR = '#04060a';
  *   manifest and its icons itself.)
  * - MediaPipe's SIMD runtime. Only `forVisionTasks(path)` is used, which loads it on every browser with
  *   WebAssembly SIMD; the `module` variant is never requested.
- * - The Lite pose model, which both Live and Video Analysis start with, and the hand model that Live
- *   Analysis uses for gesture scoring. models.json says which pose models the deployment has.
+ * - The Lite pose model, which both Live and Video Analysis start with, the hand model that Live
+ *   Analysis uses for gesture scoring, and the face model Video Analysis uses at each anchor (3.6 MB). models.json says which pose models the deployment has.
  * - The converter's manifest (a few hundred bytes), so "Convert to MP4" can start offline once the core
  *   itself has been downloaded (see RUNTIME_CACHING). The core is never precached: it is 31 MB and most
  *   athletes never convert.
@@ -28,6 +28,7 @@ export const PRECACHE_GLOBS = [
   'models/models.json',
   'models/pose_landmarker_lite.task',
   'models/hand_landmarker.task',
+  'models/face_landmarker.task',
   'ffmpeg/manifest.json',
 ];
 

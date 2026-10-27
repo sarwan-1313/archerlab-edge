@@ -1,6 +1,6 @@
 import type { ArcherHandedness } from '../types/biomechanics';
 import type { AudioInput, BuildReportInput } from './buildReport';
-import type { AnalysisSettings, AudioOnset, AudioSummary, BowType, PoseSample, VideoAnalysisReport, VideoSourceInfo } from './types';
+import type { AnalysisSettings, AnchorObservation, AudioOnset, AudioSummary, BowType, PoseSample, VideoAnalysisReport, VideoSourceInfo } from './types';
 
 /**
  * Turns a stored or exported report back into engine input, so it can be
@@ -25,7 +25,7 @@ export interface RescoreSettings {
   requestedHandedness: 'auto' | ArcherHandedness;
 }
 
-type ReportParts = Pick<VideoAnalysisReport, 'id' | 'createdAt' | 'samples' | 'source' | 'settings' | 'audio'> & {
+type ReportParts = Pick<VideoAnalysisReport, 'id' | 'createdAt' | 'samples' | 'source' | 'settings' | 'audio' | 'anchorFrames'> & {
   tracking?: Partial<VideoAnalysisReport['tracking']>;
 };
 
@@ -48,6 +48,7 @@ function toInput(report: ReportParts, changes?: Partial<RescoreSettings>): Build
     audio: audioInput(report.audio),
     processingMs: report.tracking?.processingMs,
     refinedFrames: report.tracking?.refinedFrames,
+    anchorFrames: report.anchorFrames,
   };
 }
 
@@ -121,6 +122,14 @@ function isOnset(value: unknown): value is AudioOnset {
   return isRecord(value) && isNumber(value.t) && isNumber(value.strength) && isNumber(value.peakDb) && isNumber(value.centroidHz) && isNumber(value.decayS);
 }
 
+/** Anchor measurements are optional; malformed entries are dropped rather than failing the whole file. */
+function restoreAnchorFrames(value: unknown): AnchorObservation[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const keys = ['t', 'x', 'y', 'toChin', 'toMouthCorner', 'toNose', 'visibility'] as const;
+  return value.filter((item): item is AnchorObservation => isRecord(item) && keys.every((key) => isNumber(item[key])))
+    .map((item) => Object.fromEntries(keys.map((key) => [key, item[key]])) as unknown as AnchorObservation);
+}
+
 function restoreAudio(value: unknown): AudioSummary | null {
   if (value === null || value === undefined) return null;
   const malformed = new ReportFileError('The audio data in this report is malformed.');
@@ -144,6 +153,7 @@ export function restoreReportInput(value: unknown): BuildReportInput {
     source: restoreSource(value.source),
     settings: restoreSettings(value.settings),
     audio: restoreAudio(value.audio),
+    anchorFrames: restoreAnchorFrames(value.anchorFrames),
     tracking: {
       processingMs: isNumber(tracking.processingMs) ? tracking.processingMs : undefined,
       refinedFrames: isNumber(tracking.refinedFrames) ? tracking.refinedFrames : undefined,
