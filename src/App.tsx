@@ -12,7 +12,6 @@ import { desktopNavItems, mobileNavItems, pageTitles } from './data/navigation';
 import { guideStepForPage, isGuideDetailPage } from './data/userGuide';
 import { attachReportedResult, attachShotNotes, clearReportedResult } from './gesture-entry/shotAssociation';
 import { HomePage } from './pages/HomePage';
-import { LiveAnalysisPage } from './pages/LiveAnalysisPage';
 import { runPresentationTransition } from './motion/runPresentationTransition';
 import { pageForPathname, readReportParam, resolvePageFromPathname, routeForPage } from './navigation/routes';
 import { useAthleteProfile } from './hooks/useAthleteProfile';
@@ -24,6 +23,8 @@ import { isVideoShot } from './video-analysis/toShotAnalyses';
 const CalibrationPage = lazy(() => import('./pages/CalibrationPage').then((module) => ({ default: module.CalibrationPage })));
 const GestureGuidePage = lazy(() => import('./pages/GestureGuidePage').then((module) => ({ default: module.GestureGuidePage })));
 const GuideDetailPage = lazy(() => import('./pages/GuideDetailPage').then((module) => ({ default: module.GuideDetailPage })));
+// Lazy like every page, so MediaPipe is loaded only when Live Analysis opens.
+const LiveAnalysisPage = lazy(() => import('./pages/LiveAnalysisPage').then((module) => ({ default: module.LiveAnalysisPage })));
 const ManualShotEntryPage = lazy(() => import('./pages/ManualShotEntryPage').then((module) => ({ default: module.ManualShotEntryPage })));
 const MultiCameraPage = lazy(() => import('./pages/MultiCameraPage').then((module) => ({ default: module.MultiCameraPage })));
 const NewSessionPage = lazy(() => import('./pages/NewSessionPage').then((module) => ({ default: module.NewSessionPage })));

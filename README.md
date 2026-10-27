@@ -135,7 +135,7 @@ Landmarks are converted into archery-specific measurements: shoulder alignment, 
 Archery is a sequence, not a single frame. Each shot is buffered and split into draw, hold, release and follow-through, with pre- and post-release windows, release metrics, data-quality summaries and follow-through analysis. Automatic release detection is available as an experimental option.
 
 ### 4. Touchless scoring
-Archers can show their score with a hand gesture after each arrow, so they don't need to touch a device between shots. Stability confirmation guards against misreads, and manual and on-target entry are available as fallbacks.
+Archers can show their score with a hand gesture after each arrow, so they don't need to touch a device between shots. Stability confirmation guards against misreads, and manual and on-target entry are available as fallbacks. Or they can say it: a **voice note** ("nine, dropped the bow arm") is transcribed by Whisper on the device, the score is offered for confirmation, and the words are saved as the shot's notes. The audio never leaves the device ([docs/voice-notes.md](docs/voice-notes.md)).
 
 ### 5. Recording and replay
 Sessions are recorded locally with synchronised pose telemetry and shot markers, then replayed from the Sessions library. Recorded data is kept separate from analytical data, so the analysis can improve without re-recording sessions.
@@ -153,6 +153,9 @@ A separate engine for recorded clips (`src/video-analysis`). Because it sees the
 - **Larger pose models.** Lite ships with the app; Full and Heavy are downloaded automatically on Vercel builds, and Full is preselected when available.
 - **Video shots in Analytics.** **Open in Analytics** runs a clip through the live capture engine, so its shots appear in Analytics and Replay, ready for scores.
 - **Re-score and reopen.** Change the bow type or drawing hand and re-score from the stored movement without re-tracking. Export a report as JSON and open it later; it is scored again with the current engine.
+- **3D view.** A tab next to the replay draws the tracked skeleton in 3D (world landmarks, metres), to orbit around the archer at any frame.
+- **Anchor on the face** (experimental). Face and hand models look at a few frames of each anchor, on a crop around the head, to measure where the index fingertip sits against the chin and mouth corner, and how much that changes between shots; a face diagram shows one dot per shot ([details](docs/video-analysis.md#anchor-on-the-face-experimental)).
+- **Convert to MP4 on this device.** A clip the browser cannot play, such as an iPhone HEVC `.mov` in Chrome, can be converted to H.264 with ffmpeg running in the browser; the converter downloads only when asked for ([docs/video-conversion.md](docs/video-conversion.md)).
 - **Real-clip fixtures.** Exported reports with an expected shot count and release times become regression tests ([how](src/video-analysis/fixtures/README.md)).
 
 ### 9. Optional second opinions, backup and imports
@@ -221,11 +224,11 @@ Camera ─► Local vision models ─► Landmarks ─► Biomechanics ─► Lo
 | Area | Tools |
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite, `vite-plugin-pwa` (Workbox) |
-| Computer vision | MediaPipe Tasks Vision (Pose and Hand Landmarker), WebAssembly |
+| Computer vision | MediaPipe Tasks Vision (Pose, Hand and Face Landmarker), WebAssembly; three.js for the 3D view |
 | Browser APIs | MediaDevices camera capture, MediaRecorder, requestVideoFrameCallback, Web Audio, Screen Wake Lock, IndexedDB, Service Worker and Cache Storage (offline, installable), Canvas and SVG |
 | Optional cloud | Claude, OpenAI and Gemini APIs (bring your own key); Supabase Auth, Postgres and Storage over REST |
-| Optional on-device AI | WebLLM (WebGPU) running Qwen2.5-1.5B-Instruct (Apache-2.0) |
-| Quality | Vitest + Testing Library (63 test files, 327 cases), oxlint, GitHub Actions CI |
+| On-device AI and media | Whisper (whisper-tiny) via Transformers.js for voice notes; WebLLM (WebGPU) running Qwen2.5-1.5B-Instruct (Apache-2.0) for the optional private coach; ffmpeg.wasm for converting video |
+| Quality | Vitest + Testing Library (81 test files, 499 cases), Playwright end-to-end tests with axe accessibility checks, oxlint, GitHub Actions CI |
 | Hosting | Vercel (production deploys from `main`; builds fetch the larger pose models), GitHub Codespaces for development |
 
 ## Repository structure

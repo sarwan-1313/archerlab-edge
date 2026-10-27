@@ -2,26 +2,9 @@
 
 All notable changes to ArcherLab Edge. Versions follow [semantic versioning](https://semver.org/); while the project is below 1.0, minor versions can change behaviour.
 
-## Unreleased
+## 0.2.0 (2026-10-27)
 
-### Added
-
-- **Remote coach review** (optional, needs accounts). A signed-in athlete can share a video report read-only with a coach's email from **Share with a coach** in the report. The report is backed up first if needed. The video is included only if the athlete ticks it (off by default), and sharing asks them to confirm they trust the coach (and, if under 18, to ask a parent or guardian first). Shares are listed with **Revoke**, and the athlete copies a `/video?report=<id>` link to send the coach themselves; the app sends no email.
-- **Shared with me** on the Video Analysis page for signed-in coaches. Opening a shared link loads the report from the cloud, with the video through a short-lived signed URL when it was included.
-- **Comments** on reports in the cloud, from the athlete and their coaches, showing author, shot and time. **Comment at this moment** uses the replay's current time and shot, clicking a comment jumps the replay there, and timed comments are marked on the timeline. Authors can delete their own comments.
-- `report_shares` and `report_comments` tables in `supabase/schema.sql`, with row-level security: coaches can read, never edit or delete, a shared report; they can read its video only when it is included; and only the owner and active coaches can read and add comments. Re-run the script to add them to an existing project.
-- **3D view** tab next to the replay in the video report. It draws the report's world landmarks (metres, hip-centred) as a skeleton with the bow arm in cyan and the draw arm in orange, a floor grid and an arrow line from the draw hand to the bow hand. It follows the replay time and the frame-step buttons, orbits by drag and zoom, and has Side, Behind and Top-down cameras. three.js is loaded only when the tab is first opened, and its WebGL resources are freed when the tab closes. Camera moves are not animated when the system asks for reduced motion. Reports restored from the cloud have no landmarks, so the tab says so instead. It shows measured landmarks only, not a prediction.
-- **Private coach.** An optional on-device AI coach in the video report (WebLLM, Qwen2.5-1.5B-Instruct, Apache-2.0). It is offered only where WebGPU works, shows the model's size and asks before the one-time 886 MB download, then reviews the measurements and answers follow-up questions about the report. Nothing is sent anywhere. It counts in the combined consensus, has a Stop button, and frees graphics memory when the report is left. The Privacy page describes it, and "Delete everything" removes the saved model.
-
-### Changed
-
-- The cloud backup list and cloud report deletion now ask only for the athlete's own reports, since reports shared with them are readable too.
-- **Delete my cloud data** also deletes the comments the athlete wrote on reports shared with them. Shares and comments on their own reports go with the reports, and with the account.
-- The Privacy page, README and `docs/cloud-setup.md` explain sharing, what a coach can see, how to revoke, and what deletion removes.
-
-## 0.2.0 (2026-10-26)
-
-A second, offline engine for recorded video, plus privacy controls and optional cloud features; also everything that reached `main` after the 0.1.0 tag (the guided training flow, user guide, sample session and redesign). The live engine's measurements are unchanged.
+A second, offline engine for recorded video, plus privacy controls, optional cloud and on-device AI features, offline use and video conversion; also everything that reached `main` after the 0.1.0 tag (the guided training flow, user guide, sample session and redesign). The live engine's measurements are unchanged.
 
 ### Added
 
@@ -49,9 +32,22 @@ A second, offline engine for recorded video, plus privacy controls and optional 
 - **Optional accounts and backup** (Supabase over plain REST): back up the profile and video reports, and optionally videos, with row-level security. Includes a `delete_my_account()` SQL function for self-service account deletion.
 - **Optional imports** from Dropbox and Google Drive on desktop, and from a link.
 - `CHANGELOG.md`.
+- **Installable and offline.** A service worker keeps the app, its fonts, the MediaPipe runtime and the Lite, hand and face models, so Live and Video Analysis work with no connection; larger downloads (Full and Heavy pose models, the converter, the voice-note runtime, the private coach) are kept after first use. A new version waits for the athlete's **Reload** and never interrupts an analysis. An offline badge shows when there is no connection.
+- **Convert to MP4 on this device.** A clip the browser cannot play (typically an iPhone HEVC `.mov`) can be converted to a 720 px H.264 MP4 with ffmpeg compiled to WebAssembly, with progress, an estimate of the time left and Cancel. The converter (about 31 MB, GPL-2.0-or-later, self-hosted, see `public/ffmpeg/NOTICE.txt`) is downloaded only when asked for. The video is never uploaded.
+- **Remote coach review** (optional, needs accounts). A signed-in athlete can share a video report read-only with a coach's email from **Share with a coach** in the report. The report is backed up first if needed. The video is included only if the athlete ticks it (off by default), and sharing asks them to confirm they trust the coach (and, if under 18, to ask a parent or guardian first). Shares are listed with **Revoke**, and the athlete copies a `/video?report=<id>` link to send the coach themselves; the app sends no email.
+- **Shared with me** on the Video Analysis page for signed-in coaches. Opening a shared link loads the report from the cloud, with the video through a short-lived signed URL when it was included.
+- **Comments** on reports in the cloud, from the athlete and their coaches, showing author, shot and time. **Comment at this moment** uses the replay's current time and shot, clicking a comment jumps the replay there, and timed comments are marked on the timeline. Authors can delete their own comments.
+- `report_shares` and `report_comments` tables in `supabase/schema.sql`, with row-level security: coaches can read, never edit or delete, a shared report; they can read its video only when it is included; and only the owner and active coaches can read and add comments. Re-run the script to add them to an existing project.
+- **3D view** tab next to the replay in the video report. It draws the report's world landmarks (metres, hip-centred) as a skeleton with the bow arm in cyan and the draw arm in orange, a floor grid and an arrow line from the draw hand to the bow hand. It follows the replay time and the frame-step buttons, orbits by drag and zoom, and has Side, Behind and Top-down cameras. three.js is loaded only when the tab is first opened, and its WebGL resources are freed when the tab closes. Camera moves are not animated when the system asks for reduced motion. Reports restored from the cloud have no landmarks, so the tab says so instead. It shows measured landmarks only, not a prediction.
+- **Private coach.** An optional on-device AI coach in the video report (WebLLM, Qwen2.5-1.5B-Instruct, Apache-2.0). It is offered only where WebGPU works, shows the model's size and asks before the one-time 886 MB download, then reviews the measurements and answers follow-up questions about the report. Nothing is sent anywhere. It counts in the combined consensus, has a Stop button, and frees graphics memory when the report is left. The Privacy page describes it, and "Delete everything" removes the saved model.
+- **End-to-end tests** with Playwright and axe accessibility checks on desktop and phone sizes, using a stubbed pose model and a synthetic clip (`npm run test:e2e`).
 
 ### Changed
 
+- The cloud backup list and cloud report deletion now ask only for the athlete's own reports, since reports shared with them are readable too.
+- **Delete my cloud data** also deletes the comments the athlete wrote on reports shared with them. Shares and comments on their own reports go with the reports, and with the account.
+- The Privacy page, README and `docs/cloud-setup.md` explain sharing, what a coach can see, how to revoke, and what deletion removes.
+- Every page, including Live Analysis, is loaded on demand; MediaPipe, three.js, Transformers.js, WebLLM and ffmpeg each load only when their feature is used, and the private coach's 12 MB of code is no longer part of the app install.
 - Video analysis reports state their limits, including trimmed ranges and audio that could not be used. Files longer than 30 minutes are analysed without their sound.
 - The README, `docs/video-analysis.md` and `docs/cloud-setup.md` cover the new engine and the optional features. All cloud features are off by default and appear only when a deployment configures them.
 - Development moved to GitHub Codespaces, with Vercel deploying production from `main`.

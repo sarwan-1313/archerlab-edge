@@ -16,6 +16,24 @@ export default defineConfig({
     // (npm run ort:wasm), so the build does not emit a second 27 MB copy of it.
     conditions: ['onnxruntime-web-use-extern-wasm', ...defaultClientConditions],
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // Only the matched packages go into these groups, not what they import: otherwise Vite's small preload
+          // helper lands in the MediaPipe chunk and every page loads MediaPipe to reach it.
+          includeDependenciesRecursively: false,
+          groups: [
+            // WebLLM (the optional private coach) gets a chunk of its own, so the service worker can leave it
+            // out of the install and cache it only for athletes who use it (see pwa.config.ts).
+            { name: 'webllm', test: /[\\/]node_modules[\\/]@mlc-ai[\\/]web-llm[\\/]/ },
+            // MediaPipe on its own, so the pages that do not track anyone never load it.
+            { name: 'mediapipe', test: /[\\/]node_modules[\\/]@mediapipe[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

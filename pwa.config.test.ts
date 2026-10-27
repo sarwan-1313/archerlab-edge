@@ -66,6 +66,13 @@ describe('runtime caching', () => {
     expect(handles('https://cdn.example.com/ort/ort-wasm-simd-threaded.asyncify.wasm', false)).toBe(false);
   });
 
+  it('leaves the private coach\'s WebLLM code out of the install and caches it on first use', () => {
+    expect(PRECACHE_IGNORES).toEqual(expect.arrayContaining(['**/assets/webllm-*.js', '**/assets/engine.worker-*.js']));
+    expect(handles('https://app.test/assets/webllm-C9A9Avkh.js')).toBe(true);
+    expect(handles('https://app.test/assets/engine.worker-CVcuH73x.js')).toBe(true);
+    expect(handles('https://app.test/assets/index-4_ww3UEK.js')).toBe(false);
+  });
+
   it('names the converter\'s cache after its version, so a new core is not answered with the old files', () => {
     expect(FFMPEG_CORE_CACHE).toMatch(/^archerlab-ffmpeg-core-.+/);
     const manifestUrl = new URL('./public/ffmpeg/manifest.json', import.meta.url);
