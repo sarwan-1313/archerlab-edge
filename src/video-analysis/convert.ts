@@ -10,6 +10,8 @@ export const CONVERT_CONFIG = {
   crf: 24,
   preset: 'veryfast',
   audioKbps: 128,
+  /** x264 threads with the multi-thread core, which cannot choose the count itself (see buildConvertArgs). */
+  multiThreadEncoderThreads: 2,
   /** Clips longer than this ask for a confirmation first, because the conversion takes a while. */
   warnDurationS: 5 * 60,
   /**
@@ -107,8 +109,11 @@ export function parseProbe(text: string): MediaInfo {
  * timecode and metadata tracks that MP4 cannot hold). The long edge is capped at 720 px without enlarging
  * and without breaking the 2-pixel alignment H.264 needs; ffmpeg applies the rotation flag first, so a
  * portrait phone clip is measured the way it is shown.
+ *
+ * With the multi-thread core the encoder's thread count is set explicitly: its libx264 crashes ("function
+ * signature mismatch") when x264 picks the count itself, while explicit counts of 1 to 4 were tested to work.
  */
-export function buildConvertArgs(input: string, output: string): string[] {
+export function buildConvertArgs(input: string, output: string, { multiThread = false }: { multiThread?: boolean } = {}): string[] {
   const edge = CONVERT_CONFIG.longEdgePx;
   const scale = `scale=w='if(gte(iw,ih),trunc(min(${edge},iw)/2)*2,-2)':h='if(gte(iw,ih),-2,trunc(min(${edge},ih)/2)*2)'`;
   return [
@@ -116,6 +121,7 @@ export function buildConvertArgs(input: string, output: string): string[] {
     '-map', '0:v:0', '-map', '0:a:0?', '-sn', '-dn',
     '-vf', `${scale},format=yuv420p`,
     '-c:v', 'libx264', '-preset', CONVERT_CONFIG.preset, '-crf', String(CONVERT_CONFIG.crf),
+    ...(multiThread ? ['-threads', String(CONVERT_CONFIG.multiThreadEncoderThreads)] : []),
     '-c:a', 'aac', '-b:a', `${CONVERT_CONFIG.audioKbps}k`,
     '-movflags', '+faststart',
     output,

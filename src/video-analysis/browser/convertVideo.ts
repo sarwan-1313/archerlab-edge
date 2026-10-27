@@ -174,7 +174,7 @@ export async function openConverter(file: File, { signal, onDownload }: OpenConv
       log.length = 0;
       let code: number;
       try {
-        code = await instance.exec(buildConvertArgs(inputPath, OUTPUT_PATH), -1, { signal });
+        code = await instance.exec(buildConvertArgs(inputPath, OUTPUT_PATH, { multiThread: kind === 'multi' }), -1, { signal });
       } catch (error) {
         throw signal.aborted ? new ConvertCancelledError() : describeConvertFailure(error, log);
       }

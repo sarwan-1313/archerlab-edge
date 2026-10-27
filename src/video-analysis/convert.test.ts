@@ -70,6 +70,14 @@ describe('buildConvertArgs', () => {
     expect(args.at(-1)).toBe('/converted.mp4');
   });
 
+  it('leaves the encoder\'s thread count alone with the single-thread core, and sets it for the multi-thread core', () => {
+    expect(args).not.toContain('-threads');
+    const multi = buildConvertArgs('/input/source', '/converted.mp4', { multiThread: true });
+    expect(multi[multi.indexOf('-threads') + 1]).toBe('2');
+    expect(multi.indexOf('-threads')).toBeGreaterThan(multi.indexOf('libx264'));
+    expect(multi.at(-1)).toBe('/converted.mp4');
+  });
+
   it('keeps only the first video and audio streams, and survives a missing audio track', () => {
     expect(args.join(' ')).toContain('-map 0:v:0 -map 0:a:0?');
   });
