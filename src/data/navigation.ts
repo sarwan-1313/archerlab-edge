@@ -45,4 +45,5 @@ export const pageTitles: Record<PageKey, string> = {
   profile: 'Profile',
   privacy: 'Privacy',
   training: 'Training',
+  club: 'My club',
 };

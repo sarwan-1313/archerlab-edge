@@ -8,10 +8,12 @@ import { AppIcon } from '../AppIcon';
 type AccountPanelProps = {
   profile: Record<string, unknown> | null;
   onRestoreProfile: (data: Record<string, unknown>) => Promise<void>;
+  /** Opens My club. */
+  onClub?: () => void;
 };
 
 /** Optional account: back up the profile and video reports, and pick them up on another device. */
-export function AccountPanel({ profile, onRestoreProfile }: AccountPanelProps) {
+export function AccountPanel({ profile, onRestoreProfile, onClub }: AccountPanelProps) {
   const account = useCloudAccount();
   const [email, setEmail] = useState('');
   const [syncing, setSyncing] = useState(false);
@@ -80,6 +82,7 @@ export function AccountPanel({ profile, onRestoreProfile }: AccountPanelProps) {
           <div className="va-actions">
             <ActionButton variant="secondary" type="button" disabled={syncing} onClick={() => void backup()}><AppIcon name="upload" size={16} /> Back up profile &amp; log</ActionButton>
             <ActionButton variant="secondary" type="button" disabled={syncing} onClick={() => void restore()}><AppIcon name="download" size={16} /> Restore profile &amp; log</ActionButton>
+            {onClub ? <ActionButton variant="secondary" type="button" onClick={onClub}><AppIcon name="user" size={16} /> My club</ActionButton> : null}
             <ActionButton variant="ghost" type="button" onClick={() => void account.signOut()}>Sign out</ActionButton>
           </div>
         </>

@@ -2,6 +2,7 @@ import { routeForPage } from '../../navigation/routes';
 import { formatClock } from '../../video-analysis/format';
 import type { ShotReport, VideoAnalysisReport, VideoReportSummary } from '../../video-analysis/types';
 import { CLOUD_CONFIG } from '../config';
+import { memberForReport, type ClubMember } from './clubs';
 import { CloudError, type CloudSession, type SupabaseRest } from './supabaseRest';
 
 /**
@@ -72,9 +73,10 @@ export function shotAtTime(shots: ShotReport[], t: number): number | null {
   return nearest?.index ?? null;
 }
 
-/** How a comment's author is shown: "You", or their role and email. */
-export function commentAuthor(comment: ReportComment, currentUserId: string, viewerIsOwner: boolean, ownerEmail: string | null): string {
+/** How a comment's author is shown: "You", or their role and email (or, for the athlete when `owner` is given, the name the coach knows them by). */
+export function commentAuthor(comment: ReportComment, currentUserId: string, viewerIsOwner: boolean, ownerEmail: string | null, owner?: { id: string; label: string }): string {
   if (comment.author_id === currentUserId) return 'You';
+  if (owner && comment.author_id === owner.id) return `Athlete · ${owner.label}`;
   const email = comment.author_email ?? 'someone';
   if (viewerIsOwner) return `Coach · ${email}`;
   return ownerEmail && comment.author_email === ownerEmail ? `Athlete · ${email}` : `Coach · ${email}`;
@@ -138,7 +140,7 @@ export async function cloudReportState(client: SupabaseRest, session: CloudSessi
  * Opens a report from the cloud for review: the athlete's own, or one shared
  * with the signed-in coach. A coach gets the video only when it was included.
  */
-export async function loadReviewReport(client: SupabaseRest, session: CloudSession, reportId: string): Promise<{ report: VideoAnalysisReport; videoUrl: string | null; share: ReportShare | null } | null> {
+export async function loadReviewReport(client: SupabaseRest, session: CloudSession, reportId: string): Promise<{ report: VideoAnalysisReport; videoUrl: string | null; share: ReportShare | null; club?: ClubMember | null } | null> {
   const token = session.accessToken;
   const rows = await client.select<{ report: VideoAnalysisReport; video_path: string | null; user_id: string }>('video_reports', `select=report,video_path,user_id&id=${eq(reportId)}`, token);
   const row = rows[0];
@@ -152,6 +154,8 @@ export async function loadReviewReport(client: SupabaseRest, session: CloudSessi
     ? await client.select<ReportShare>('report_shares', `select=${SHARE_COLUMNS}&report_id=${eq(reportId)}&coach_email=${eq(normalizeEmail(session.user.email))}&revoked_at=is.null&limit=1`, token)
     : [];
   const share = shares[0] ?? null;
+  // Not shared directly: readable because the athlete shares their analyses with a club this coach runs. Club access never includes the video.
+  if (!share) return { report, videoUrl: null, share: null, club: await memberForReport(client, session, row.user_id) };
   const videoUrl = share?.include_video && row.video_path
     ? await client.signedUrl(CLOUD_CONFIG.videoBucket, row.video_path, token).catch(() => null)
     : null;

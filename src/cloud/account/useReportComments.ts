@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { describeCloudError } from './cloudSync';
+import { listClubComments } from './clubs';
 import { addComment, deleteComment, listComments, type ReportComment } from './coachReview';
 import type { CloudSession, SupabaseRest } from './supabaseRest';
 
-/** Comments on a report in the cloud. Pass a null report id to switch them off. */
-export function useReportComments(client: SupabaseRest | null, freshSession: () => Promise<CloudSession | null>, reportId: string | null) {
+/**
+ * Comments on a report in the cloud. Pass a null report id to switch them off.
+ * A club coach (`viaClub`) reads them through the database function that leaves out minors' emails.
+ */
+export function useReportComments(client: SupabaseRest | null, freshSession: () => Promise<CloudSession | null>, reportId: string | null, viaClub = false) {
   const [comments, setComments] = useState<ReportComment[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -16,11 +20,11 @@ export function useReportComments(client: SupabaseRest | null, freshSession: () 
     setStatus(null);
     if (!client || !reportId) return;
     let cancelled = false;
-    void freshSession().then((session) => (session ? listComments(client, session, reportId) : []))
+    void freshSession().then((session) => (session ? (viaClub ? listClubComments : listComments)(client, session, reportId) : []))
       .then((rows) => { if (!cancelled) setComments(rows); })
       .catch((error: unknown) => { if (!cancelled) setStatus(describeCloudError(error)); });
     return () => { cancelled = true; };
-  }, [client, freshSession, reportId, revision]);
+  }, [client, freshSession, reportId, revision, viaClub]);
 
   const add = useCallback(async (body: string, at: { timeS: number; shotIndex: number | null } | null): Promise<boolean> => {
     if (!client || !reportId) return false;

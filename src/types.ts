@@ -30,6 +30,7 @@ export type PageKey =
   | 'profile'
   | 'privacy'
   | 'training'
+  | 'club'
   | GuideDetailPageKey;
 
 export type NavItem = {

@@ -1285,3 +1285,25 @@ body {
 .landing-goals:empty { display: none; }
 .goal-progress--compact { margin: 24px 0; padding: 20px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius-lg); background: linear-gradient(180deg, var(--ath-panel-2), var(--ath-panel)); }
 .goal-progress > h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 800 20px/1.1 var(--ath-display); text-transform: uppercase; letter-spacing: .02em; }
+.club-roster { display: flex; flex-direction: column; margin: 0 0 10px; padding: 0; list-style: none; }
+.club-roster__row { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 12px; align-items: center; width: 100%; padding: 12px 8px; border: 0; border-top: 1px solid var(--ath-line); background: transparent; color: var(--ath-text); text-align: left; cursor: pointer; }
+.club-roster li:first-child .club-roster__row { border-top: 0; }
+.club-roster__row:hover, .club-roster__row.is-selected { background: rgba(46, 230, 255, .06); }
+.club-roster__row > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 14px; }
+.club-roster__row small { color: var(--ath-faint); font: 500 12px var(--ath-body); }
+.club-roster__name strong { overflow-wrap: anywhere; }
+.club-spark { display: block; width: 100%; max-width: 120px; height: 22px; }
+.club-focus { font-size: 22px !important; overflow-wrap: anywhere; }
+.club-code { font-family: var(--ath-mono); letter-spacing: .12em; }
+.club-explainer { display: flex; flex-direction: column; gap: 10px; margin: 0 0 14px; padding: 0; list-style: none; color: var(--ath-muted); font-size: 13px; }
+.club-explainer li { display: flex; gap: 10px; align-items: flex-start; }
+.club-explainer svg { flex: none; margin-top: 2px; color: var(--ath-volt); }
+.club-explainer strong { color: var(--ath-text); }
+.club-age { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 12px; padding: 0; border: 0; }
+.club-age legend { margin-bottom: 6px; color: var(--ath-muted); font: 600 12px var(--ath-body); }
+.club-details { margin: 6px 0 12px; color: var(--ath-muted); font-size: 13px; }
+.club-details summary { margin-bottom: 10px; cursor: pointer; color: var(--ath-text); font-weight: 600; }
+@media (max-width: 640px) {
+  .club-roster__row { grid-template-columns: 1fr 1fr; }
+  .club-roster__name { grid-column: 1 / -1; }
+}
