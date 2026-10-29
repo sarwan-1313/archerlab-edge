@@ -526,3 +526,12 @@
 .va-labels__not-shot td { opacity: .6; }
 .va-labels__footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
 .va-labels__level { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+
+/* Dataset tools (Coach tools) */
+.dataset-tools { display: flex; flex-direction: column; gap: 16px; }
+.dataset-tools__field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; max-width: 100%; }
+.dataset-tools__field select, .dataset-tools__field input { max-width: 100%; }
+.dataset-tools__status { font-size: 13px; margin-top: 8px; }
+.dataset-tools__video { display: none; }
+.dataset-tools__canvas { display: block; width: 100%; height: auto; margin: 12px 0; cursor: crosshair; touch-action: none; background: #000; border-radius: 8px; }
+.dataset-tools__class { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 2px solid; border-radius: 999px; font-size: 13px; }

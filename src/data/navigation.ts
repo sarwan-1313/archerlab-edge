@@ -43,4 +43,5 @@ export const pageTitles: Record<PageKey, string> = {
   'saved-recordings': 'Recordings',
   profile: 'Profile',
   privacy: 'Privacy',
+  'dataset-tools': 'Dataset tools',
 };

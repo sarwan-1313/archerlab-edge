@@ -21,6 +21,7 @@ import { createSampleSession, isSampleShot } from './demo/sampleSession';
 import { isVideoShot } from './video-analysis/toShotAnalyses';
 
 const CalibrationPage = lazy(() => import('./pages/CalibrationPage').then((module) => ({ default: module.CalibrationPage })));
+const DatasetToolsPage = lazy(() => import('./pages/DatasetToolsPage').then((module) => ({ default: module.DatasetToolsPage })));
 const GestureGuidePage = lazy(() => import('./pages/GestureGuidePage').then((module) => ({ default: module.GestureGuidePage })));
 const GuideDetailPage = lazy(() => import('./pages/GuideDetailPage').then((module) => ({ default: module.GuideDetailPage })));
 // Lazy like every page, so MediaPipe is loaded only when Live Analysis opens.
@@ -70,13 +71,14 @@ const ROUTE_LOADING_STATUS = {
   'saved-recordings': 'Loading sessions...',
   profile: 'Loading profile...',
   privacy: 'Loading privacy...',
+  'dataset-tools': 'Loading dataset tools...',
 } as const satisfies Record<PageKey, string>;
 
 function primaryPageFor(page: PageKey): PageKey {
   if (page === 'new-session' || page === 'calibration' || page === 'multi-camera') return 'live-analysis';
   if (page === 'manual-shot-entry' || page === 'replay-analysis') return 'dashboard';
   if (page === 'gesture-guide' || isGuideDetailPage(page)) return 'user-guide';
-  if (page === 'privacy') return 'profile';
+  if (page === 'privacy' || page === 'dataset-tools') return 'profile';
   return page;
 }
 
@@ -418,8 +420,9 @@ function App() {
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
-      case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} />;
+      case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onDatasetTools={() => requestNavigation('dataset-tools')} />;
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
+      case 'dataset-tools': return <DatasetToolsPage onProfile={() => requestNavigation('profile')} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;
       case 'guide-start-analysis':
       case 'guide-camera-setup':
