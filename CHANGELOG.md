@@ -2,6 +2,14 @@
 
 All notable changes to ArcherLab Edge. Versions follow [semantic versioning](https://semver.org/); while the project is below 1.0, minor versions can change behaviour.
 
+## Unreleased
+
+### Added
+
+- **Practice log** (`/training`), stored on the device. Live sessions and video analyses add an entry automatically (date, arrows, average score when scores were entered, form score and focus areas). Athletes can add their own entries too: distance, target face, arrows, total score, notes and how it felt from 1 to 5. The Training page shows this week's arrows and sessions, streaks, a 26-week heat-map of training days, and charts of arrows per week, average score and form score.
+- **Weekly goals**: arrows and sessions per week and a focus area from the latest video analysis, with progress on Home, Profile and Training.
+- The practice log is included in the Privacy page's export and delete controls, and in account backup and restore. Existing cloud projects need the latest `supabase/schema.sql` (new `practice_logs` table).
+
 ## 0.2.0 (2026-10-29)
 
 A second, offline engine for recorded video, plus privacy controls, optional cloud and on-device AI features, offline use and video conversion; also everything that reached `main` after the 0.1.0 tag (the guided training flow, user guide, sample session and redesign). The live engine's measurements are unchanged.

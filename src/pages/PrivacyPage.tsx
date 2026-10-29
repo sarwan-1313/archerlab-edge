@@ -6,7 +6,7 @@ import { ActionButton } from '../components/ActionButton';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
 import { LOCAL_MODEL, LOCAL_MODEL_SIZE_LABEL } from '../local-coach/model';
-import { LocalDataError, deleteAllVideoAnalyses, deleteEverythingOnDevice, exportAllVideoReports } from '../privacy/localData';
+import { LocalDataError, deleteAllVideoAnalyses, deleteEverythingOnDevice, deletePracticeLog, exportAllVideoReports, exportPracticeLog } from '../privacy/localData';
 import '../styles/video.css';
 
 const ISSUES_URL = 'https://github.com/sarwan-1313/archerlab-edge/issues';
@@ -58,13 +58,25 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
     return `Exported ${result.count} video report${result.count === 1 ? '' : 's'}.`;
   });
 
+  const exportLog = () => run('export-log', async () => {
+    const result = await exportPracticeLog();
+    if (!result) return 'There is nothing in the practice log to export.';
+    download(result.blob, `archerlab-practice-log-${new Date().toISOString().slice(0, 10)}.json`);
+    return `Exported ${result.count} practice log entr${result.count === 1 ? 'y' : 'ies'} and your goals.`;
+  });
+
+  const deleteLog = () => {
+    if (!window.confirm('Delete your practice log on this device?\n\nEvery entry and your weekly goals will be removed from this browser. Live session recordings and video reports are kept. This cannot be undone. A copy backed up to an account is not affected.')) return;
+    void run('delete-log', async () => { await deletePracticeLog(); return 'Your practice log was deleted from this device.'; });
+  };
+
   const deleteVideo = () => {
     if (!window.confirm('Delete all video analyses on this device?\n\nEvery video report, and any videos you chose to keep, will be removed from this browser. This cannot be undone. Copies backed up to an account are not affected.')) return;
     void run('delete-video', async () => { await deleteAllVideoAnalyses(); return 'All video analyses were deleted from this device.'; });
   };
 
   const deleteEverything = () => {
-    if (!window.confirm('Delete everything ArcherLab stores on this device?\n\nYour profile and photo, live session recordings, video analyses, settings, saved AI keys, the private coach’s downloaded model and your sign-in will be removed from this browser. This cannot be undone. Data in an account is not affected.')) return;
+    if (!window.confirm('Delete everything ArcherLab stores on this device?\n\nYour profile and photo, live session recordings, video analyses, practice log and goals, settings, saved AI keys, the private coach’s downloaded model and your sign-in will be removed from this browser. This cannot be undone. Data in an account is not affected.')) return;
     void run('delete-all', async () => {
       await deleteEverythingOnDevice();
       // Start afresh so nothing still in memory is written back.
@@ -73,7 +85,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteCloud = () => {
-    if (!window.confirm('Delete all your cloud data?\n\nEvery backed-up video report, every backed-up video and your backed-up profile will be deleted from your account, together with every share and comment on those reports and the comments you wrote on reports shared with you. Your account stays, and data on this device is not affected. This cannot be undone.')) return;
+    if (!window.confirm('Delete all your cloud data?\n\nEvery backed-up video report, every backed-up video, your backed-up profile and your backed-up practice log will be deleted from your account, together with every share and comment on those reports and the comments you wrote on reports shared with you. Your account stays, and data on this device is not affected. This cannot be undone.')) return;
     void run('delete-cloud', async () => {
       if (!account.client) return;
       const session = await account.freshSession();
@@ -84,7 +96,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteAccount = () => {
-    if (!window.confirm('Delete your account?\n\nAll your cloud data (reports, videos, profile, shares with coaches and comments) and the account itself will be deleted, and you will be signed out. Data on this device is not affected. This cannot be undone.')) return;
+    if (!window.confirm('Delete your account?\n\nAll your cloud data (reports, videos, profile, practice log, shares with coaches and comments) and the account itself will be deleted, and you will be signed out. Data on this device is not affected. This cannot be undone.')) return;
     void run('delete-account', async () => {
       if (!account.client) return;
       const session = await account.freshSession();
@@ -119,6 +131,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Athlete profile</strong>: name, archer ID, bow and handedness, experience level, form status, and your photo if you add one.</li>
           <li><strong>Live session recordings</strong>: the video and movement data of sessions you record.</li>
           <li><strong>Video reports</strong>: measurements, scores and the tracked body positions of each analysed clip. The video itself only if you tick “Keep the video on this device”.</li>
+          <li><strong>Practice log</strong>: the date, arrows, scores, form score and focus areas of each live session and video analysis, the entries you add yourself (with any notes and how you felt), and your weekly goals.</li>
           <li><strong>Settings</strong>: analysis options, onboarding progress and the shots of the current session.</li>
           <li><strong>A copy of the app</strong>: its code, fonts and pose models, saved so ArcherLab opens and analyses without a connection, and so it can be installed on your phone. It holds none of your data, so “Delete everything on this device” leaves it in place; clear this site’s data in your browser to remove it.</li>
           <li><strong>Voice notes</strong>: the text of notes you saved, with their shots, and the speech model once you have downloaded it.</li>
@@ -134,7 +147,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>Private coach</strong>: sends nothing. Its one download is described under “What runs on this device”.</li>
           <li><strong>AI review</strong> (“Second opinion from AI coaches” in a report): after you tick the consent box, the measurements are sent to the AI providers you pick (Anthropic, OpenAI and/or Google), using your own API key. While the video is open or kept on this device, six annotated still frames go with them; without the video, only the measurements are sent. If you also allow it, Gemini receives the whole clip instead of stills. Each provider’s terms and privacy policy apply.</li>
           <li>
-            <strong>Account backup</strong>{accountsEnabled ? '' : ' (switched off in this copy of the app)'}: when you sign in and press a backup button, your profile (without the photo) and your video reports (without the frame-by-frame body positions) are stored in a Supabase database run by whoever deployed this copy of ArcherLab. Videos are uploaded only when you press “Back up report + video”. Each account can reach only its own data.
+            <strong>Account backup</strong>{accountsEnabled ? '' : ' (switched off in this copy of the app)'}: when you sign in and press a backup button, your profile (without the photo), your practice log and goals, and your video reports (without the frame-by-frame body positions) are stored in a Supabase database run by whoever deployed this copy of ArcherLab. Videos are uploaded only when you press “Back up report + video”. Each account can reach only its own data.
           </li>
           {accountsEnabled ? (
             <li>
@@ -153,10 +166,12 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
       <Section id="privacy-controls" icon="download" title="Your data on this device">
         <div className="privacy-actions">
           <ActionButton variant="secondary" type="button" disabled={busy !== null} onClick={() => void exportReports()}><AppIcon name="download" size={16} /> {busy === 'export' ? 'Exporting…' : 'Export all video reports (JSON)'}</ActionButton>
+          <ActionButton variant="secondary" type="button" disabled={busy !== null} onClick={() => void exportLog()}><AppIcon name="download" size={16} /> {busy === 'export-log' ? 'Exporting…' : 'Export practice log (JSON)'}</ActionButton>
+          <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteLog}><AppIcon name="trash" size={16} /> Delete practice log on this device</ActionButton>
           <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteVideo}><AppIcon name="trash" size={16} /> Delete all video analyses on this device</ActionButton>
           <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteEverything}><AppIcon name="trash" size={16} /> Delete everything on this device</ActionButton>
         </div>
-        <p className="va-faint">The export holds every video report with its tracked body positions, so treat it like the videos themselves. To restore it, use “Open report file” on the Video Analysis page. Deleting here never touches data in an account.</p>
+        <p className="va-faint">The practice log export holds your entries, notes and goals, with no video or body positions. The video report export holds every video report with its tracked body positions, so treat it like the videos themselves. To restore it, use “Open report file” on the Video Analysis page. Deleting here never touches data in an account.</p>
       </Section>
 
       {account.configured ? (

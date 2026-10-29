@@ -30,7 +30,7 @@ afterEach(() => {
 
 describe('local data controls', () => {
   it('knows every database the app uses', () => {
-    expect([...APP_DATABASES].sort()).toEqual(['archerlab-edge-profiles', 'archerlab-edge-recordings', 'archerlab-edge-video']);
+    expect([...APP_DATABASES].sort()).toEqual(['archerlab-edge-practice-log', 'archerlab-edge-profiles', 'archerlab-edge-recordings', 'archerlab-edge-video']);
   });
 
   it('removes only the app’s own storage keys', () => {
@@ -85,7 +85,7 @@ describe('local data controls', () => {
     expect(error).toBeInstanceOf(LocalDataError);
     expect((error as LocalDataError).reason).toBe('blocked');
     expect((error as Error).message).toBe('Everything else was deleted. Your profile will be deleted as soon as you close ArcherLab in your other tabs.');
-    expect(deleted).toEqual(['archerlab-edge-recordings', 'archerlab-edge-video']);
+    expect(deleted).toEqual(['archerlab-edge-recordings', 'archerlab-edge-video', 'archerlab-edge-practice-log']);
     expect(localStorage.length).toBe(0);
   });
 

@@ -9,6 +9,13 @@ create table if not exists public.athlete_profiles (
   updated_at timestamptz not null default now()
 );
 
+-- The practice log (entries and weekly goals) as one JSON document per user.
+create table if not exists public.practice_logs (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.video_reports (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
@@ -22,6 +29,13 @@ create index if not exists video_reports_user_created_idx on public.video_report
 
 alter table public.athlete_profiles enable row level security;
 alter table public.video_reports enable row level security;
+alter table public.practice_logs enable row level security;
+
+drop policy if exists "Own practice log" on public.practice_logs;
+create policy "Own practice log" on public.practice_logs
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Own profile" on public.athlete_profiles;
 create policy "Own profile" on public.athlete_profiles
@@ -61,7 +75,7 @@ create policy "Delete own videos" on storage.objects
   using (bucket_id = 'videos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 -- Lets a signed-in athlete delete their own account (Privacy page → "Delete my account").
--- Rows in athlete_profiles and video_reports go with it (on delete cascade), and with
+-- Rows in athlete_profiles, practice_logs and video_reports go with it (on delete cascade), and with
 -- them every share and comment on those reports, plus comments the user wrote as a coach. The app
 -- deletes the athlete's files in the videos bucket first, because stored objects can
 -- keep a user from being deleted.

@@ -67,7 +67,7 @@ describe('cloud data deletion', () => {
     expect((removals.flatMap((request) => (request.body as { prefixes: string[] }).prefixes))).toContain('u1/orphan.mov');
 
     const rowDeletes = project.requests.filter((request) => request.method === 'DELETE' && request.path.startsWith('/rest/v1/'));
-    expect(rowDeletes.map((request) => request.path)).toEqual(['/rest/v1/report_comments?author_id=eq.u1', '/rest/v1/video_reports?user_id=eq.u1', '/rest/v1/athlete_profiles?user_id=eq.u1']);
+    expect(rowDeletes.map((request) => request.path)).toEqual(['/rest/v1/report_comments?author_id=eq.u1', '/rest/v1/video_reports?user_id=eq.u1', '/rest/v1/athlete_profiles?user_id=eq.u1', '/rest/v1/practice_logs?user_id=eq.u1']);
     // Rows go only after the files.
     const lastFileDelete = project.requests.lastIndexOf(removals.at(-1) as Request);
     expect(project.requests.indexOf(rowDeletes[0])).toBeGreaterThan(lastFileDelete);

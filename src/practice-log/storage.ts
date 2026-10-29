@@ -18,10 +18,13 @@ export function subscribePracticeLog(listener: () => void): () => void {
   return () => { listeners.delete(listener); };
 }
 
-function changed() {
+/** Tells every open view to reload (also used after the database is deleted). */
+export function notifyPracticeLogChanged(): void {
   listeners.forEach((listener) => listener());
   channel?.postMessage('changed');
 }
+
+const changed = notifyPracticeLogChanged;
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -79,8 +82,10 @@ export async function readPracticeLog(): Promise<PracticeLogData> {
 }
 
 /**
- * Adds entries from a backup or export: an entry already on this device is
- * kept unless the incoming copy has the same id; goals are taken when newer.
+ * Adds entries from a backup: entries are matched by id, so a backed-up copy of
+ * an entry replaces the one here and every other entry is kept (an entry
+ * deleted here comes back if the backup still has it). Goals are taken only
+ * when the backup's are newer.
  * Returns how many entries were added or replaced.
  */
 export async function mergePracticeLog(data: PracticeLogData): Promise<number> {
