@@ -33,6 +33,8 @@ import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, re
 import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
 import type { BowType, PoseModelVariant, ReportLabels, TimeRange, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
 import type { ShotAnalysis } from '../types/shotAnalysis';
+import { entryFromVideoReport } from '../practice-log/sources';
+import { recordPracticeEntry } from '../practice-log/storage';
 import '../styles/video.css';
 
 const OPTIONS_KEY = 'archerlab-edge:video-options';
@@ -245,6 +247,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
         } catch {
           setNotice('The report could not be saved on this device (storage may be full), but you can still review and export it.');
         }
+        recordPracticeEntry(entryFromVideoReport(report));
         if (options.updateProfile) {
           try {
             await save(applyReportToProfile(profileRef.current as Record<string, unknown> | null, report));
@@ -337,6 +340,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
       if (current.source !== 'file') {
         try {
           await updateVideoReport(report);
+          // Same id, so the clip's log entry is replaced with the new form score and focus areas.
+          recordPracticeEntry(entryFromVideoReport(report));
         } catch {
           setNotice('The re-scored report could not be saved on this device (storage may be full), but you can still review and export it.');
         }
