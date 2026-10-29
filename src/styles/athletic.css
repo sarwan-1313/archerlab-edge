@@ -1280,3 +1280,8 @@ body {
 .goal-progress__focus span { color: var(--ath-muted); font: 600 12px var(--ath-body); text-transform: uppercase; letter-spacing: .06em; }
 .goal-progress__focus strong { color: var(--ath-text); font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .goal-progress__track span { transition: none; } }
+/* Home has no video.css, so the compact card brings its own panel. */
+.landing-goals { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+.landing-goals:empty { display: none; }
+.goal-progress--compact { margin: 24px 0; padding: 20px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius-lg); background: linear-gradient(180deg, var(--ath-panel-2), var(--ath-panel)); }
+.goal-progress > h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 800 20px/1.1 var(--ath-display); text-transform: uppercase; letter-spacing: .02em; }
