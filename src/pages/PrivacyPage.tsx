@@ -85,7 +85,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteCloud = () => {
-    if (!window.confirm('Delete all your cloud data?\n\nEvery backed-up video report, every backed-up video, your backed-up profile and your backed-up practice log will be deleted from your account, together with every share and comment on those reports and the comments you wrote on reports shared with you. Your account stays, and data on this device is not affected. This cannot be undone.')) return;
+    if (!window.confirm('Delete all your cloud data?\n\nEvery backed-up video report, every backed-up video, your backed-up profile and your backed-up practice log will be deleted from your account, together with every share and comment on those reports and the comments you wrote on reports shared with you. You also leave every club you are in, and clubs you run are deleted with their invite codes. Your account stays, and data on this device is not affected. This cannot be undone.')) return;
     void run('delete-cloud', async () => {
       if (!account.client) return;
       const session = await account.freshSession();
@@ -96,7 +96,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteAccount = () => {
-    if (!window.confirm('Delete your account?\n\nAll your cloud data (reports, videos, profile, practice log, shares with coaches and comments) and the account itself will be deleted, and you will be signed out. Data on this device is not affected. This cannot be undone.')) return;
+    if (!window.confirm('Delete your account?\n\nAll your cloud data (reports, videos, profile, practice log, shares with coaches, comments, club memberships and clubs you run) and the account itself will be deleted, and you will be signed out. Data on this device is not affected. This cannot be undone.')) return;
     void run('delete-account', async () => {
       if (!account.client) return;
       const session = await account.freshSession();
@@ -154,13 +154,18 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
               <strong>Sharing with a coach</strong>: from a backed-up report you can share it with a coach’s email address. After signing in with that email, the coach can read the whole report as it is stored in your account (scores, findings, shot timings and the clip’s file name, without the frame-by-frame body positions) and the comments on it. They see the video only if you tick “Include the video”, and they can never change, re-share or delete the report. You and the coaches you share with can comment on it; each person can delete their own comments. ArcherLab does not email anyone: you send the link yourself. To stop sharing, open the report and press <strong>Revoke</strong> next to the coach; they lose access at once, though a video they already have open can keep playing for up to an hour.
             </li>
           ) : null}
+          {accountsEnabled ? (
+            <li>
+              <strong>Clubs</strong> (“My club”, from your Profile page): you can join a coach’s club with an invite code. The coach always sees the name you choose and the date you joined; if you are 18 or over, also your sign-in email. If you are under 18, the coach never sees your email, and joining needs a parent or guardian’s agreement. With <strong>Share my analyses with my club</strong> on (off by default), the coach can read the video reports you back up to your account, without the video, and you can both comment on them. With <strong>Share my practice log with my club</strong> on (off by default), they see your backed-up practice log as arrows and sessions per week. The coach can never change or delete anything, and never sees other members’ data or anything only on this device. Turning a switch off, or pressing <strong>Leave club</strong>, ends the coach’s access at once.
+            </li>
+          ) : null}
           {storageImport ? <li><strong>Import from Dropbox or Google Drive</strong>: the file you pick is downloaded into this browser. Dropbox or Google see that you used their picker; nothing is uploaded to them.</li> : null}
           <li><strong>Import from a link</strong>: this browser downloads the file from the link you paste, so the site that hosts it sees the request, as it would for any download. Nothing is uploaded.</li>
         </ul>
       </Section>
 
       <Section id="privacy-young" icon="user" title="Young athletes">
-        <p>If you are under 18, ask a parent or guardian before using AI review, account backup{accountsEnabled ? ' or sharing with a coach' : ''}; the AI review asks you to confirm that they agreed. Coaches and clubs should have agreement from a parent or guardian before filming or analysing young athletes, even though the analysis itself stays on the device.</p>
+        <p>If you are under 18, ask a parent or guardian before using AI review, account backup{accountsEnabled ? ', sharing with a coach or joining a club' : ''}; the AI review and joining a club ask you to confirm that they agreed. Coaches and clubs should have agreement from a parent or guardian before filming or analysing young athletes, even though the analysis itself stays on the device.</p>
       </Section>
 
       <Section id="privacy-controls" icon="download" title="Your data on this device">
@@ -178,7 +183,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
         <Section id="privacy-account" icon="cloud" title="Your account">
           {account.session ? (
             <>
-              <p>Signed in as {account.session.user.email ?? 'your account'}. Deleting your cloud data or your account also removes every share of your reports and all comments on them, as well as the comments you wrote as a coach.</p>
+              <p>Signed in as {account.session.user.email ?? 'your account'}. Deleting your cloud data or your account also removes every share of your reports and all comments on them, as well as the comments you wrote as a coach, your club memberships and any club you run.</p>
               <div className="privacy-actions">
                 <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteCloud}><AppIcon name="trash" size={16} /> {busy === 'delete-cloud' ? 'Deleting…' : 'Delete my cloud data'}</ActionButton>
                 <ActionButton variant="danger" type="button" disabled={busy !== null} onClick={deleteAccount}><AppIcon name="trash" size={16} /> {busy === 'delete-account' ? 'Deleting…' : 'Delete my account'}</ActionButton>
