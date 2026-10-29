@@ -33,6 +33,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({
 const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then((module) => ({ default: module.ReplayAnalysisPage })));
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
 const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').then((module) => ({ default: module.SessionDashboardPage })));
+const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
 const VideoAnalysisPage = lazy(() => import('./pages/VideoAnalysisPage').then((module) => ({ default: module.VideoAnalysisPage })));
 import type { PageKey, SessionConfiguration } from './types';
@@ -70,6 +71,7 @@ const ROUTE_LOADING_STATUS = {
   'saved-recordings': 'Loading sessions...',
   profile: 'Loading profile...',
   privacy: 'Loading privacy...',
+  training: 'Loading training log...',
 } as const satisfies Record<PageKey, string>;
 
 function primaryPageFor(page: PageKey): PageKey {
@@ -420,6 +422,7 @@ function App() {
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
       case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} />;
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
+      case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;
       case 'guide-start-analysis':
       case 'guide-camera-setup':

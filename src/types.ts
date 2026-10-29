@@ -29,6 +29,7 @@ export type PageKey =
   | 'saved-recordings'
   | 'profile'
   | 'privacy'
+  | 'training'
   | GuideDetailPageKey;
 
 export type NavItem = {

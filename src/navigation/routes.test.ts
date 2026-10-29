@@ -27,6 +27,7 @@ const EXPECTED_ROUTES = {
   'saved-recordings': '/sessions',
   profile: '/profile',
   privacy: '/privacy',
+  training: '/training',
 } as const satisfies Record<PageKey, string>;
 
 describe('page routes', () => {
