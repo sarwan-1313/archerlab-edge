@@ -141,7 +141,8 @@ export async function listOwnVideoPaths(client: SupabaseRest, session: CloudSess
 /**
  * Deletes everything the athlete has in the cloud: their video files, every
  * video report row (with its shares and comments), comments they wrote on
- * reports shared with them, the backed-up profile and the practice log. Files go first, so no
+ * reports shared with them, the backed-up profile, the practice log, their club
+ * memberships and any club they coach. Files go first, so no
  * report is left pointing at nothing and nothing blocks deleting the account
  * afterwards.
  */
@@ -162,6 +163,14 @@ export async function deleteAllCloudData(client: SupabaseRest, session: CloudSes
   await client.remove('video_reports', userFilter, token);
   await client.remove('athlete_profiles', userFilter, token);
   await client.remove('practice_logs', userFilter, token).catch((error: unknown) => {
+    if (!missingTable(error)) throw error;
+  });
+  // Club memberships, and clubs they coach (with those clubs' memberships and invites). Older projects have no club tables.
+  const id = encodeURIComponent(session.user.id);
+  await client.remove('club_members', `athlete_id=eq.${id}`, token).catch((error: unknown) => {
+    if (!missingTable(error)) throw error;
+  });
+  await client.remove('clubs', `coach_id=eq.${id}`, token).catch((error: unknown) => {
     if (!missingTable(error)) throw error;
   });
   return { files: all.length, reports: rows.length };

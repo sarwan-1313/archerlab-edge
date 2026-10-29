@@ -260,3 +260,304 @@ drop policy if exists "Coaches read shared videos" on storage.objects;
 create policy "Coaches read shared videos" on storage.objects
   for select to authenticated
   using (bucket_id = 'videos' and public.can_read_shared_video(name));
+
+-- ---------------------------------------------------------------------------
+-- Clubs (optional). A volunteer coach runs a club for a training ground and
+-- hands out invite codes. An athlete joins with a code and decides what the
+-- coach sees: by default only the display name they chose (and, for adults,
+-- their sign-in email). Reports and the practice log are visible to the coach
+-- only while the athlete has the matching sharing switch on, and leaving the
+-- club ends all of it at once. Coaches never see a minor's email address.
+-- Joining, changing sharing and leaving go through the functions below, so an
+-- athlete cannot change their club, age flag or email on the membership row.
+-- Everything below is safe to run again.
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.clubs (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(btrim(name)) between 1 and 80),
+  coach_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists clubs_coach_idx on public.clubs (coach_id);
+
+create table if not exists public.club_members (
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  athlete_id uuid not null references auth.users (id) on delete cascade,
+  -- The only name the coach sees.
+  display_name text not null check (char_length(btrim(display_name)) between 1 and 60),
+  -- Set for adults only, from their sign-in; always null for a minor.
+  athlete_email text,
+  is_minor boolean not null default false,
+  guardian_confirmed_at timestamptz,
+  -- "Share my analyses with my club" and "Share my practice log with my club", both off by default.
+  share_analyses boolean not null default false,
+  share_practice_log boolean not null default false,
+  joined_at timestamptz not null default now(),
+  left_at timestamptz,
+  primary key (club_id, athlete_id),
+  constraint club_members_minor_privacy check (not is_minor or (athlete_email is null and guardian_confirmed_at is not null))
+);
+
+create index if not exists club_members_athlete_idx on public.club_members (athlete_id) where left_at is null;
+
+create table if not exists public.club_invites (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  code text not null unique check (code ~ '^[A-Z0-9]{8}$'),
+  expires_at timestamptz not null,
+  max_uses int not null check (max_uses between 1 and 500),
+  uses int not null default 0 check (uses >= 0),
+  created_at timestamptz not null default now()
+);
+
+alter table public.clubs enable row level security;
+alter table public.club_members enable row level security;
+alter table public.club_invites enable row level security;
+
+-- Policy helpers (security definer for the same reason as the coach review ones).
+
+-- Does the caller coach this club?
+create or replace function public.is_club_coach(p_club_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.clubs c where c.id = p_club_id and c.coach_id = auth.uid());
+$$;
+
+-- Is the caller a current member of this club?
+create or replace function public.is_club_member(p_club_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.club_members m
+    where m.club_id = p_club_id and m.athlete_id = auth.uid() and m.left_at is null
+  );
+$$;
+
+-- Does this athlete share their analyses with a club the caller coaches?
+create or replace function public.club_shares_analyses(p_athlete_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.club_members m
+    join public.clubs c on c.id = m.club_id
+    where m.athlete_id = p_athlete_id and c.coach_id = auth.uid()
+      and m.left_at is null and m.share_analyses
+  );
+$$;
+
+-- Does this athlete share their practice log with a club the caller coaches?
+create or replace function public.club_shares_practice_log(p_athlete_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.club_members m
+    join public.clubs c on c.id = m.club_id
+    where m.athlete_id = p_athlete_id and c.coach_id = auth.uid()
+      and m.left_at is null and m.share_practice_log
+  );
+$$;
+
+-- Can the caller see this report as the coach of a club its owner shares analyses with?
+create or replace function public.is_club_report_coach(p_report_id text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.video_reports r
+    where r.id = p_report_id and public.club_shares_analyses(r.user_id)
+  );
+$$;
+
+revoke execute on function public.is_club_coach(uuid) from public, anon;
+revoke execute on function public.is_club_member(uuid) from public, anon;
+revoke execute on function public.club_shares_analyses(uuid) from public, anon;
+revoke execute on function public.club_shares_practice_log(uuid) from public, anon;
+revoke execute on function public.is_club_report_coach(text) from public, anon;
+grant execute on function public.is_club_coach(uuid) to authenticated;
+grant execute on function public.is_club_member(uuid) to authenticated;
+grant execute on function public.club_shares_analyses(uuid) to authenticated;
+grant execute on function public.club_shares_practice_log(uuid) to authenticated;
+grant execute on function public.is_club_report_coach(text) to authenticated;
+
+-- Clubs: the coach manages their own; a member sees only the clubs they belong to.
+drop policy if exists "Coach manages own clubs" on public.clubs;
+create policy "Coach manages own clubs" on public.clubs
+  for all to authenticated
+  using ((select auth.uid()) = coach_id)
+  with check ((select auth.uid()) = coach_id);
+
+drop policy if exists "Members see their clubs" on public.clubs;
+create policy "Members see their clubs" on public.clubs
+  for select to authenticated
+  using (public.is_club_member(id));
+
+-- Members: an athlete sees their own memberships (including ones they left);
+-- the coach sees current members only. Athletes see no other members. There
+-- are no insert or update policies: joining, sharing and leaving use the
+-- functions below.
+drop policy if exists "Athlete sees own memberships" on public.club_members;
+create policy "Athlete sees own memberships" on public.club_members
+  for select to authenticated
+  using ((select auth.uid()) = athlete_id);
+
+drop policy if exists "Coach sees current members" on public.club_members;
+create policy "Coach sees current members" on public.club_members
+  for select to authenticated
+  using (left_at is null and public.is_club_coach(club_id));
+
+-- An athlete can delete their own membership rows (Privacy page → delete cloud data).
+drop policy if exists "Athlete deletes own memberships" on public.club_members;
+create policy "Athlete deletes own memberships" on public.club_members
+  for delete to authenticated
+  using ((select auth.uid()) = athlete_id);
+
+-- Invites: only the club's coach can see, create or delete them. Athletes
+-- redeem a code through join_club and never read this table.
+drop policy if exists "Coach manages invites" on public.club_invites;
+create policy "Coach manages invites" on public.club_invites
+  for all to authenticated
+  using (public.is_club_coach(club_id))
+  with check (public.is_club_coach(club_id));
+
+-- A club coach reads (never writes) the reports and practice log of members who share them.
+drop policy if exists "Club coaches read shared reports" on public.video_reports;
+create policy "Club coaches read shared reports" on public.video_reports
+  for select to authenticated
+  using (public.club_shares_analyses(user_id));
+
+drop policy if exists "Club coaches read shared practice logs" on public.practice_logs;
+create policy "Club coaches read shared practice logs" on public.practice_logs
+  for select to authenticated
+  using (public.club_shares_practice_log(user_id));
+
+-- Club coaches comment on shared reports like a coach with a direct share.
+-- They read comments through club_report_comments below, which hides the
+-- email of any author who is a minor.
+drop policy if exists "Add report comments" on public.report_comments;
+create policy "Add report comments" on public.report_comments
+  for insert to authenticated
+  with check (
+    (select auth.uid()) = author_id
+    and author_email is not distinct from lower((select auth.jwt()) ->> 'email')
+    and (public.owns_video_report(report_id) or public.is_report_coach(report_id) or public.is_club_report_coach(report_id))
+  );
+
+-- Join with an invite code. Rejoining restarts the membership with sharing off.
+create or replace function public.join_club(p_code text, p_display_name text, p_is_minor boolean, p_guardian_confirmed boolean)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_invite public.club_invites;
+  v_coach uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in first.' using errcode = '42501';
+  end if;
+  if p_is_minor and not coalesce(p_guardian_confirmed, false) then
+    raise exception 'A parent or guardian must agree before a minor joins a club.' using errcode = '22023';
+  end if;
+  select * into v_invite from public.club_invites
+    where code = upper(btrim(p_code)) for update;
+  if not found or v_invite.expires_at <= now() or v_invite.uses >= v_invite.max_uses then
+    raise exception 'That invite code is not valid. It may have expired or been used up.' using errcode = 'P0002';
+  end if;
+  select coach_id into v_coach from public.clubs where id = v_invite.club_id;
+  if v_coach = auth.uid() then
+    raise exception 'You coach this club.' using errcode = '22023';
+  end if;
+  insert into public.club_members as m (club_id, athlete_id, display_name, athlete_email, is_minor, guardian_confirmed_at)
+  values (
+    v_invite.club_id, auth.uid(), btrim(p_display_name),
+    case when p_is_minor then null else lower(auth.jwt() ->> 'email') end,
+    p_is_minor,
+    case when p_is_minor then now() else null end
+  )
+  on conflict (club_id, athlete_id) do update set
+    display_name = excluded.display_name,
+    athlete_email = excluded.athlete_email,
+    is_minor = excluded.is_minor,
+    guardian_confirmed_at = excluded.guardian_confirmed_at,
+    share_analyses = false,
+    share_practice_log = false,
+    joined_at = case when m.left_at is null then m.joined_at else now() end,
+    left_at = null;
+  update public.club_invites set uses = uses + 1 where id = v_invite.id;
+  return v_invite.club_id;
+end;
+$$;
+
+-- Turn the athlete's sharing with one club on or off.
+create or replace function public.set_club_sharing(p_club_id uuid, p_share_analyses boolean, p_share_practice_log boolean)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.club_members
+  set share_analyses = p_share_analyses, share_practice_log = p_share_practice_log
+  where club_id = p_club_id and athlete_id = auth.uid() and left_at is null;
+$$;
+
+-- Leave a club. Sharing stops at once and the coach no longer sees the athlete.
+create or replace function public.leave_club(p_club_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.club_members
+  set left_at = now(), share_analyses = false, share_practice_log = false
+  where club_id = p_club_id and athlete_id = auth.uid() and left_at is null;
+$$;
+
+-- Comments on a report, for its club coach: the email of an author who is a minor in one of the caller's clubs is left out.
+create or replace function public.club_report_comments(p_report_id text)
+returns setof public.report_comments
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select k.id, k.report_id, k.author_id,
+    case when k.author_id <> auth.uid() and exists (
+      select 1 from public.club_members m join public.clubs c on c.id = m.club_id
+      where m.athlete_id = k.author_id and m.is_minor and c.coach_id = auth.uid()
+    ) then null else k.author_email end,
+    k.shot_index, k.time_s, k.body, k.created_at
+  from public.report_comments k
+  where public.is_club_report_coach(p_report_id) and k.report_id = p_report_id
+  order by k.created_at, k.id;
+$$;
+
+revoke execute on function public.join_club(text, text, boolean, boolean) from public, anon;
+revoke execute on function public.set_club_sharing(uuid, boolean, boolean) from public, anon;
+revoke execute on function public.leave_club(uuid) from public, anon;
+revoke execute on function public.club_report_comments(text) from public, anon;
+grant execute on function public.join_club(text, text, boolean, boolean) to authenticated;
+grant execute on function public.set_club_sharing(uuid, boolean, boolean) to authenticated;
+grant execute on function public.leave_club(uuid) to authenticated;
+grant execute on function public.club_report_comments(text) to authenticated;

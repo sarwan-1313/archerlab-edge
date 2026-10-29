@@ -56,7 +56,7 @@ describe('cloud data deletion', () => {
     expect(lists.every((request) => (request.body as { prefix: string }).prefix === 'u1/')).toBe(true);
   });
 
-  it('deletes every file, then the report rows and the profile, with the user’s token', async () => {
+  it('deletes every file, then the report rows, profile, log and club rows, with the user’s token', async () => {
     const project = fakeProject({ files: userFiles(120), rows: [{ video_path: 'u1/video_000.mp4' }, { video_path: null }, { video_path: 'u1/orphan.mov' }] });
     const result = await deleteAllCloudData(project.client, session);
     expect(result).toEqual({ files: 121, reports: 3 });
@@ -67,7 +67,7 @@ describe('cloud data deletion', () => {
     expect((removals.flatMap((request) => (request.body as { prefixes: string[] }).prefixes))).toContain('u1/orphan.mov');
 
     const rowDeletes = project.requests.filter((request) => request.method === 'DELETE' && request.path.startsWith('/rest/v1/'));
-    expect(rowDeletes.map((request) => request.path)).toEqual(['/rest/v1/report_comments?author_id=eq.u1', '/rest/v1/video_reports?user_id=eq.u1', '/rest/v1/athlete_profiles?user_id=eq.u1', '/rest/v1/practice_logs?user_id=eq.u1']);
+    expect(rowDeletes.map((request) => request.path)).toEqual(['/rest/v1/report_comments?author_id=eq.u1', '/rest/v1/video_reports?user_id=eq.u1', '/rest/v1/athlete_profiles?user_id=eq.u1', '/rest/v1/practice_logs?user_id=eq.u1', '/rest/v1/club_members?athlete_id=eq.u1', '/rest/v1/clubs?coach_id=eq.u1']);
     // Rows go only after the files.
     const lastFileDelete = project.requests.lastIndexOf(removals.at(-1) as Request);
     expect(project.requests.indexOf(rowDeletes[0])).toBeGreaterThan(lastFileDelete);
