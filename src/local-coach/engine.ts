@@ -1,29 +1,17 @@
-import type { WebWorkerMLCEngine } from '@mlc-ai/web-llm';
-import { LOCAL_APP_CONFIG, LOCAL_MODEL, LOCAL_MODEL_FLAG } from './model';
+import type { ChatMessage, Completion, CompleteRequest, FromWorker, LoadProgress, ToWorker } from './engineProtocol';
+import { LOCAL_MODEL, LOCAL_MODEL_FLAG } from './model';
 
 /**
- * The only file that talks to WebLLM. WebLLM (about 6 MB of code) and the model
- * are loaded when the athlete asks for them, never with the page, and the model
- * runs in a worker so the interface stays responsive.
+ * The page's side of the private coach. WebLLM (about 6 MB of code) and the model
+ * load only inside a worker, and only when the athlete asks for them, so the page
+ * never downloads WebLLM and the interface stays responsive.
  */
 
-export interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string }
+export type { ChatMessage, Completion, LoadProgress } from './engineProtocol';
 
-export interface CompleteOptions {
-  maxTokens: number;
-  temperature: number;
-  /** A JSON schema the answer must follow; decoding is constrained to it. */
-  jsonSchema?: object;
+export interface CompleteOptions extends CompleteRequest {
   /** Called with the whole answer so far each time it grows. */
   onText?: (text: string) => void;
-}
-
-export interface Completion {
-  text: string;
-  /** Ran out of room before finishing, so the answer is cut off. */
-  truncated: boolean;
-  /** Ended by the Stop button. */
-  stopped: boolean;
 }
 
 export interface LocalEngine {
@@ -34,8 +22,6 @@ export interface LocalEngine {
   unload(): Promise<void>;
 }
 
-export interface LoadProgress { fraction: number; text: string }
-
 export class LoadCancelled extends Error {
   constructor() {
     super('Cancelled.');
@@ -43,12 +29,47 @@ export class LoadCancelled extends Error {
   }
 }
 
-const loadWebLlm = () => import('@mlc-ai/web-llm');
+type Request = ToWorker extends infer R ? R extends { id: number } ? Omit<R, 'id'> : never : never;
+
+/** A worker running WebLLM, with request/answer pairs matched by id. */
+function startWorker() {
+  const worker = new Worker(new URL('./engine.worker.ts', import.meta.url), { type: 'module' });
+  const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void; onEvent?: (message: FromWorker) => void }>();
+  let nextId = 1;
+  worker.onmessage = (event: MessageEvent<FromWorker>) => {
+    const message = event.data;
+    const entry = pending.get(message.id);
+    if (!entry) return;
+    if (message.type === 'done') { pending.delete(message.id); entry.resolve(message.value); }
+    else if (message.type === 'error') { pending.delete(message.id); entry.reject(new Error(message.message)); }
+    else entry.onEvent?.(message);
+  };
+  return {
+    send<T>(request: Request, onEvent?: (message: FromWorker) => void): Promise<T> {
+      const id = nextId++;
+      return new Promise<T>((resolve, reject) => {
+        pending.set(id, { resolve: resolve as (value: unknown) => void, reject, onEvent });
+        worker.postMessage({ ...request, id } as ToWorker);
+      });
+    },
+    terminate() {
+      worker.terminate();
+      for (const entry of pending.values()) entry.reject(new LoadCancelled());
+      pending.clear();
+    },
+  };
+}
+
+/** Runs one request in a short-lived worker. */
+async function once<T>(request: Request): Promise<T> {
+  const worker = startWorker();
+  try { return await worker.send<T>(request); } finally { worker.terminate(); }
+}
 
 /** True once the model's files are saved in this browser, so loading it needs no download. */
 export async function isModelCached(): Promise<boolean> {
   try {
-    return await (await loadWebLlm()).hasModelInCache(LOCAL_MODEL.id, LOCAL_APP_CONFIG);
+    return await once<boolean>({ type: 'cached' });
   } catch {
     return false;
   }
@@ -78,8 +99,7 @@ export async function hasRoomForModel(): Promise<boolean | null> {
 
 /** Deletes the downloaded model from this browser. */
 export async function removeLocalModel(): Promise<void> {
-  const webLlm = await loadWebLlm();
-  await webLlm.deleteModelAllInfoInCache(LOCAL_MODEL.id, LOCAL_APP_CONFIG);
+  await once({ type: 'delete' });
   rememberModelDownloaded(false);
 }
 
@@ -90,76 +110,33 @@ export async function removeLocalModel(): Promise<void> {
  */
 export async function loadLocalEngine(onProgress: (progress: LoadProgress) => void, signal: AbortSignal): Promise<LocalEngine> {
   if (signal.aborted) throw new LoadCancelled();
-  const webLlm = await loadWebLlm();
-  if (signal.aborted) throw new LoadCancelled();
-  const worker = new Worker(new URL('./engine.worker.ts', import.meta.url), { type: 'module' });
-  let engine: WebWorkerMLCEngine | null = null;
-  const release = async () => {
-    const current = engine;
-    engine = null;
-    try { await current?.unload(); } catch { /* the worker is ended below either way */ }
-    worker.terminate();
-  };
-
-  let onAbort: (() => void) | undefined;
-  const cancelled = new Promise<never>((_, reject) => {
-    onAbort = () => { worker.terminate(); reject(new LoadCancelled()); };
-    signal.addEventListener('abort', onAbort, { once: true });
-  });
+  const worker = startWorker();
+  const onAbort = () => worker.terminate();
+  signal.addEventListener('abort', onAbort, { once: true });
   try {
-    engine = await Promise.race([
-      webLlm.CreateWebWorkerMLCEngine(worker, LOCAL_MODEL.id, {
-        appConfig: LOCAL_APP_CONFIG,
-        initProgressCallback: (report) => onProgress({ fraction: Math.min(1, Math.max(0, report.progress)), text: report.text }),
-      }),
-      cancelled,
-    ]);
+    await worker.send({ type: 'load' }, (message) => { if (message.type === 'progress') onProgress(message.progress); });
   } catch (error) {
     worker.terminate();
-    throw error;
+    throw signal.aborted ? new LoadCancelled() : error;
   } finally {
-    if (onAbort) signal.removeEventListener('abort', onAbort);
+    signal.removeEventListener('abort', onAbort);
   }
   rememberModelDownloaded(true);
-  const ready = engine;
   let released = false;
 
   return {
-    async complete(messages, options) {
+    async complete(messages, { onText, ...options }) {
       if (released) throw new Error('The private coach was closed.');
-      const run = async (constrained: boolean): Promise<Completion> => {
-        const stream = await ready.chat.completions.create({
-          messages,
-          stream: true,
-          max_tokens: options.maxTokens,
-          temperature: options.temperature,
-          top_p: 0.9,
-          repetition_penalty: 1.05,
-          ...(constrained && options.jsonSchema ? { response_format: { type: 'json_object' as const, schema: JSON.stringify(options.jsonSchema) } } : {}),
-        });
-        let text = '';
-        let finish: string | null = null;
-        for await (const chunk of stream) {
-          const piece = chunk.choices[0]?.delta?.content;
-          if (piece) { text += piece; options.onText?.(text); }
-          finish = chunk.choices[0]?.finish_reason ?? finish;
-        }
-        return { text, truncated: finish === 'length', stopped: finish === 'abort' };
-      };
-      try {
-        return await run(true);
-      } catch (error) {
-        // If this build's grammar support rejects the schema, ask again without it rather than failing outright.
-        if (options.jsonSchema && error instanceof Error && /schema|grammar|response_format/i.test(error.message)) return run(false);
-        throw error;
-      }
+      return worker.send<Completion>({ type: 'complete', messages, options }, (message) => { if (message.type === 'text') onText?.(message.text); });
     },
     interrupt() {
-      try { ready.interruptGenerate(); } catch { /* nothing is being written */ }
+      if (!released) void worker.send({ type: 'interrupt' }).catch(() => undefined);
     },
     async unload() {
+      if (released) return;
       released = true;
-      await release();
+      try { await worker.send({ type: 'unload' }); } catch { /* the worker is ended below either way */ }
+      worker.terminate();
     },
   };
 }

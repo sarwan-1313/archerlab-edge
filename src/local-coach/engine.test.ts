@@ -1,17 +1,27 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LoadCancelled, loadLocalEngine } from './engine';
+import { createEngineHost, type WebLlmApi } from './engineHost';
+import type { FromWorker, ToWorker } from './engineProtocol';
 import { LOCAL_APP_CONFIG, LOCAL_MODEL } from './model';
 
-const web = vi.hoisted(() => ({ create: vi.fn(), hasModelInCache: vi.fn(), deleteModelAllInfoInCache: vi.fn() }));
-vi.mock('@mlc-ai/web-llm', () => ({
-  CreateWebWorkerMLCEngine: web.create,
-  hasModelInCache: web.hasModelInCache,
-  deleteModelAllInfoInCache: web.deleteModelAllInfoInCache,
-}));
+const web = { create: vi.fn(), hasModelInCache: vi.fn(), deleteModelAllInfoInCache: vi.fn() };
+const fakeWebLlm = {
+  CreateMLCEngine: (...args: unknown[]) => web.create(...args),
+  hasModelInCache: (...args: unknown[]) => web.hasModelInCache(...args),
+  deleteModelAllInfoInCache: (...args: unknown[]) => web.deleteModelAllInfoInCache(...args),
+} as unknown as WebLlmApi;
 
+// The worker runs in-process here: the same host the real worker uses, with WebLLM faked.
 const terminate = vi.fn();
+class FakeWorker {
+  onmessage: ((event: { data: FromWorker }) => void) | null = null;
+  private ended = false;
+  private host = createEngineHost(fakeWebLlm, (data) => queueMicrotask(() => { if (!this.ended) this.onmessage?.({ data }); }));
+  postMessage(message: ToWorker) { queueMicrotask(() => { if (!this.ended) void this.host.handle(message); }); }
+  terminate() { this.ended = true; terminate(); }
+}
 beforeEach(() => {
-  vi.stubGlobal('Worker', class { terminate = terminate; });
+  vi.stubGlobal('Worker', FakeWorker);
   web.create.mockReset();
   terminate.mockReset();
 });
@@ -27,7 +37,7 @@ function fakeMlc(create: (request: Record<string, unknown>) => unknown) {
 
 it('loads only the pinned model, reporting progress', async () => {
   const mlc = fakeMlc(() => chunks());
-  web.create.mockImplementation(async (_worker, id, config: { appConfig: unknown; initProgressCallback: (report: { progress: number; text: string }) => void }) => {
+  web.create.mockImplementation(async (id, config: { appConfig: unknown; initProgressCallback: (report: { progress: number; text: string }) => void }) => {
     config.initProgressCallback({ progress: 0.5, text: 'Fetching' });
     expect(id).toBe(LOCAL_MODEL.id);
     expect(config.appConfig).toBe(LOCAL_APP_CONFIG);

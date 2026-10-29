@@ -35,8 +35,8 @@ export const PRECACHE_GLOBS = [
 /** The big models are fetched on first use instead (see RUNTIME_CACHING), never at install. */
 export const PRECACHE_IGNORES = [
   '**/pose_landmarker_full.task', '**/pose_landmarker_heavy.task',
-  // WebLLM for the optional private coach: about 12 MB of code (main-thread chunk + worker), cached on first use.
-  '**/assets/webllm-*.js', '**/assets/engine.worker-*.js',
+  // WebLLM for the optional private coach: about 6 MB of code, all in its worker, cached on first use.
+  '**/assets/engine.worker-*.js',
 ];
 
 /** The largest precached file is the 11 MB wasm; Workbox skips anything bigger than this without failing the build. */
@@ -113,9 +113,9 @@ export const RUNTIME_CACHING: NonNullable<NonNullable<VitePWAOptions['workbox']>
     },
   },
   {
-    // The private coach's code (WebLLM, about 12 MB), kept after first use. File names carry a content hash,
+    // The private coach's code (WebLLM in its worker, about 6 MB), kept after first use. File names carry a content hash,
     // so a new version is a new file; the oldest entries are dropped.
-    urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/assets\/(?:webllm|engine\.worker)-[\w-]+\.js$/.test(url.pathname),
+    urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/assets\/engine\.worker-[\w-]+\.js$/.test(url.pathname),
     handler: 'CacheFirst',
     options: {
       cacheName: 'archerlab-local-coach-code',

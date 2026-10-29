@@ -24,9 +24,10 @@ export default defineConfig({
           // helper lands in the MediaPipe chunk and every page loads MediaPipe to reach it.
           includeDependenciesRecursively: false,
           groups: [
-            // WebLLM (the optional private coach) gets a chunk of its own, so the service worker can leave it
-            // out of the install and cache it only for athletes who use it (see pwa.config.ts).
-            { name: 'webllm', test: /[\\/]node_modules[\\/]@mlc-ai[\\/]web-llm[\\/]/ },
+            // three.js (the 3D pose viewer, loaded only when it is opened) in two pieces, its core and the
+            // renderer, so neither goes over the 500 kB chunk warning. WebLLM is imported only by its worker.
+            { name: 'three-core', test: /[\\/]node_modules[\\/]three[\\/]build[\\/]three\.core\.js$/ },
+            { name: 'three', test: /[\\/]node_modules[\\/]three[\\/]/ },
             // MediaPipe on its own, so the pages that do not track anyone never load it.
             { name: 'mediapipe', test: /[\\/]node_modules[\\/]@mediapipe[\\/]/ },
           ],

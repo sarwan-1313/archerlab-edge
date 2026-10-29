@@ -67,8 +67,7 @@ describe('runtime caching', () => {
   });
 
   it('leaves the private coach\'s WebLLM code out of the install and caches it on first use', () => {
-    expect(PRECACHE_IGNORES).toEqual(expect.arrayContaining(['**/assets/webllm-*.js', '**/assets/engine.worker-*.js']));
-    expect(handles('https://app.test/assets/webllm-C9A9Avkh.js')).toBe(true);
+    expect(PRECACHE_IGNORES).toEqual(expect.arrayContaining(['**/assets/engine.worker-*.js']));
     expect(handles('https://app.test/assets/engine.worker-CVcuH73x.js')).toBe(true);
     expect(handles('https://app.test/assets/index-4_ww3UEK.js')).toBe(false);
   });
