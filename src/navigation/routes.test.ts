@@ -29,6 +29,7 @@ const EXPECTED_ROUTES = {
   privacy: '/privacy',
   training: '/training',
   club: '/club',
+  'dataset-tools': '/dataset-tools',
 } as const satisfies Record<PageKey, string>;
 
 describe('page routes', () => {

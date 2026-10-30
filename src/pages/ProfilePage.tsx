@@ -11,7 +11,7 @@ import '../styles/video.css';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
 
-export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub }: { onAnalyzeVideo?: () => void; onPrivacy?: () => void; onTraining?: () => void; onClub?: () => void } = {}) {
+export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub, onDatasetTools }: { onAnalyzeVideo?: () => void; onPrivacy?: () => void; onTraining?: () => void; onClub?: () => void; onDatasetTools?: () => void } = {}) {
   const { profile, loadError, save, removePhoto } = useAthleteProfile();
   const practice = usePracticeLog();
   const [form, setForm] = useState<any>({ displayName: '', archerId: '', handedness: 'right', bowType: '', discipline: '', experienceLevel: '', defaultCameraAngle: 'side' });
@@ -81,7 +81,7 @@ export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub }: {
     </form>
     <AccountPanel profile={profile} onRestoreProfile={onRestoreProfile} onClub={onClub} />
     <LiteModeSetting />
-    <CoachToolsSetting />
+    <CoachToolsSetting onDatasetTools={onDatasetTools} />
     {onPrivacy ? <p className="va-faint profile-privacy">What is stored, what is sent, and how to export or delete it: <button type="button" className="privacy-link" onClick={onPrivacy}>Privacy</button></p> : null}
   </div>);
 }

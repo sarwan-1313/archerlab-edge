@@ -278,6 +278,7 @@ supabase/            SQL for optional accounts, backup, coach review and account
 | Document | Covers |
 | --- | --- |
 | [docs/video-analysis.md](docs/video-analysis.md) | The video engine: pipeline, segmentation, audio, scoring, trimming, larger pose models, limits |
+| [docs/bow-detection.md](docs/bow-detection.md) | Building a bow, arrow and target-face dataset with the Dataset tools (Coach tools), how much to label, privacy, and licence-checked training options |
 | [docs/validation.md](docs/validation.md) | Checking the scores against coaches: Coach tools labelling, fixture export, `npm run validate:fixtures`, consent and how to tune the rubric |
 | [docs/voice-notes.md](docs/voice-notes.md) | On-device voice notes with Whisper: score parsing, the model and runtime, download and caching, languages |
 | [docs/video-conversion.md](docs/video-conversion.md) | Converting a clip the browser cannot play to MP4 on the device: flow, ffmpeg settings, the self-hosted core, licence |

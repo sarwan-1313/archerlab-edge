@@ -46,4 +46,5 @@ export const pageTitles: Record<PageKey, string> = {
   privacy: 'Privacy',
   training: 'Training',
   club: 'My club',
+  'dataset-tools': 'Dataset tools',
 };

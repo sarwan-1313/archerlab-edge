@@ -31,6 +31,7 @@ export type PageKey =
   | 'privacy'
   | 'training'
   | 'club'
+  | 'dataset-tools'
   | GuideDetailPageKey;
 
 export type NavItem = {
