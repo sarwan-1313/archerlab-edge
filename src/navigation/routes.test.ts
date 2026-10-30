@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { PageKey } from '../types';
-import { PAGE_PATHS, pageForPathname, resolvePageFromPathname, routeForPage } from './routes';
+import { PAGE_PATHS, pageForPathname, readReportParam, resolvePageFromPathname, routeForPage } from './routes';
 
 const EXPECTED_ROUTES = {
   home: '/',
   'new-session': '/camera',
   calibration: '/readiness',
   'live-analysis': '/analysis',
+  'video-analysis': '/video',
   'manual-shot-entry': '/manual-shot-entry',
   'replay-analysis': '/replay-analysis',
   dashboard: '/analytics',
@@ -25,6 +26,10 @@ const EXPECTED_ROUTES = {
   'guide-analytics': '/guide/analytics',
   'saved-recordings': '/sessions',
   profile: '/profile',
+  privacy: '/privacy',
+  training: '/training',
+  club: '/club',
+  'dataset-tools': '/dataset-tools',
 } as const satisfies Record<PageKey, string>;
 
 describe('page routes', () => {
@@ -61,5 +66,13 @@ describe('page routes', () => {
   it('distinguishes unknown paths when callers need to canonicalize the URL', () => {
     expect(resolvePageFromPathname('/guide/')).toBe('user-guide');
     expect(resolvePageFromPathname('/not-a-route')).toBeUndefined();
+  });
+
+  it('keeps a shared report id on the Video Analysis route only', () => {
+    expect(routeForPage('video-analysis', { reportId: 'r 1' })).toBe('/video?report=r%201');
+    expect(routeForPage('profile', { reportId: 'r1' })).toBe('/profile');
+    expect(readReportParam('?report=r%201')).toBe('r 1');
+    expect(readReportParam('?report=')).toBeUndefined();
+    expect(readReportParam('')).toBeUndefined();
   });
 });

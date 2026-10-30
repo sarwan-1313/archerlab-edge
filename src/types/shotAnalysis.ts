@@ -2,7 +2,7 @@ import type { ArcherHandedness, BiomechanicsMetric, Point2D } from './biomechani
 
 export type ShotCaptureState = 'idle' | 'armed' | 'capturing-post-release' | 'finalizing' | 'complete' | 'error';
 export type ShotPhase = 'setup' | 'draw' | 'anchor' | 'release' | 'follow-through';
-export type ReleaseSource = 'manual' | 'automatic-candidate-confirmed';
+export type ReleaseSource = 'manual' | 'automatic-candidate-confirmed' | 'video-detected';
 
 export interface ShotFrame {
   timestampMs: number;
@@ -88,6 +88,10 @@ export interface ShotAnalysis {
   summary: ShotSummary;
   dataQuality: ShotDataQuality;
   actualResult?: import('./gestureScore').ReportedShotResult;
+  /** The athlete's own note for this shot (typed, or a voice note transcribed on the device). */
+  notes?: string;
+  /** Set on shots converted from a video analysis report. */
+  videoSource?: { reportId: string; fileName: string };
 }
 
 export interface ReleaseCandidate {

@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-e2e
 dist-ssr
 *.local
 
@@ -43,4 +44,15 @@ ui-desktop.png
 ui-mobile-500.png
 ui-mobile-full.png
 # Temporary build/debug output
-build-output*.txtgit status --short
+build-output*.txt
+
+# Larger pose models are downloaded at build time (npm run models:pose), not committed
+public/models/pose_landmarker_full.task
+public/models/pose_landmarker_heavy.task
+public/models/*.download
+# Playwright output
+test-results/
+playwright-report/
+
+# Voice-note model: fetched at build time (npm run models:whisper), not committed
+public/models/whisper-tiny/
