@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { commentAuthor, shotAtTime, type ReportComment } from '../../cloud/account/coachReview';
 import { RESOURCE_LIBRARY } from '../../video-analysis/resources';
 import { CATEGORY_INFO, METRIC_RUBRIC, formatMetricShort } from '../../video-analysis/rubric';
@@ -15,6 +16,8 @@ import { LabelPanel } from './LabelPanel';
 import { AnalysisPlayer, type PlayerHandle, type SeekRequest, type TimelineMarker } from './AnalysisPlayer';
 import { CommentsPanel, type CommentsPanelProps } from './CommentsPanel';
 import { LevelBadge } from './LevelBadge';
+import { PrintableReport } from './PrintableReport';
+import { renderFocusFrames, type FocusFrame } from '../../video-analysis/browser/keyFrames';
 
 type ReportViewProps = {
   report: VideoAnalysisReport;
@@ -216,6 +219,21 @@ export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, not
     setSeek({ t, joints, nonce: nonce.current });
     document.querySelector('.va-review')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
+  const [printFrames, setPrintFrames] = useState<FocusFrame[]>([]);
+  const [preparingPrint, setPreparingPrint] = useState(false);
+  // Key frames are rendered only for printing, and dropped again once the print dialog closes.
+  const printReport = async () => {
+    setPreparingPrint(true);
+    try {
+      const frames = await renderFocusFrames(report, videoUrl).catch(() => []);
+      flushSync(() => setPrintFrames(frames));
+      await Promise.all([...document.querySelectorAll<HTMLImageElement>('.va-print img')].map((image) => image.decode().catch(() => undefined)));
+      window.addEventListener('afterprint', () => setPrintFrames([]), { once: true });
+      window.print();
+    } finally {
+      setPreparingPrint(false);
+    }
+  };
   const others = report.findings.filter((finding) => !report.focusAreas.includes(finding));
   const commentItems = comments?.comments;
   const currentUserId = comments?.currentUserId;
@@ -241,6 +259,13 @@ export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, not
   return (
     <div className="va-report">
       {notice}
+      <div className="va-print-bar">
+        <ActionButton variant="secondary" type="button" disabled={preparingPrint} onClick={() => void printReport()}>
+          <AppIcon name="download" size={16} /> {preparingPrint ? 'Preparing…' : 'Print / Save as PDF'}
+        </ActionButton>
+        <small>A black-on-white copy to give a coach or parent. No account needed.</small>
+      </div>
+      <PrintableReport report={report} frames={printFrames} />
       <Scoreboard report={report} />
       <Callouts report={report} />
       {settingsControl}

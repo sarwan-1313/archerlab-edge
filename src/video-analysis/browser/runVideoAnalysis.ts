@@ -3,6 +3,7 @@ import { detectOnsets } from '../audio';
 import { buildReport, type AudioInput } from '../buildReport';
 import { QUALITY_FPS, VIDEO_CONFIG } from '../config';
 import { formatClock } from '../format';
+import { DEFAULT_BUDGET, cappedFps, type MemoryBudget } from '../memoryBudget';
 import { audioSkipReason, onsetsInRange, rangeLength, rangeProblem } from '../range';
 import type { AnalysisQuality, AnchorObservation, BowType, PoseModelVariant, PoseSample, TimeRange, VideoAnalysisReport } from '../types';
 import { measureAnchorDetail } from './anchorDetail';
@@ -37,6 +38,8 @@ export interface RunVideoAnalysisOptions {
   range?: TimeRange;
   signal: AbortSignal;
   onProgress: (progress: AnalysisProgress) => void;
+  /** Memory limits for this device (see memoryBudget); the defaults when omitted. */
+  budget?: MemoryBudget;
 }
 
 const STAGE_SPAN: Record<AnalysisStage, [number, number]> = {
@@ -109,6 +112,7 @@ function mergeSamples(base: PoseSample[], refined: PoseSample[]): PoseSample[] {
 export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promise<VideoAnalysisReport> {
   const started = performance.now();
   const { video, signal } = options;
+  const budget = options.budget ?? DEFAULT_BUDGET;
   const progress = (stage: AnalysisStage, fraction: number, message: string, extra: Partial<AnalysisProgress> = {}) =>
     options.onProgress({ stage, fraction: overall(stage, fraction), message, ...extra });
   const checkAbort = () => { if (signal.aborted) throw new AnalysisCancelledError(); };
@@ -128,7 +132,7 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
     audio = { kind: 'unavailable', reason: skipAudio };
   } else if (options.analyzeAudio) {
     progress('audio', 0, 'Listening for releases, clicker and impacts…');
-    const decoded = await decodeAudioTrack(options.file);
+    const decoded = await decodeAudioTrack(options.file, undefined, budget.maxAudioDecodeBytes);
     checkAbort();
     if (decoded.status === 'decoded') {
       const analysis = detectOnsets(decoded.samples, decoded.sampleRate);
@@ -141,14 +145,15 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
 
   // 2. First tracking pass over the selected range.
   progress('model', 0, 'Loading the pose model…');
-  const fps = QUALITY_FPS[options.quality];
+  // Long ranges are sampled more sparsely on low-memory devices, so the pose frames fit in memory.
+  const fps = Math.round(cappedFps(QUALITY_FPS[options.quality], span, budget.maxFrames) * 10) / 10;
   const first = await createVideoPoseModel(options.model);
   let pass1;
   try {
     checkAbort();
     progress('tracking', 0, 'Tracking the archer frame by frame…');
     pass1 = await captureRanges({
-      video, canvas: options.canvas, landmarker: first.landmarker, ranges: [[range.start, range.end]], fps, signal,
+      video, canvas: options.canvas, landmarker: first.landmarker, ranges: [[range.start, range.end]], fps, signal, longEdgePx: budget.inferenceLongEdgePx,
       onProgress: (info) => progress('tracking', info.fraction, `Tracking frame by frame — ${(info.t - range.start).toFixed(1)} s of ${span.toFixed(1)} s`, {
         currentTime: info.t, sample: info.sample, framesProcessed: info.processed, playbackRate: info.playbackRate,
       }),
@@ -194,7 +199,7 @@ export async function runVideoAnalysis(options: RunVideoAnalysisOptions): Promis
         checkAbort();
         const refined = await captureRanges({
           video, canvas: options.canvas, landmarker: second.landmarker,
-          ranges: mergeWindows(releases, VIDEO_CONFIG.refineWindowS, analysed), fps: Math.min(nativeFps, 60), signal, allowPartial: true,
+          ranges: mergeWindows(releases, VIDEO_CONFIG.refineWindowS, analysed), fps: Math.min(nativeFps, 60), signal, allowPartial: true, longEdgePx: budget.inferenceLongEdgePx,
           onProgress: (info) => progress('refining', info.fraction, `Precision pass — ${info.t.toFixed(1)} s`, { currentTime: info.t, sample: info.sample, framesProcessed: info.processed, playbackRate: info.playbackRate }),
         });
         refinedFrames = refined.samples.length;

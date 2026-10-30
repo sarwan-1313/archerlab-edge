@@ -19,7 +19,10 @@ import { UploadPanel, type UploadOptions } from '../components/video/UploadPanel
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
 import { isWakeLockSupported, useWakeLock } from '../hooks/useWakeLock';
 import { readReportParam, routeForPage } from '../navigation/routes';
-import { AnalysisCancelledError } from '../video-analysis/browser/frameCapture';
+import { LiteModeSuggestion } from '../components/profile/LiteModeSetting';
+import { useLiteMode } from '../settings/liteMode';
+import { AnalysisCancelledError, releaseCanvas, releaseVideo } from '../video-analysis/browser/frameCapture';
+import { memoryBudget } from '../video-analysis/memoryBudget';
 import { availableModels } from '../video-analysis/browser/poseModel';
 import { loadVideo, runVideoAnalysis, type AnalysisProgress } from '../video-analysis/browser/runVideoAnalysis';
 import { VIDEO_CONFIG } from '../video-analysis/config';
@@ -93,6 +96,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
   const { profile, save } = useAthleteProfile();
   const account = useCloudAccount();
   const [view, setView] = useState<View>({ kind: 'upload' });
+  const lite = useLiteMode();
   const [options, setOptions] = useState<UploadOptions>(() => ({
     quality: 'standard', model: 'lite', handedness: 'auto', bowType: 'recurve', analyzeAudio: true, keepVideo: false, updateProfile: true, ...readOptions(),
   }));
@@ -173,6 +177,15 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
     urlsRef.current.push(url);
     return url;
   };
+  // Revoke each object URL as soon as no view shows it, so a phone does not keep every clip it has opened.
+  const liveUrl = view.kind === 'preview' || view.kind === 'processing' ? view.url : view.kind === 'report' ? view.videoUrl : null;
+  useEffect(() => {
+    urlsRef.current = urlsRef.current.filter((url) => {
+      if (url === liveUrl) return true;
+      URL.revokeObjectURL(url);
+      return false;
+    });
+  }, [liveUrl]);
   useEffect(() => () => {
     abortRef.current?.abort();
     urlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -212,8 +225,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
   }, [onProcessingChange, processing]);
 
   // Options, models and profile are read once, when the run starts, so changing them never restarts a run.
-  const runInputsRef = useRef({ options, models, save, refreshHistory });
-  useEffect(() => { runInputsRef.current = { options, models, save, refreshHistory }; }, [options, models, save, refreshHistory]);
+  const runInputsRef = useRef({ options, models, save, refreshHistory, lite });
+  useEffect(() => { runInputsRef.current = { options, models, save, refreshHistory, lite }; }, [options, models, save, refreshHistory, lite]);
 
   // Run the engine once the processing view (and its video element) is on screen.
   const processingFile = view.kind === 'processing' ? view.file : null;
@@ -221,7 +234,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
   const processingRange = view.kind === 'processing' ? view.range : null;
   useEffect(() => {
     if (!processingFile || !processingUrl || !processingRange) return;
-    const { options, models, save, refreshHistory } = runInputsRef.current;
+    const { options, models, save, refreshHistory, lite } = runInputsRef.current;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -238,7 +251,9 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
         }
         const report = await runVideoAnalysis({
           file: processingFile, video, canvas,
-          quality: options.quality, model: models.includes(options.model) ? options.model : 'lite',
+          // Lite mode: the Lite model and the Fast preset, whatever was picked before it was turned on.
+          quality: lite ? 'fast' : options.quality, model: !lite && models.includes(options.model) ? options.model : 'lite',
+          budget: memoryBudget((navigator as Navigator & { deviceMemory?: number }).deviceMemory, lite),
           requestedHandedness: options.handedness, profileHandedness, bowType: options.bowType,
           analyzeAudio: options.analyzeAudio, range: processingRange, signal: controller.signal, onProgress: setProgress,
         });
@@ -265,7 +280,13 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
         console.error('Video analysis failed', error);
         setView({ kind: 'error', file: processingFile, message: error instanceof Error ? error.message : 'The analysis failed.' });
       } finally {
-        if (abortRef.current === controller) abortRef.current = null;
+        // Unless a newer run already uses them (StrictMode re-runs the effect), free the analysis canvas
+        // and the hidden video's frame buffers now rather than whenever they are collected.
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          releaseCanvas(canvas);
+          releaseVideo(video);
+        }
       }
     })();
     return () => controller.abort();
@@ -502,7 +523,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
 
       {view.kind === 'upload' ? (
         <>
-          <UploadPanel options={options} availableModels={models} offline={!online} onOptionsChange={changeOptions} onFile={chooseFile} />
+          <LiteModeSuggestion />
+          <UploadPanel options={options} availableModels={models} offline={!online} lite={lite} onOptionsChange={changeOptions} onFile={chooseFile} />
           <div className="va-open-report">
             <input ref={reportFileRef} type="file" accept="application/json,.json" aria-label="Report file" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void openReportFile(file); }} />
             <ActionButton variant="ghost" type="button" onClick={() => reportFileRef.current?.click()}><AppIcon name="upload" size={16} /> Open report file (.json)</ActionButton>

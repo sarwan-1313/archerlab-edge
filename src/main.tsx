@@ -7,9 +7,13 @@ import './styles/athletic.css'
 import { captureAuthRedirect } from './cloud/account/authRedirect'
 import { accountsEnabled } from './cloud/config'
 import { registerServiceWorker } from './pwa/serviceWorker'
+import { applyLiteMode } from './settings/liteMode'
 
 // Optional accounts: keep sign-in tokens from the URL before the router rewrites it.
 if (accountsEnabled) captureAuthRedirect()
+
+// Lite mode cuts animations through a data attribute on <html>.
+applyLiteMode()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -22,6 +22,8 @@ type UploadPanelProps = {
   availableModels: PoseModelVariant[];
   /** Offline, only the models already on this device are offered. */
   offline?: boolean;
+  /** Lite mode fixes the precision and the model. */
+  lite?: boolean;
   onOptionsChange: (options: UploadOptions) => void;
   onFile: (file: File) => void;
 };
@@ -67,7 +69,7 @@ function modelHint(model: PoseModelVariant, available: PoseModelVariant[], offli
   return model !== 'heavy' && available.includes('heavy') ? `${MODEL_HINT[model]} Heavy is the most accurate but slowest.` : MODEL_HINT[model];
 }
 
-export function UploadPanel({ options, availableModels, offline = false, onOptionsChange, onFile }: UploadPanelProps) {
+export function UploadPanel({ options, availableModels, offline = false, lite = false, onOptionsChange, onFile }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -146,16 +148,24 @@ export function UploadPanel({ options, availableModels, offline = false, onOptio
 
       <div className="va-panel va-options">
         <h2>Analysis settings</h2>
-        <Field label="Precision" hint={QUALITY_HINT[options.quality]}>
-          <Chips name="Precision" value={options.quality} onChange={(value) => set('quality', value)} options={[
-            { value: 'fast', label: 'Fast' }, { value: 'standard', label: 'Standard' }, { value: 'max', label: 'Every frame' },
-          ]} />
-        </Field>
-        <Field label="Pose model" hint={modelHint(options.model, availableModels, offline)}>
-          <Chips name="Pose model" value={options.model} onChange={(value) => set('model', value)} options={(['lite', 'full', 'heavy'] as const).map((variant) => ({
-            value: variant, label: variant === 'lite' ? 'Lite' : variant === 'full' ? 'Full' : 'Heavy', disabled: !availableModels.includes(variant),
-          }))} />
-        </Field>
+        {lite ? (
+          <Field label="Precision and pose model" hint="Lite mode is on, so clips use the Fast preset and the Lite model. Turn it off on the Profile page for more precise settings.">
+            <p className="va-faint">Fast · Lite model</p>
+          </Field>
+        ) : (
+          <>
+          <Field label="Precision" hint={QUALITY_HINT[options.quality]}>
+            <Chips name="Precision" value={options.quality} onChange={(value) => set('quality', value)} options={[
+              { value: 'fast', label: 'Fast' }, { value: 'standard', label: 'Standard' }, { value: 'max', label: 'Every frame' },
+            ]} />
+          </Field>
+          <Field label="Pose model" hint={modelHint(options.model, availableModels, offline)}>
+            <Chips name="Pose model" value={options.model} onChange={(value) => set('model', value)} options={(['lite', 'full', 'heavy'] as const).map((variant) => ({
+              value: variant, label: variant === 'lite' ? 'Lite' : variant === 'full' ? 'Full' : 'Heavy', disabled: !availableModels.includes(variant),
+            }))} />
+          </Field>
+          </>
+        )}
         <Field label="Drawing hand" hint={options.handedness === 'auto' ? 'Worked out from the video: the hand that comes to your face at full draw.' : undefined}>
           <Chips name="Drawing hand" value={options.handedness} onChange={(value) => set('handedness', value)} options={[
             { value: 'auto', label: 'Auto' }, { value: 'right', label: 'Right' }, { value: 'left', label: 'Left' },

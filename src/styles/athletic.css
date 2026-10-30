@@ -1307,3 +1307,14 @@ body {
   .club-roster__row { grid-template-columns: 1fr 1fr; }
   .club-roster__name { grid-column: 1 / -1; }
 }
+
+/* ---------- Lite mode: fewer animations ---------- */
+html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}
+.lite-suggestion { display: grid; gap: 8px; margin-bottom: 14px; }
+.lite-suggestion p { margin: 0; }
+.lite-suggestion__actions { display: flex; flex-wrap: wrap; gap: 8px; }

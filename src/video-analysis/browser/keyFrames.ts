@@ -3,7 +3,7 @@ import { drawSkeleton } from '../drawing';
 import { sourceRange } from '../range';
 import { indexAtTime } from '../signal';
 import type { JointName, VideoAnalysisReport } from '../types';
-import { seekTo } from './frameCapture';
+import { releaseCanvas, releaseVideo, seekTo } from './frameCapture';
 
 /**
  * Renders a handful of annotated stills (anchor, release, follow-through) for
@@ -41,6 +41,7 @@ export async function renderKeyFrames(report: VideoAnalysisReport, video: HTMLVi
     const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
     parts.push({ kind: 'image', mimeType: 'image/jpeg', base64: dataUrl.slice(dataUrl.indexOf(',') + 1), caption: moment.caption });
   }
+  releaseCanvas(canvas);
   return parts;
 }
 
@@ -55,4 +56,70 @@ export function fileToBase64(file: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error('The file could not be read.'));
     reader.readAsDataURL(file);
   });
+}
+
+export interface FocusFrame {
+  findingId: string;
+  /** A JPEG data URL. */
+  src: string;
+  caption: string;
+}
+
+function loadDetachedVideo(url: string): Promise<HTMLVideoElement> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.addEventListener('loadeddata', () => resolve(video), { once: true });
+    video.addEventListener('error', () => reject(new Error('The video could not be read.')), { once: true });
+    video.src = url;
+  });
+}
+
+/**
+ * One still per focus area, at the moment the finding points to, with the skeleton drawn and the joints
+ * in question highlighted: for the printable report. Uses its own video element, so the on-screen replay
+ * stays where it is, and frees it (and the canvas) afterwards. Without the video, the skeleton is drawn
+ * on white. Small stills (long edge 640 px) keep the memory and the printed page light.
+ */
+export async function renderFocusFrames(report: VideoAnalysisReport, videoUrl: string | null): Promise<FocusFrame[]> {
+  const findings = report.focusAreas.filter((finding) => finding.where.time !== null);
+  if (!findings.length || !report.samples.some((sample) => sample.image)) return [];
+  let video: HTMLVideoElement | null = null;
+  if (videoUrl) {
+    try { video = await loadDetachedVideo(videoUrl); } catch { video = null; }
+  }
+  const width = video?.videoWidth || report.source.width || 640;
+  const height = video?.videoHeight || report.source.height || 360;
+  const scale = Math.min(1, 640 / Math.max(width, height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+  const context = canvas.getContext('2d');
+  const times = report.samples.map((sample) => sample.t);
+  const frames: FocusFrame[] = [];
+  try {
+    if (!context) return [];
+    for (const finding of findings) {
+      const t = finding.where.time as number;
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      if (video) {
+        await seekTo(video, t);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+      const sample = report.samples[indexAtTime(times, t)];
+      if (sample?.image) drawSkeleton(context, sample.image, { x: 0, y: 0, width: canvas.width, height: canvas.height, handedness: report.settings.handedness, highlight: finding.where.joints });
+      frames.push({
+        findingId: finding.id,
+        src: canvas.toDataURL('image/jpeg', 0.85),
+        caption: `${finding.where.shotIndex ? `Shot ${finding.where.shotIndex}, ` : ''}${t.toFixed(2)} s${video ? '' : ' · skeleton only, video not stored'}`,
+      });
+    }
+  } finally {
+    releaseCanvas(canvas);
+    if (video) releaseVideo(video);
+  }
+  return frames;
 }
