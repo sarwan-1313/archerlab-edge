@@ -35,6 +35,8 @@ export interface CaptureOptions {
    * was tracked, and fails otherwise.
    */
   allowPartial?: boolean;
+  /** Long edge of the frame handed to the model; VIDEO_CONFIG.inferenceLongEdgePx when omitted. */
+  longEdgePx?: number;
 }
 
 export interface CaptureResult {
@@ -60,6 +62,19 @@ export class AnalysisCancelledError extends Error {
 
 export const VIDEO_STALLED_MESSAGE = 'The video stopped playing partway. The file may be damaged; try exporting it again as MP4.';
 export const VIDEO_READ_ERROR_MESSAGE = 'The video could not be read partway through. The file may be damaged; try exporting it again as MP4.';
+
+/** Frees a canvas's pixel buffer now rather than when it is garbage collected (a 720p canvas is about 3.5 MB). */
+export function releaseCanvas(canvas: HTMLCanvasElement): void {
+  canvas.width = 0;
+  canvas.height = 0;
+}
+
+/** Detaches a video element from its file, so the browser drops its decoder and buffered frames. */
+export function releaseVideo(video: HTMLVideoElement): void {
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+}
 
 /**
  * The clip's length in seconds. Files saved by MediaRecorder (screen and
@@ -128,9 +143,9 @@ function toSample(t: number, result: ReturnType<PoseLandmarker['detectForVideo']
   return { t, image, world: worldArray };
 }
 
-function prepareCanvas(video: HTMLVideoElement, canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+function prepareCanvas(video: HTMLVideoElement, canvas: HTMLCanvasElement, longEdgePx: number): CanvasRenderingContext2D {
   const longEdge = Math.max(video.videoWidth, video.videoHeight) || 1;
-  const scale = Math.min(1, VIDEO_CONFIG.inferenceLongEdgePx / longEdge);
+  const scale = Math.min(1, longEdgePx / longEdge);
   const width = Math.max(2, Math.round(video.videoWidth * scale));
   const height = Math.max(2, Math.round(video.videoHeight * scale));
   if (canvas.width !== width) canvas.width = width;
@@ -142,7 +157,7 @@ function prepareCanvas(video: HTMLVideoElement, canvas: HTMLCanvasElement): Canv
 
 export async function captureRanges(options: CaptureOptions): Promise<CaptureResult> {
   const video = options.video as FrameCallbackVideo;
-  const context = prepareCanvas(video, options.canvas);
+  const context = prepareCanvas(video, options.canvas, options.longEdgePx ?? VIDEO_CONFIG.inferenceLongEdgePx);
   const totalSpan = options.ranges.reduce((sum, [start, end]) => sum + Math.max(0, end - start), 0) || 1;
   const samples: PoseSample[] = [];
   let lastTimestampMs = -1;

@@ -526,3 +526,45 @@
 .va-labels__not-shot td { opacity: .6; }
 .va-labels__footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
 .va-labels__level { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+
+/* ---------- Printable report ---------- */
+.va-print-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.va-print-bar small { color: var(--ath-muted, #9aa3ad); }
+.va-print { display: none; }
+
+@media print {
+  /* Only the report goes on paper; A4 and Letter both fit the margins below. */
+  @page { size: auto; margin: 14mm 12mm; }
+  html, body { background: #fff !important; color: #000 !important; }
+  body > :not(.va-print) { display: none !important; }
+  .va-print { display: block; color: #000; background: #fff; font: 10.5pt/1.4 Georgia, 'Times New Roman', serif; }
+  .va-print h1 { font: 700 16pt/1.2 Arial, Helvetica, sans-serif; margin: 0 0 2mm; }
+  .va-print h2 { font: 700 12pt/1.2 Arial, Helvetica, sans-serif; margin: 6mm 0 2mm; padding-bottom: 1mm; border-bottom: 1pt solid #000; break-after: avoid; }
+  .va-print h3 { font: 700 11pt/1.25 Arial, Helvetica, sans-serif; margin: 0 0 1.5mm; }
+  .va-print h2 small, .va-print h3 small { font-weight: 400; font-size: 9pt; }
+  .va-print p { margin: 0 0 1.5mm; }
+  .va-print__head p { font-size: 9.5pt; }
+  .va-print__score { display: flex; flex-wrap: wrap; gap: 4mm 10mm; align-items: flex-end; margin-top: 4mm; padding: 3mm 4mm; border: 1.5pt solid #000; break-inside: avoid; }
+  .va-print__score > div { display: grid; }
+  .va-print__score span { font: 700 9pt Arial, Helvetica, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+  .va-print__score strong { font: 700 22pt/1.1 Arial, Helvetica, sans-serif; }
+  .va-print__score strong small { font-size: 11pt; }
+  .va-print__note { flex-basis: 100%; font-style: italic; font-size: 9.5pt; margin: 0; }
+  .va-print__table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .va-print__table th, .va-print__table td { border: .5pt solid #666; padding: 1.2mm 1.8mm; text-align: left; vertical-align: top; }
+  .va-print__table thead th { border-bottom: 1pt solid #000; font-family: Arial, Helvetica, sans-serif; }
+  .va-print__table tr { break-inside: avoid; }
+  .va-print__num { text-align: right !important; font-weight: 700; white-space: nowrap; }
+  .va-print__bar { display: block; width: 28mm; height: 2.5mm; border: .5pt solid #000; }
+  .va-print__bar span { display: block; height: 100%; background: #000; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .va-print__shots { font-size: 9pt; }
+  .va-print__finding { display: grid; grid-template-columns: 1fr 62mm; gap: 4mm; padding: 2mm 0 3mm; border-bottom: .5pt solid #999; break-inside: avoid; }
+  .va-print__finding figure { margin: 0; }
+  .va-print__finding img { display: block; width: 100%; max-height: 70mm; object-fit: contain; border: .5pt solid #000; }
+  .va-print__finding figcaption { font-size: 8.5pt; margin-top: 1mm; }
+  .va-print__plan { margin: 0; padding-left: 6mm; }
+  .va-print__plan li { margin-bottom: 1.5mm; break-inside: avoid; }
+  .va-print__foot { margin-top: 6mm; font-size: 8.5pt; color: #333; }
+  .va-print a { color: #000; text-decoration: none; }
+}
+

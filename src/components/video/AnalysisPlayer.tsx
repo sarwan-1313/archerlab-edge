@@ -7,6 +7,7 @@ import { indexAtTime } from '../../video-analysis/signal';
 import type { FrameReadout, JointName, VideoAnalysisReport } from '../../video-analysis/types';
 import { AppIcon } from '../AppIcon';
 import { StatusBadge } from '../StatusBadge';
+import { useLiteMode } from '../../settings/liteMode';
 
 export interface SeekRequest {
   t: number;
@@ -89,7 +90,10 @@ export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }:
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(0.5);
   const [highlight, setHighlight] = useState<{ joints: JointName[]; until: number } | null>(null);
   const [view, setView] = useState<ViewId>('replay');
+  const lite = useLiteMode();
   const has3d = useMemo(() => hasWorldLandmarks(report.samples), [report.samples]);
+  // Lite mode leaves out the 3D view: three.js and its WebGL context cost too much memory on low-end phones.
+  const views = lite ? VIEWS.filter((item) => item.id !== '3d') : VIEWS;
   const timeRef = useRef(time);
   const sampleTimes = useMemo(() => report.samples.map((sample) => sample.t), [report.samples]);
   const frameTimes = useMemo(() => report.frames.map((frame) => frame.t), [report.frames]);
@@ -213,7 +217,7 @@ export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }:
   const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     event.preventDefault();
-    const next = VIEWS[(VIEWS.findIndex((item) => item.id === view) + (event.key === 'ArrowRight' ? 1 : VIEWS.length - 1)) % VIEWS.length].id;
+    const next = views[(views.findIndex((item) => item.id === view) + (event.key === 'ArrowRight' ? 1 : views.length - 1)) % views.length].id;
     setView(next);
     document.getElementById(`va-view-tab-${next}`)?.focus();
   };
@@ -225,18 +229,18 @@ export function AnalysisPlayer({ report, videoUrl, seek, handle, markers = [] }:
     <section className="va-review" aria-label="Frame-by-frame review">
       <div className="va-player">
         <div className="va-viewtabs" role="tablist" aria-label="Replay view" onKeyDown={onTabKeyDown}>
-          {VIEWS.map((item) => (
+          {views.map((item) => (
             <button key={item.id} id={`va-view-tab-${item.id}`} type="button" role="tab" aria-selected={view === item.id} aria-controls={`va-view-panel-${item.id}`} tabIndex={view === item.id ? 0 : -1} className={view === item.id ? 'is-selected' : ''} onClick={() => setView(item.id)}>{item.label}</button>
           ))}
         </div>
-        <div id="va-view-panel-replay" role="tabpanel" aria-labelledby="va-view-tab-replay" hidden={view !== 'replay'}>
+        <div id="va-view-panel-replay" role="tabpanel" aria-labelledby="va-view-tab-replay" hidden={view !== 'replay' && !lite}>
           <div className="va-stage" tabIndex={0} onKeyDown={onKeyDown} onClick={() => setPlaying((value) => !value)} aria-label="Replay. Space plays or pauses; arrow keys step one frame.">
             {videoUrl ? <video ref={videoRef} src={videoUrl} muted playsInline preload="auto" onLoadedData={() => goTo(timeRef.current)} /> : null}
             <canvas ref={canvasRef} aria-hidden="true" />
             <span className="va-stage__chip">{videoUrl ? (shotIndex ? `Shot ${shotIndex}` : 'Replay') : 'Skeleton replay · video not stored'}</span>
           </div>
         </div>
-        {view === '3d' ? (
+        {view === '3d' && !lite ? (
           <div id="va-view-panel-3d" role="tabpanel" aria-labelledby="va-view-tab-3d" className="va-stage va-stage--3d" tabIndex={0} onKeyDown={onKeyDown} aria-label="3D view. Space plays or pauses; arrow keys step one frame.">
             {has3d ? (
               <Suspense fallback={<p className="va-viewer3d__message" role="status">Loading the 3D view…</p>}>

@@ -1285,3 +1285,14 @@ body {
 .landing-goals:empty { display: none; }
 .goal-progress--compact { margin: 24px 0; padding: 20px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius-lg); background: linear-gradient(180deg, var(--ath-panel-2), var(--ath-panel)); }
 .goal-progress > h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 800 20px/1.1 var(--ath-display); text-transform: uppercase; letter-spacing: .02em; }
+
+/* ---------- Lite mode: fewer animations ---------- */
+html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}
+.lite-suggestion { display: grid; gap: 8px; margin-bottom: 14px; }
+.lite-suggestion p { margin: 0; }
+.lite-suggestion__actions { display: flex; flex-wrap: wrap; gap: 8px; }
