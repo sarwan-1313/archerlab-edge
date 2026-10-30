@@ -115,7 +115,8 @@ describe('saving to the athlete’s Google Drive', () => {
     expect(fresh.state.profile).toMatchObject({ displayName: 'Sam', handedness: 'left' });
     expect(fresh.state.settings).toEqual({ 'archerlab-edge:coach-tools': '1' });
     const restored = fresh.state.reports.get('r1')!;
-    expect(restored.scores.overall).toBe(original.scores.overall);
+    // Saved body positions are rounded to 5 decimals, so scores match closely rather than exactly.
+    expect(restored.scores.overall).toBeCloseTo(original.scores.overall ?? 0, 1);
     expect(restored.shots).toHaveLength(original.shots.length);
   });
 
