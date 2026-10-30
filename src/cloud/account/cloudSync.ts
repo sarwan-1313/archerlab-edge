@@ -39,13 +39,19 @@ export function videoPathFor(userId: string, reportId: string, mimeType: string)
   return `${userId}/${reportId}.${extension}`;
 }
 
-/** Profile data that is safe and small enough to sync (the photo stays on the device). */
+/** The only profile fields kept in the account: enough to show who you are to a coach or club. Everything else stays on the device or in your own Google Drive. */
+export const ACCOUNT_PROFILE_FIELDS = ['displayName', 'handedness', 'bowType', 'discipline', 'experienceLevel'] as const;
+
+/** The small profile kept in the account (no photo, notes, history or form details beyond the estimated level). */
 export function cloudProfileData(profile: Record<string, unknown>): Record<string, unknown> {
   const data: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(profile)) {
-    if (key === 'profilePhotoBlob' || key === 'profilePhotoUrl' || value instanceof Blob) continue;
-    data[key] = value;
+  for (const key of ACCOUNT_PROFILE_FIELDS) {
+    const value = profile[key];
+    if (typeof value === 'string') data[key] = value.slice(0, 120);
   }
+  const status = profile.formStatus as { estimatedLevel?: unknown } | undefined;
+  if (status && typeof status.estimatedLevel === 'string') data.estimatedLevel = status.estimatedLevel;
+  if (typeof profile.updatedAt === 'number') data.updatedAt = profile.updatedAt;
   return data;
 }
 

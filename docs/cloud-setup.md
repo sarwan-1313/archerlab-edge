@@ -1,11 +1,12 @@
 # Optional cloud features
 
-ArcherLab Edge works fully on-device with no setup. Three optional features can be switched on. All are **off by default**, and none sends anything anywhere until the athlete chooses to.
+ArcherLab Edge works fully on-device with no setup. Four optional features can be switched on. All are **off by default**, and none sends anything anywhere until the athlete chooses to.
 
 | Feature | Needs | Who pays |
 | --- | --- | --- |
 | AI coach second opinion (Claude, GPT, Gemini) | Nothing to deploy. Each athlete pastes their own API key in the report | The key's owner, per review |
-| Accounts and backup (profile, video reports, videos), and sharing a report with a coach | A free Supabase project + 2 environment variables | Supabase free tier is enough to start |
+| Save to the athlete's own Google Drive (profile, practice log, settings, video reports, videos on request) | A Google OAuth client ID + 1 environment variable | Free; the data uses the athlete's own Drive storage |
+| Accounts (Google or email sign-in with a small profile), sharing a report with a coach, clubs | A free Supabase project + 2 environment variables | Supabase free tier is enough to start |
 | Import from Dropbox / Google Drive on desktop | An app key from Dropbox and/or Google | Free |
 
 On phones, the normal **Choose video** button already opens Google Drive, iCloud, Dropbox and other storage apps through the system file picker, with no setup.
@@ -48,7 +49,7 @@ The default models think before they answer, and that thinking counts toward the
 1. Create a project at https://supabase.com.
 2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles`, `practice_logs` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, the `report_shares` and `report_comments` tables for [remote coach review](#remote-coach-review), the `clubs`, `club_members` and `club_invites` tables for [clubs](#clubs), and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add coach review, the practice log or clubs to an existing project. Until it is re-run, **Back up profile & log** on an older project reports that the practice log table is missing.
 3. In **Authentication → URL Configuration**, set the Site URL to your deployment (e.g. `https://archerlab-edge.vercel.app`) and add `https://archerlab-edge.vercel.app/profile` (plus `http://localhost:5173/profile` for development) to the redirect URLs.
-4. Email sign-in links work out of the box. To add Google sign-in, enable the Google provider in **Authentication → Providers**. Coach review trusts the email in each user's sign-in token, so leave **Confirm email** switched on if you also enable password sign-up.
+4. Email sign-in links work out of the box. To add Google sign-in (the main button on the Profile page), enable the Google provider in **Authentication → Providers** and paste in an OAuth client ID and secret from Google Cloud (a Web application client whose authorised redirect URI is `https://<project>.supabase.co/auth/v1/callback`). It can be the same client as Drive saving. Coach review trusts the email in each user's sign-in token, so leave **Confirm email** switched on if you also enable password sign-up.
 5. Copy the project URL and the **anon** public key from **Project Settings → API** into environment variables (below). The anon key is safe to ship to browsers; row-level security protects the data.
 
 The app talks to Supabase over plain REST (`src/cloud/account/supabaseRest.ts`), so no extra npm package is needed.
@@ -106,7 +107,30 @@ Signed-in athletes can remove their data themselves from the Privacy page:
 
 If a project was set up before this function existed, **Delete my account** still deletes the athlete's cloud data, then reports that the account could not be removed. Re-run `supabase/schema.sql` to add the function.
 
-## 3. Dropbox and Google Drive import (desktop)
+## 3. Save to the athlete's own Google Drive
+
+With `VITE_GOOGLE_CLIENT_ID` set, the Profile page offers **Connect Google Drive**. The athlete's data goes straight from the browser to an **ArcherLab Edge** folder in *their* Google Drive; nothing passes through or is stored on your servers:
+
+| File | Holds |
+| --- | --- |
+| `archerlab-backup.json` | Profile (without the photo), practice log and goals, a few app settings (never AI keys or sign-ins) |
+| `report-<id>.json.gz` | One video report with its tracked body positions, gzip-compressed |
+| `video-<id>.mp4` | A video, only when the athlete presses **Save video to Drive** |
+
+While connected, changes save about 8 seconds after they happen. Connecting on a new device restores first (the practice log is merged, a newer profile wins, reports already on the device are kept) and then saves. A save never removes practice log entries that are already in Drive; **Delete my data from Google Drive** on the Privacy page removes the folder.
+
+Setup, in Google Cloud Console:
+
+1. Enable the **Google Drive API**.
+2. **APIs & Services → OAuth consent screen**: add the `…/auth/drive.file` scope. It is a non-sensitive scope, so publishing the app does not need Google's security review; while the app is in *Testing*, only listed test users can connect.
+3. **Credentials → Create credentials → OAuth client ID** (Web application). Add every origin the app is served from (e.g. `https://archerlab-edge.vercel.app`, `http://localhost:5173`) as an **Authorised JavaScript origin**. Vercel preview URLs change per deployment, so test on a fixed domain or add the preview origin you use.
+4. Set `VITE_GOOGLE_CLIENT_ID` to the client ID. The same client ID is used for the desktop Drive import picker below.
+
+`drive.file` lets the app reach only the files it created (and files the athlete picks in the import picker), never the rest of their Drive. Google's access token lasts about an hour and is kept only in memory, so the athlete taps **Reconnect Google Drive** after that; changes made meanwhile save on reconnect.
+
+When Drive saving is available, the Supabase account keeps **only the sign-in and a small profile** (display name, hand, bow type, discipline, experience level and the estimated level), updated when the athlete saves their profile. The account's practice log and report backup buttons are hidden. Sharing a report with a coach still copies that one report into the account, because the coach reads it there. Clubs that read members' shared analyses or practice logs need those copies too: set `VITE_ACCOUNT_DATA_BACKUP=on` to bring the account backup buttons back alongside Drive.
+
+## 4. Dropbox and Google Drive import (desktop)
 
 **Dropbox:** create an app at https://www.dropbox.com/developers/apps (Scoped access, App folder or Full Dropbox), add your domain under *Chooser/Saver domains*, and copy the **App key**.
 
@@ -126,7 +150,8 @@ Copy `.env.example` to `.env.local` for development, and add the same variables 
 | `VITE_SUPABASE_MAX_UPLOAD_MB` | Optional, defaults to `50` |
 | `VITE_DROPBOX_APP_KEY` | Dropbox import |
 | `VITE_GOOGLE_API_KEY` | Google Drive import |
-| `VITE_GOOGLE_CLIENT_ID` | Google Drive import |
+| `VITE_GOOGLE_CLIENT_ID` | Save to Google Drive, and Google Drive import |
+| `VITE_ACCOUNT_DATA_BACKUP` | Optional. `on` keeps practice log and report backup in the account as well as Drive |
 | `VITE_GOOGLE_APP_ID` | Google Drive import (project number) |
 
 With none set, the cloud features stay hidden and the app is fully on-device.

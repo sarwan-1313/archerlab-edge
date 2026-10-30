@@ -13,7 +13,8 @@ export type ImportProgress = (loaded: number, total: number | null) => void;
 export const MAX_IMPORT_BYTES = 2 * 1024 * 1024 * 1024;
 export const IMPORT_TOO_LARGE_MESSAGE = 'This file is larger than 2 GB, the most that can be imported. Trim the video, or download it and choose it from your device.';
 
-function loadScript(src: string, attributes: Record<string, string> = {}): Promise<void> {
+/** Loads a provider script once; later calls reuse it. */
+export function loadScript(src: string, attributes: Record<string, string> = {}): Promise<void> {
   const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
   if (existing?.dataset.loaded === 'true') return Promise.resolve();
   return new Promise((resolve, reject) => {

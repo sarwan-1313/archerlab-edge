@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { deleteAllCloudData, deleteCloudAccount, describeCloudError } from '../cloud/account/cloudSync';
 import { useCloudAccount } from '../cloud/account/useCloudAccount';
-import { accountsEnabled, dropboxEnabled, googleDriveEnabled } from '../cloud/config';
+import { accountDataBackup, accountsEnabled, driveBackupEnabled, dropboxEnabled, googleDriveEnabled } from '../cloud/config';
+import { useDriveSync } from '../cloud/drive/useDriveSync';
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
@@ -33,6 +34,7 @@ function download(blob: Blob, fileName: string) {
 
 export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   const account = useCloudAccount();
+  const drive = useDriveSync();
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>(null);
   const storageImport = dropboxEnabled || googleDriveEnabled;
@@ -146,8 +148,15 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
         <ul>
           <li><strong>Private coach</strong>: sends nothing. Its one download is described under “What runs on this device”.</li>
           <li><strong>AI review</strong> (“Second opinion from AI coaches” in a report): after you tick the consent box, the measurements are sent to the AI providers you pick (Anthropic, OpenAI and/or Google), using your own API key. While the video is open or kept on this device, six annotated still frames go with them; without the video, only the measurements are sent. If you also allow it, Gemini receives the whole clip instead of stills. Each provider’s terms and privacy policy apply.</li>
+          {driveBackupEnabled ? (
+            <li>
+              <strong>Save to your Google Drive</strong>: after you press “Connect Google Drive” and agree in Google’s window, your profile (without the photo), practice log and goals, a few app settings (never AI keys or sign-ins) and your video reports with their tracked body positions are saved in an <strong>ArcherLab Edge</strong> folder in <em>your own</em> Google Drive, and saved again a few seconds after each change while you stay connected. Videos are saved only when you press “Save video to Drive”. ArcherLab’s servers never receive this data: it goes straight from this browser to Google. ArcherLab’s Drive permission (“drive.file”) reaches only the files it created, not the rest of your Drive. The connection lasts about an hour and is kept only in memory; “Stop saving to Drive” ends it, and you can remove the folder in Drive or below at any time. Google’s terms and privacy policy apply.
+            </li>
+          ) : null}
           <li>
-            <strong>Account backup</strong>{accountsEnabled ? '' : ' (switched off in this copy of the app)'}: when you sign in and press a backup button, your profile (without the photo), your practice log and goals, and your video reports (without the frame-by-frame body positions) are stored in a Supabase database run by whoever deployed this copy of ArcherLab. Videos are uploaded only when you press “Back up report + video”. Each account can reach only its own data.
+            <strong>Account</strong>{accountsEnabled ? '' : ' (switched off in this copy of the app)'}: {accountDataBackup
+              ? <>when you sign in and press a backup button, your profile (without the photo), your practice log and goals, and your video reports (without the frame-by-frame body positions) are stored in a Supabase database run by whoever deployed this copy of ArcherLab. Videos are uploaded only when you press “Back up report + video”. Each account can reach only its own data.</>
+              : <>when you sign in (with Google or an emailed link), the account, in a Supabase database run by whoever deployed this copy of ArcherLab, keeps your sign-in email and a small profile: display name, hand, bow type, discipline, experience level and the level estimated from your videos. It is updated when you save your profile. Your practice log, reports and videos are not stored there, except a report you choose to share with a coach (below). Each account can reach only its own data.</>}
           </li>
           {accountsEnabled ? (
             <li>
@@ -192,6 +201,20 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           ) : (
             <p>Sign in on your <button type="button" className="privacy-link" onClick={onProfile}>Profile page</button> to delete data backed up to your account, or the account itself.</p>
           )}
+        </Section>
+      ) : null}
+
+      {drive.enabled && drive.chosen ? (
+        <Section id="privacy-drive" icon="cloud" title="Your Google Drive">
+          <p>This device saves to the ArcherLab Edge folder in your Google Drive. Deleting it removes every file ArcherLab saved there (reports, practice log, profile and any videos) on every device. Data on this device is not affected.</p>
+          <div className="privacy-actions">
+            <ActionButton variant="danger" type="button" disabled={busy !== null || drive.status === 'needs-connect'} onClick={() => {
+              if (!window.confirm('Delete your ArcherLab data from Google Drive?\n\nEvery file ArcherLab saved in the ArcherLab Edge folder, and the folder, will be deleted. Data on this device is not affected. This cannot be undone.')) return;
+              void run('delete-drive', async () => { await drive.deleteFromDrive(); });
+            }}><AppIcon name="trash" size={16} /> {busy === 'delete-drive' ? 'Deleting…' : 'Delete my data from Google Drive'}</ActionButton>
+            {drive.status === 'needs-connect' ? <ActionButton variant="secondary" type="button" onClick={() => void drive.connect()}>Reconnect Google Drive</ActionButton> : null}
+          </div>
+          {drive.message ? <p className="va-faint" role="status">{drive.message}</p> : null}
         </Section>
       ) : null}
 

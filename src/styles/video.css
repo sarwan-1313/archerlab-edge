@@ -576,3 +576,7 @@
 .dataset-tools__video { display: none; }
 .dataset-tools__canvas { display: block; width: 100%; height: auto; margin: 12px 0; cursor: crosshair; touch-action: none; background: #000; border-radius: 8px; }
 .dataset-tools__class { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 2px solid; border-radius: 999px; font-size: 13px; }
+.drive-backup { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--ath-line); }
+.drive-backup h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1rem; }
+.drive-backup__option { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.account-panel > h2 + .drive-backup { border-top: 0; padding-top: 0; }
