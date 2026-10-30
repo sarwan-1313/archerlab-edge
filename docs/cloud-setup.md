@@ -16,7 +16,8 @@ Many ArcherLab users are under 18. Before turning cloud features on for a club o
 
 - The AI coach panel requires an explicit consent tick ("a parent or guardian has agreed") before anything is sent. By default it sends **six annotated still frames plus the measurements**, not the video. Gemini can be allowed to watch the whole clip (under 14 MB), as a separate opt-in.
 - API keys stay in the browser (session storage, or local storage if "remember" is ticked) and go only to the chosen provider. ArcherLab has no server.
-- Account backup stores reports **without** per-frame landmarks. Videos are uploaded only when the athlete presses "Back up report + video". Row-level security keeps every row and file private to its owner, except what the athlete shares read-only with a coach (see [Remote coach review](#remote-coach-review)).
+- Account backup stores reports **without** per-frame landmarks. Videos are uploaded only when the athlete presses "Back up report + video". Row-level security keeps every row and file private to its owner, except what the athlete shares read-only with a coach or a club (see [Remote coach review](#remote-coach-review) and [Clubs](#clubs)).
+- Joining a [club](#clubs) asks for the athlete's age. Under 18 needs an "A parent or guardian has agreed" tick, enforced again in the database, and a minor's email is never stored on the membership, so the coach sees only the display name they chose. Sharing reports and the practice log with the club is off until the athlete turns it on.
 - Sharing with a coach asks the athlete to confirm "Only share with a coach you trust. If you're under 18, ask a parent or guardian first." The video is never shared unless the athlete ticks "Include the video".
 - The in-app **Privacy** page (`/privacy`, `src/pages/PrivacyPage.tsx`) explains all of this to athletes and lets them export or delete their data. Update it, and the README, if you change these defaults.
 
@@ -45,7 +46,7 @@ The default models think before they answer, and that thinking counts toward the
 ## 2. Accounts and backup (Supabase)
 
 1. Create a project at https://supabase.com.
-2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, the `report_shares` and `report_comments` tables for [remote coach review](#remote-coach-review), and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add coach review to an existing project.
+2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles`, `practice_logs` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, the `report_shares` and `report_comments` tables for [remote coach review](#remote-coach-review), the `clubs`, `club_members` and `club_invites` tables for [clubs](#clubs), and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add coach review, the practice log or clubs to an existing project. Until it is re-run, **Back up profile & log** on an older project reports that the practice log table is missing.
 3. In **Authentication → URL Configuration**, set the Site URL to your deployment (e.g. `https://archerlab-edge.vercel.app`) and add `https://archerlab-edge.vercel.app/profile` (plus `http://localhost:5173/profile` for development) to the redirect URLs.
 4. Email sign-in links work out of the box. To add Google sign-in, enable the Google provider in **Authentication → Providers**. Coach review trusts the email in each user's sign-in token, so leave **Confirm email** switched on if you also enable password sign-up.
 5. Copy the project URL and the **anon** public key from **Project Settings → API** into environment variables (below). The anon key is safe to ship to browsers; row-level security protects the data.
@@ -75,14 +76,33 @@ How the policies enforce this (each one is commented in `schema.sql`):
 
 The policies call three small `security definer` functions (`owns_video_report`, `is_report_coach`, `can_read_shared_video`). They answer only yes/no questions about the caller, and they let the `video_reports` and `report_shares` policies check each other without recursing.
 
+### Clubs
+
+Clubs extend coach review so one volunteer coach can follow everyone at a training ground. Everything is on the **My club** page (`/club`, linked from the account panel on Profile).
+
+- **Starting a club.** Any signed-in user can create a club (`clubs`, one row per club with `coach_id = auth.uid()`) and make invite codes (`club_invites`: 8 characters without 0/O or 1/I, an expiry of up to 90 days and 1–500 uses). The app sends nothing: the coach hands codes out.
+- **Joining.** The athlete enters the code and the name the coach will see, says whether they are under 18, reads what the coach will see, and confirms. Under 18 also needs a parent or guardian's agreement. The app calls `join_club(code, display_name, is_minor, guardian_confirmed)`, which checks the code's expiry and uses, refuses a minor without the agreement, stores the sign-in email only for adults, and counts the use. Rejoining after leaving starts again with sharing off.
+- **Sharing.** Each membership has `share_analyses` ("Share my analyses with my club") and `share_practice_log` ("Share my practice log with my club"), both false by default and changed only through `set_club_sharing`. While `share_analyses` is on, the coach can read the athlete's backed-up `video_reports` rows (never the video file) and comment on them. While `share_practice_log` is on, the coach can read their `practice_logs` row.
+- **What the coach sees.** For each current member: the display name, the email for adults only, an estimated level and form-score trend from shared reports, arrows and sessions per week from a shared practice log, and the focus area named most often across the latest shared report of each athlete. Opening a report reuses the coach review page, read-only and without the video.
+- **Minors.** A check constraint keeps `athlete_email` null whenever `is_minor` is true. Club coaches read comments through `club_report_comments(report_id)`, which leaves out the email of any author who is a minor member of one of their clubs, and the app shows the athlete by display name.
+- **Leaving.** `leave_club` sets `left_at` and turns both switches off. The coach stops seeing the athlete, their reports and their log at once; comments already written stay on the reports.
+
+| Who | Can |
+| --- | --- |
+| Coach | Create, read, rename and delete their own clubs; create, read and delete their clubs' invites; read current members of their clubs; read (select only) the reports and practice logs of members whose switches are on; comment on those reports |
+| Athlete | Read the clubs they are a current member of (not other members) and their own membership rows; join, change sharing and leave only through `join_club`, `set_club_sharing` and `leave_club`; delete their own membership rows |
+| Nobody | Insert or update `club_members` directly, so an athlete cannot change their club, age flag or email, and a coach cannot change an athlete's sharing |
+
+The policies use `security definer` helpers (`is_club_coach`, `is_club_member`, `club_shares_analyses`, `club_shares_practice_log`, `is_club_report_coach`) that answer yes/no questions about the caller, like the coach review ones. The "Add report comments" policy is replaced to also allow club coaches.
+
 ### Deleting cloud data and accounts
 
 Signed-in athletes can remove their data themselves from the Privacy page:
 
-- **Delete my cloud data** lists the athlete's own folder in the `videos` bucket (`<user id>/…`) and deletes every file in it, plus any file a report row points to. It then deletes the comments they wrote on reports shared with them, all of their `video_reports` rows (which removes every share of those reports and every comment on them) and their `athlete_profiles` row. The account stays. Row-level security limits every request to the athlete's own rows and files.
+- **Delete my cloud data** lists the athlete's own folder in the `videos` bucket (`<user id>/…`) and deletes every file in it, plus any file a report row points to. It then deletes the comments they wrote on reports shared with them, all of their `video_reports` rows (which removes every share of those reports and every comment on them) their `athlete_profiles` row and their `practice_logs` row, their `club_members` rows and any club they coach (with its memberships and invites). The account stays. Row-level security limits every request to the athlete's own rows and files.
 - **Delete my account** does the same, then calls `POST /rest/v1/rpc/delete_my_account`, then signs out. Storage files are deleted first because stored objects can keep a user from being deleted.
 
-`delete_my_account()` is a `security definer` SQL function that runs `delete from auth.users where id = auth.uid()`, so it can only ever delete the caller. Its `search_path` is empty and every name is schema-qualified. Execution is revoked from `public` and `anon` and granted only to `authenticated`. Deleting the user cascades to their rows in `athlete_profiles` and `video_reports`, and from there to every share and comment on their reports, as well as to shares they created and comments they wrote anywhere.
+`delete_my_account()` is a `security definer` SQL function that runs `delete from auth.users where id = auth.uid()`, so it can only ever delete the caller. Its `search_path` is empty and every name is schema-qualified. Execution is revoked from `public` and `anon` and granted only to `authenticated`. Deleting the user cascades to their rows in `athlete_profiles`, `practice_logs` and `video_reports`, and from there to every share and comment on their reports, as well as to shares they created and comments they wrote anywhere.
 
 If a project was set up before this function existed, **Delete my account** still deletes the athlete's cloud data, then reports that the account could not be removed. Re-run `supabase/schema.sql` to add the function.
 

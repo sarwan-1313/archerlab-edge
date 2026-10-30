@@ -1,4 +1,5 @@
 import { modelWasDownloaded, removeLocalModel } from '../local-coach/engine';
+import { PRACTICE_DB_NAME, notifyPracticeLogChanged, readPracticeLog } from '../practice-log/storage';
 import { PROFILE_DB_NAME } from '../profile/profileStorage';
 import { RECORDINGS_DB_NAME } from '../recording/recordingStorage';
 import { VIDEO_DB_NAME, listVideoReports, loadVideoReport, reportToJson } from '../video-analysis/storage';
@@ -9,12 +10,13 @@ import { VIDEO_DB_NAME, listVideoReports, loadVideoReport, reportToJson } from '
  * stays complete.
  */
 
-export const APP_DATABASES = [PROFILE_DB_NAME, RECORDINGS_DB_NAME, VIDEO_DB_NAME] as const;
+export const APP_DATABASES = [PROFILE_DB_NAME, RECORDINGS_DB_NAME, VIDEO_DB_NAME, PRACTICE_DB_NAME] as const;
 
 const DATABASE_LABELS: Record<string, string> = {
   [PROFILE_DB_NAME]: 'your profile',
   [RECORDINGS_DB_NAME]: 'live session recordings',
   [VIDEO_DB_NAME]: 'video analyses',
+  [PRACTICE_DB_NAME]: 'your practice log',
 };
 const LOCAL_MODEL_LABEL = 'the private coach’s downloaded model';
 export const STORAGE_KEY_PREFIX = 'archerlab-edge:';
@@ -89,6 +91,19 @@ export async function deleteEverythingOnDevice(factory?: IDBFactory): Promise<vo
   if (blocked.length) {
     throw new LocalDataError(`Everything else was deleted. ${list(blocked).replace(/^./, (first) => first.toUpperCase())} will be deleted as soon as you close ArcherLab in your other tabs.`, 'blocked');
   }
+}
+
+export async function deletePracticeLog(factory?: IDBFactory): Promise<void> {
+  await deleteDatabase(PRACTICE_DB_NAME, factory);
+  notifyPracticeLogChanged();
+}
+
+/** The practice log and goals as one JSON file. Returns null when nothing has been logged and no goals are set. */
+export async function exportPracticeLog(now = Date.now()): Promise<{ blob: Blob; count: number } | null> {
+  const log = await readPracticeLog();
+  if (!log.entries.length && !log.goals.updatedAt) return null;
+  const json = JSON.stringify({ app: 'ArcherLab Edge', exportedAt: new Date(now).toISOString(), practiceLog: log }, null, 2);
+  return { blob: new Blob([json], { type: 'application/json' }), count: log.entries.length };
 }
 
 /** All video reports on this device, with landmarks, as one JSON file. Returns null when there are none. */

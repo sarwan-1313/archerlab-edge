@@ -33,6 +33,8 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({
 const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then((module) => ({ default: module.ReplayAnalysisPage })));
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
 const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').then((module) => ({ default: module.SessionDashboardPage })));
+const ClubPage = lazy(() => import('./pages/ClubPage').then((module) => ({ default: module.ClubPage })));
+const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
 const VideoAnalysisPage = lazy(() => import('./pages/VideoAnalysisPage').then((module) => ({ default: module.VideoAnalysisPage })));
 import type { PageKey, SessionConfiguration } from './types';
@@ -70,6 +72,8 @@ const ROUTE_LOADING_STATUS = {
   'saved-recordings': 'Loading sessions...',
   profile: 'Loading profile...',
   privacy: 'Loading privacy...',
+  training: 'Loading training log...',
+  club: 'Loading club...',
 } as const satisfies Record<PageKey, string>;
 
 function primaryPageFor(page: PageKey): PageKey {
@@ -207,7 +211,7 @@ function App() {
 
   const commitNavigation = useCallback((
     page: PageKey,
-    { mode = 'push', targetIndex, shotId }: { mode?: 'push' | 'pop'; targetIndex?: number; shotId?: string } = {},
+    { mode = 'push', targetIndex, shotId, reportId }: { mode?: 'push' | 'pop'; targetIndex?: number; shotId?: string; reportId?: string } = {},
   ) => {
     const previousPage = navigationPageRef.current;
     if (mode === 'push' && page === previousPage) return;
@@ -217,7 +221,7 @@ function App() {
 
     if (mode === 'push') {
       // Keep the address bar authoritative before presentation work begins.
-      window.history.pushState(routeHistoryState(page, nextIndex), '', routeForPage(page, { shotId }));
+      window.history.pushState(routeHistoryState(page, nextIndex), '', routeForPage(page, { shotId, reportId }));
     }
 
     routeIndexRef.current = nextIndex;
@@ -407,7 +411,7 @@ function App() {
 
   const currentPage = (() => {
     switch (activePage) {
-      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} onPrivacy={() => requestNavigation('privacy')} />;
+      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} />;
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onAttachNotes={attachNotes} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
@@ -418,8 +422,10 @@ function App() {
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
-      case 'profile': return <ProfilePage onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} />;
+      case 'profile': return <ProfilePage onClub={() => requestNavigation('club')} onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} />;
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
+      case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} />;
+      case 'club': return <ClubPage onProfile={() => requestNavigation('profile')} onPrivacy={() => requestNavigation('privacy')} onOpenReport={(reportId) => commitNavigation('video-analysis', { reportId })} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;
       case 'guide-start-analysis':
       case 'guide-camera-setup':

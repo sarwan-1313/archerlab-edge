@@ -110,6 +110,18 @@ describe('coach side', () => {
     expect(withoutVideo.requests.some((request) => request.path.includes('/object/sign/'))).toBe(false);
   });
 
+  it('opens a report shared through a club without its video, naming the member', async () => {
+    const reportRow = { report: { id: 'r1', shots: [] }, video_path: 'u1/r1.mp4', user_id: 'u1' };
+    const memberRow = { club_id: 'k1', athlete_id: 'u1', display_name: 'Asha', athlete_email: null, is_minor: true, share_analyses: true, share_practice_log: false, joined_at: '2026-10-01T00:00:00Z', left_at: null };
+    const { client, requests } = fakeFetch([{ body: [reportRow] }, { body: [] }, { body: [memberRow] }]);
+    const opened = await loadReviewReport(client, coach, 'r1');
+    expect(opened?.share).toBeNull();
+    expect(opened?.club?.display_name).toBe('Asha');
+    expect(opened?.videoUrl).toBeNull();
+    expect(requests[2].path).toBe('/rest/v1/club_members');
+    expect(requests.some((request) => request.path.includes('/object/sign/'))).toBe(false);
+  });
+
   it('opens the athlete’s own report with its video, and reports a missing one as null', async () => {
     const own = fakeFetch([{ body: [{ report: { id: 'r1' }, video_path: 'u1/r1.mp4', user_id: 'u1' }] }, { body: { signedURL: '/object/sign/videos/u1/r1.mp4?token=t' } }]);
     const opened = await loadReviewReport(own.client, athlete, 'r1');
@@ -194,6 +206,8 @@ describe('comment labels', () => {
     expect(commentAuthor(base, 'u1', true, 'archer@example.com')).toBe('Coach · coach@club.org');
     expect(commentAuthor({ ...base, author_id: 'u1', author_email: 'archer@example.com' }, 'c1', false, 'archer@example.com')).toBe('Athlete · archer@example.com');
     expect(commentAuthor({ ...base, author_id: 'c2', author_email: 'other@club.org' }, 'c1', false, 'archer@example.com')).toBe('Coach · other@club.org');
+    // A club coach knows a minor only by display name; their comments arrive without an email.
+    expect(commentAuthor({ ...base, author_id: 'u1', author_email: null }, 'c1', false, null, { id: 'u1', label: 'Asha' })).toBe('Athlete · Asha');
   });
 
   it('describes the moment a comment is pinned to', () => {

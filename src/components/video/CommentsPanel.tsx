@@ -10,6 +10,8 @@ export type CommentsPanelProps = {
   /** True for the athlete who owns the report; false for a coach it was shared with. */
   viewerIsOwner: boolean;
   ownerEmail: string | null;
+  /** The athlete who owns the report, when known by id (club coaches see a display name, never a minor's email). */
+  owner?: { id: string; label: string };
   busy: boolean;
   status: string | null;
   /** Saves a comment, at the replay's current moment when `atMoment` is set. Resolves true when saved. */
@@ -20,7 +22,7 @@ export type CommentsPanelProps = {
 };
 
 /** Comments from the athlete and the coaches they shared the report with, pinned to moments of the replay. */
-export function CommentsPanel({ comments, currentUserId, viewerIsOwner, ownerEmail, busy, status, onAdd, onDelete, onJump, onRefresh }: CommentsPanelProps) {
+export function CommentsPanel({ comments, currentUserId, viewerIsOwner, ownerEmail, owner, busy, status, onAdd, onDelete, onJump, onRefresh }: CommentsPanelProps) {
   const [draft, setDraft] = useState('');
   const submit = async (atMoment: boolean) => {
     if (await onAdd(draft, atMoment)) setDraft('');
@@ -37,7 +39,7 @@ export function CommentsPanel({ comments, currentUserId, viewerIsOwner, ownerEma
             return (
               <li key={comment.id} className="va-comment">
                 <header>
-                  <strong>{commentAuthor(comment, currentUserId, viewerIsOwner, ownerEmail)}</strong>
+                  <strong>{commentAuthor(comment, currentUserId, viewerIsOwner, ownerEmail, owner)}</strong>
                   <span>{formatDate(Date.parse(comment.created_at))}</span>
                   {moment ? <button type="button" className="va-comment__jump" onClick={() => onJump(comment)} aria-label={`Show ${moment} in the replay`}><AppIcon name="play" size={12} /> {moment}</button> : null}
                   {comment.author_id === currentUserId ? <button type="button" className="va-comment__delete" disabled={busy} onClick={() => { if (window.confirm('Delete this comment?')) onDelete(comment.id); }}>Delete</button> : null}

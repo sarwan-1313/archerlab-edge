@@ -38,9 +38,16 @@ export type AppIconName =
   | 'link'
   | 'download'
   | 'user'
+  | 'calendar'
   | 'unknown';
 
 const iconPaths: Record<AppIconName, ReactNode> = {
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </>
+  ),
   home: (
     <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9.5Z" />
   ),

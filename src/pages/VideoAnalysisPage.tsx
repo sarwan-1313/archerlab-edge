@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { backupReport, describeCloudError, listCloudReports, loadCloudReport } from '../cloud/account/cloudSync';
+import { memberLabel } from '../cloud/account/clubRoster';
+import type { ClubMember } from '../cloud/account/clubs';
 import { listSharedWithMe, loadReviewReport, type ReportShare, type SharedReport } from '../cloud/account/coachReview';
 import { useCloudAccount } from '../cloud/account/useCloudAccount';
 import { useReportComments } from '../cloud/account/useReportComments';
@@ -33,6 +35,8 @@ import { deleteVideoReport, listVideoReports, loadVideoBlob, loadVideoReport, re
 import { toShotAnalyses } from '../video-analysis/toShotAnalyses';
 import type { BowType, PoseModelVariant, ReportLabels, TimeRange, VideoAnalysisReport, VideoReportSummary } from '../video-analysis/types';
 import type { ShotAnalysis } from '../types/shotAnalysis';
+import { entryFromVideoReport } from '../practice-log/sources';
+import { recordPracticeEntry } from '../practice-log/storage';
 import '../styles/video.css';
 
 const OPTIONS_KEY = 'archerlab-edge:video-options';
@@ -44,7 +48,7 @@ type View =
   | { kind: 'upload' }
   | { kind: 'preview'; file: File; url: string; converted?: boolean }
   | { kind: 'processing'; file: File; url: string; range: TimeRange }
-  | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' | 'shared'; share?: ReportShare }
+  | { kind: 'report'; report: VideoAnalysisReport; videoUrl: string | null; videoBlob: Blob | null; source: 'fresh' | 'saved' | 'cloud' | 'file' | 'shared'; share?: ReportShare; club?: ClubMember }
   | { kind: 'error'; message: string; file?: File };
 
 function readOptions(): Partial<UploadOptions> {
@@ -245,6 +249,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
         } catch {
           setNotice('The report could not be saved on this device (storage may be full), but you can still review and export it.');
         }
+        recordPracticeEntry(entryFromVideoReport(report));
         if (options.updateProfile) {
           try {
             await save(applyReportToProfile(profileRef.current as Record<string, unknown> | null, report));
@@ -298,7 +303,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
       if (!session) { setNotice('Sign in on your Profile page to open a report shared with you, then come back here.'); return; }
       const loaded = await loadReviewReport(cloudApi, session, reportId);
       if (!loaded) { setNotice('That report could not be opened. The athlete may have stopped sharing it or deleted it, or it was shared with a different email than the one you signed in with.'); return; }
-      setView({ kind: 'report', report: loaded.report, videoUrl: loaded.videoUrl, videoBlob: null, source: loaded.share ? 'shared' : 'cloud', share: loaded.share ?? undefined });
+      setView({ kind: 'report', report: loaded.report, videoUrl: loaded.videoUrl, videoBlob: null, source: loaded.share || loaded.club !== undefined ? 'shared' : 'cloud', share: loaded.share ?? undefined, club: loaded.club ?? undefined });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setNotice(describeCloudError(error));
@@ -324,7 +329,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
   // Comments need the report in the cloud: shared with this coach, or backed up by the athlete.
   const commentsReportId = view.kind === 'report' && account.session && (view.source === 'shared' || view.source === 'cloud' || cloudHistory.some((item) => item.id === view.report.id))
     ? view.report.id : null;
-  const comments = useReportComments(cloudApi, freshSession, commentsReportId);
+  const viaClub = view.kind === 'report' && view.source === 'shared' && !view.share && Boolean(view.club);
+  const comments = useReportComments(cloudApi, freshSession, commentsReportId, viaClub);
 
   const rescore = async (current: ReportViewState, changes: RescoreSettings) => {
     setNotice(null);
@@ -337,6 +343,8 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
       if (current.source !== 'file') {
         try {
           await updateVideoReport(report);
+          // Same id, so the clip's log entry is replaced with the new form score and focus areas.
+          recordPracticeEntry(entryFromVideoReport(report));
         } catch {
           setNotice('The re-scored report could not be saved on this device (storage may be full), but you can still review and export it.');
         }
@@ -579,7 +587,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
           videoUrl={view.videoUrl}
           notice={view.source === 'shared' ? (
             <p className="va-callout va-callout--info">
-              <strong>Shared with you by {view.share?.owner_email ?? 'an athlete'}.</strong> You can read this report and comment on it; only the athlete can change, share or delete it. {view.videoUrl ? '' : 'The video was not shared, so the replay shows the timeline without footage. '}Frame-by-frame landmarks stay on the athlete’s device.
+              <strong>{view.club && !view.share ? `Shared with your club by ${memberLabel(view.club)}.` : `Shared with you by ${view.share?.owner_email ?? 'an athlete'}.`}</strong> You can read this report and comment on it; only the athlete can change, share or delete it. {view.videoUrl ? '' : 'The video was not shared, so the replay shows the timeline without footage. '}Frame-by-frame landmarks stay on the athlete’s device.
             </p>
           ) : view.source === 'cloud' ? <p className="va-callout va-callout--info">Opened from your account. Frame-by-frame landmarks stay on the device that analysed the clip, so this copy shows the results without the skeleton replay.</p>
             : view.source === 'file' ? <p className="va-callout va-callout--info">Opened from a report file and scored again with the current engine. It is not saved on this device yet.</p> : undefined}
@@ -591,6 +599,7 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
             currentUserId: account.session.user.id,
             viewerIsOwner: view.source !== 'shared',
             ownerEmail: view.source === 'shared' ? view.share?.owner_email ?? null : account.session.user.email?.toLowerCase() ?? null,
+            owner: view.club && !view.share ? { id: view.club.athlete_id, label: view.club.display_name } : undefined,
             busy: comments.busy,
             status: comments.status,
             onAdd: comments.add,

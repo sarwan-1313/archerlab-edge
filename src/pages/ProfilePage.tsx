@@ -3,13 +3,16 @@ import { AccountPanel } from '../components/account/AccountPanel';
 import { PageHeader } from '../components/PageHeader';
 import { CoachToolsSetting } from '../components/profile/CoachToolsSetting';
 import { FormStatusCard } from '../components/profile/FormStatusCard';
+import { GoalProgressCard } from '../components/training/GoalProgressCard';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
+import { usePracticeLog } from '../practice-log/usePracticeLog';
 import '../styles/video.css';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
 
-export function ProfilePage({ onAnalyzeVideo, onPrivacy }: { onAnalyzeVideo?: () => void; onPrivacy?: () => void } = {}) {
+export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub }: { onAnalyzeVideo?: () => void; onPrivacy?: () => void; onTraining?: () => void; onClub?: () => void } = {}) {
   const { profile, loadError, save, removePhoto } = useAthleteProfile();
+  const practice = usePracticeLog();
   const [form, setForm] = useState<any>({ displayName: '', archerId: '', handedness: 'right', bowType: '', discipline: '', experienceLevel: '', defaultCameraAngle: 'side' });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +49,7 @@ export function ProfilePage({ onAnalyzeVideo, onPrivacy }: { onAnalyzeVideo?: ()
   return (<div className="page-container page-container--wide"><PageHeader title="Athlete Profile" subtitle="Local athlete identity stored on this device" />
     {loadError ? <p role="alert">Your profile could not be loaded from this device. Try again or save the form to recreate it.</p> : null}
     <FormStatusCard formStatus={profile?.formStatus} experienceLevel={form.experienceLevel} onAdoptLevel={(level) => void onAdoptLevel(level)} onAnalyze={onAnalyzeVideo} />
+    <GoalProgressCard entries={practice.entries} goals={practice.goals} onOpen={onTraining} />
     <form className="profile-form" onSubmit={onSave}>
       <div className="profile-grid">
         <div className="profile-card">
@@ -74,7 +78,7 @@ export function ProfilePage({ onAnalyzeVideo, onPrivacy }: { onAnalyzeVideo?: ()
       </div>
       {saved ? <p role="status">Profile saved on this device.</p> : null}
     </form>
-    <AccountPanel profile={profile} onRestoreProfile={onRestoreProfile} />
+    <AccountPanel profile={profile} onRestoreProfile={onRestoreProfile} onClub={onClub} />
     <CoachToolsSetting />
     {onPrivacy ? <p className="va-faint profile-privacy">What is stored, what is sent, and how to export or delete it: <button type="button" className="privacy-link" onClick={onPrivacy}>Privacy</button></p> : null}
   </div>);

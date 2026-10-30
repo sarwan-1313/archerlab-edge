@@ -1,3 +1,5 @@
+import { isPracticeLogData } from '../../practice-log/storage';
+import type { PracticeLogData } from '../../practice-log/types';
 import { summarizeReport } from '../../video-analysis/buildReport';
 import type { VideoAnalysisReport, VideoReportSummary } from '../../video-analysis/types';
 import { CLOUD_CONFIG } from '../config';
@@ -72,6 +74,35 @@ export async function pullProfile(client: SupabaseRest, session: CloudSession): 
   return rows[0]?.data ?? null;
 }
 
+export const PRACTICE_LOG_TABLE_MISSING = 'This account’s cloud project has no practice log table yet. Ask whoever runs this app to run the latest supabase/schema.sql.';
+
+/** A 404 from a table that a project set up before the feature does not have. */
+function missingTable(error: unknown): boolean {
+  return error instanceof CloudError && error.status === 404;
+}
+
+/** Stores the whole practice log (entries and goals) as one row, replacing the previous backup. */
+export async function pushPracticeLog(client: SupabaseRest, session: CloudSession, data: PracticeLogData): Promise<void> {
+  try {
+    await client.upsert('practice_logs', [{ user_id: session.user.id, data, updated_at: new Date().toISOString() }], session.accessToken, 'user_id');
+  } catch (error) {
+    if (missingTable(error)) throw new CloudError(PRACTICE_LOG_TABLE_MISSING, 404);
+    throw error;
+  }
+}
+
+/** The backed-up practice log, or null when there is none (or the project has no practice log table). */
+export async function pullPracticeLog(client: SupabaseRest, session: CloudSession): Promise<PracticeLogData | null> {
+  try {
+    const rows = await client.select<{ data: unknown }>('practice_logs', `select=data&user_id=eq.${encodeURIComponent(session.user.id)}`, session.accessToken);
+    const data = rows[0]?.data;
+    return isPracticeLogData(data) ? data : null;
+  } catch (error) {
+    if (missingTable(error)) return null;
+    throw error;
+  }
+}
+
 export async function listCloudReports(client: SupabaseRest, session: CloudSession): Promise<VideoReportSummary[]> {
   // Reports shared with this account by others are readable too, so ask for the athlete's own.
   const rows = await client.select<{ summary: VideoReportSummary; video_path: string | null }>('video_reports', `select=summary,video_path&user_id=eq.${encodeURIComponent(session.user.id)}&order=created_at.desc&limit=100`, session.accessToken);
@@ -110,7 +141,8 @@ export async function listOwnVideoPaths(client: SupabaseRest, session: CloudSess
 /**
  * Deletes everything the athlete has in the cloud: their video files, every
  * video report row (with its shares and comments), comments they wrote on
- * reports shared with them, and the backed-up profile. Files go first, so no
+ * reports shared with them, the backed-up profile, the practice log, their club
+ * memberships and any club they coach. Files go first, so no
  * report is left pointing at nothing and nothing blocks deleting the account
  * afterwards.
  */
@@ -130,6 +162,17 @@ export async function deleteAllCloudData(client: SupabaseRest, session: CloudSes
   });
   await client.remove('video_reports', userFilter, token);
   await client.remove('athlete_profiles', userFilter, token);
+  await client.remove('practice_logs', userFilter, token).catch((error: unknown) => {
+    if (!missingTable(error)) throw error;
+  });
+  // Club memberships, and clubs they coach (with those clubs' memberships and invites). Older projects have no club tables.
+  const id = encodeURIComponent(session.user.id);
+  await client.remove('club_members', `athlete_id=eq.${id}`, token).catch((error: unknown) => {
+    if (!missingTable(error)) throw error;
+  });
+  await client.remove('clubs', `coach_id=eq.${id}`, token).catch((error: unknown) => {
+    if (!missingTable(error)) throw error;
+  });
   return { files: all.length, reports: rows.length };
 }
 

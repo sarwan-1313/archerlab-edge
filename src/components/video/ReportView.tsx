@@ -221,9 +221,10 @@ export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, not
   const currentUserId = comments?.currentUserId;
   const viewerIsOwner = comments?.viewerIsOwner;
   const ownerEmail = comments?.ownerEmail ?? null;
+  const owner = comments?.owner;
   const markers = useMemo<TimelineMarker[]>(() => (commentItems ?? [])
     .filter((comment) => comment.time_s !== null)
-    .map((comment) => ({ id: comment.id, t: comment.time_s as number, label: `${commentAuthor(comment, currentUserId ?? '', viewerIsOwner ?? true, ownerEmail)}: ${comment.body.slice(0, 120)}` })), [commentItems, currentUserId, ownerEmail, viewerIsOwner]);
+    .map((comment) => ({ id: comment.id, t: comment.time_s as number, label: `${commentAuthor(comment, currentUserId ?? '', viewerIsOwner ?? true, ownerEmail, owner)}: ${comment.body.slice(0, 120)}` })), [commentItems, currentUserId, ownerEmail, owner, viewerIsOwner]);
   // Comments jump the replay like "Show me": to their moment, else to their shot.
   const jumpToComment = (comment: ReportComment) => {
     if (comment.time_s !== null) { show(comment.time_s); return; }

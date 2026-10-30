@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ActionButton } from '../components/ActionButton';
+import { GoalProgressCard } from '../components/training/GoalProgressCard';
+import { usePracticeLog } from '../practice-log/usePracticeLog';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { mountScrollScene } from '../landing/scrollScene';
 import '../landing/landing.css';
@@ -13,6 +15,7 @@ type HomePageProps = {
   hasProfile?: boolean;
   hasTrainingHistory?: boolean;
   onPrivacy?: () => void;
+  onTraining?: () => void;
 };
 
 const sceneSteps = [
@@ -36,7 +39,8 @@ const sessionFlow: Array<{ icon: AppIconName; title: string; body: string }> = [
   { icon: 'history', title: 'Review and compare', body: 'Replay any shot, check its metrics, and track consistency across the session.' },
 ];
 
-export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPrivacy, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
+export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPrivacy, onTraining, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
+  const practice = usePracticeLog();
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => (rootRef.current ? mountScrollScene(rootRef.current) : undefined), []);
 
@@ -88,6 +92,11 @@ export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPri
           <AppIcon name="chevron-down" size={18} />
         </button>
       </section>
+
+      {/* Shown only once the athlete has set goals. */}
+      <div className="landing-goals">
+        <GoalProgressCard compact entries={practice.entries} goals={practice.goals} onOpen={onTraining} />
+      </div>
 
       <section className="landing-story" id="landing-story" data-scene="track" aria-labelledby="landing-story-title">
         <div className="landing-story__sticky">
