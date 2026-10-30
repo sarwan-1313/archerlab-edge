@@ -19,6 +19,7 @@ export type PageKey =
   | 'new-session'
   | 'calibration'
   | 'live-analysis'
+  | 'video-analysis'
   | 'manual-shot-entry'
   | 'replay-analysis'
   | 'dashboard'
@@ -27,6 +28,10 @@ export type PageKey =
   | 'user-guide'
   | 'saved-recordings'
   | 'profile'
+  | 'privacy'
+  | 'training'
+  | 'club'
+  | 'dataset-tools'
   | GuideDetailPageKey;
 
 export type NavItem = {

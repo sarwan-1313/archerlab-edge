@@ -136,9 +136,11 @@ type SessionDashboardPageProps = {
   onStart?: () => void;
   onSample?: () => void;
   onClearSample?: () => void;
+  /** File name of the video these shots came from, when viewing shots from Video Analysis. */
+  videoFileName?: string;
 };
 
-export function SessionDashboardPage({ shots, selectedShotId, onSelectShot, onStart, onSample, onClearSample }: SessionDashboardPageProps) {
+export function SessionDashboardPage({ shots, selectedShotId, onSelectShot, onStart, onSample, onClearSample, videoFileName }: SessionDashboardPageProps) {
   const scored = shots.filter((shot) => shot.actualResult);
   const gestureCount = scored.filter((shot) => shot.actualResult?.source === 'gesture').length;
   const manualCount = scored.length - gestureCount;
@@ -204,6 +206,13 @@ export function SessionDashboardPage({ shots, selectedShotId, onSelectShot, onSt
             {onStart ? <ActionButton onClick={onStart}>Start your own</ActionButton> : null}
             <ActionButton variant="ghost" onClick={onClearSample}>Clear sample</ActionButton>
           </div>
+        </aside>
+      ) : null}
+
+      {videoFileName !== undefined ? (
+        <aside className="sample-banner" aria-label="Video shots notice">
+          <span className="sample-banner__tag">Video</span>
+          <p><strong>Shots from video: {videoFileName}.</strong> Add scores in Replay to compare form with results.</p>
         </aside>
       ) : null}
 

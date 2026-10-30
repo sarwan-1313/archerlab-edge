@@ -11,7 +11,7 @@ type SidebarNavProps = {
 export function SidebarNav({ items, active, onSelect }: SidebarNavProps) {
   return (
     <nav className="sidebar-nav" aria-label="Primary navigation">
-      <button type="button" className="sidebar-nav__brand" onClick={() => onSelect('home')} aria-label="Go to Home from sidebar">
+      <button type="button" className="sidebar-nav__brand" onClick={() => onSelect('home')} aria-label="ArcherLab Edge: go to Home from sidebar">
         <span className="sidebar-nav__brand-mark"><AppIcon name="target" size={18} /></span>
         <span>ArcherLab <strong>Edge</strong></span>
       </button>

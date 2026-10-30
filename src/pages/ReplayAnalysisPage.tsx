@@ -6,7 +6,7 @@ import { ShotTimeline } from '../components/shot/ShotTimeline';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import type { BiomechanicsMetric } from '../types/biomechanics';
-import type { ShotAnalysis } from '../types/shotAnalysis';
+import type { ReleaseSource, ShotAnalysis } from '../types/shotAnalysis';
 
 type ReplayAnalysisPageProps = {
   shot?: ShotAnalysis;
@@ -15,6 +15,12 @@ type ReplayAnalysisPageProps = {
   onShowShot?: (shotNumber: number) => void;
   onManualEntry?: () => void;
   onUndoScore?: () => void;
+};
+
+const RELEASE_SOURCE_LABEL: Record<ReleaseSource, string> = {
+  manual: 'Manual',
+  'automatic-candidate-confirmed': 'Automatic candidate confirmed',
+  'video-detected': 'Detected in uploaded video',
 };
 
 function scoreTone(score: number | undefined): string {
@@ -45,7 +51,7 @@ export function ReplayAnalysisPage({ shot, shotNumber, shotCount = 0, onShowShot
     <div className="replay-page">
       <PageHeader
         title={`Shot #${shotNumber}`}
-        subtitle={`Release source: ${shot.releaseSource === 'manual' ? 'Manual' : 'Automatic candidate confirmed'}`}
+        subtitle={`Release source: ${RELEASE_SOURCE_LABEL[shot.releaseSource]}${shot.videoSource ? ` · ${shot.videoSource.fileName}` : ''}`}
         actions={
           <div className="replay-header-actions">
             <StatusBadge label={`Data quality: ${shot.dataQuality.label}`} tone={shot.dataQuality.label === 'Good' ? 'success' : 'warning'} compact />
@@ -67,6 +73,7 @@ export function ReplayAnalysisPage({ shot, shotNumber, shotCount = 0, onShowShot
             <span className="eyebrow">Athlete reported</span>
             <strong>{result ? (result.isX ? 'X — inner ten' : `${result.score} points`) : 'No result yet'}</strong>
             <small>{result ? `${result.source} entry` : 'Not entered'}</small>
+            {shot.notes ?? result?.notes ? <p className="replay-notes"><span className="eyebrow">Notes</span> {shot.notes ?? result?.notes}</p> : null}
             <div className="replay-actions">
               <ActionButton variant={result ? 'secondary' : 'primary'} onClick={onManualEntry}>Add Actual Result</ActionButton>
               {result ? <ActionButton variant="ghost" onClick={onUndoScore}>Undo Score</ActionButton> : null}
