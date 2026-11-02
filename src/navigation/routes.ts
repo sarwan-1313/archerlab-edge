@@ -25,6 +25,7 @@ export const PAGE_PATHS = {
   'saved-recordings': '/sessions',
   profile: '/profile',
   training: '/training',
+  scoring: '/scoring',
   club: '/club',
   'dataset-tools': '/dataset-tools',
   privacy: '/privacy',

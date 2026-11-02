@@ -30,6 +30,7 @@ export type PageKey =
   | 'profile'
   | 'privacy'
   | 'training'
+  | 'scoring'
   | 'club'
   | 'dataset-tools'
   | GuideDetailPageKey;

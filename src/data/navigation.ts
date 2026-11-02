@@ -6,6 +6,7 @@ export const desktopNavItems: NavItem[] = [
   { key: 'video-analysis', label: 'Video Analysis', icon: 'film' },
   { key: 'saved-recordings', label: 'Sessions', icon: 'history' },
   { key: 'training', label: 'Training', icon: 'calendar' },
+  { key: 'scoring', label: 'Scoring', icon: 'target' },
   { key: 'dashboard', label: 'Analytics', icon: 'grid' },
   { key: 'user-guide', label: 'Guide', icon: 'accessibility' },
 ];
@@ -45,6 +46,7 @@ export const pageTitles: Record<PageKey, string> = {
   profile: 'Profile',
   privacy: 'Privacy',
   training: 'Training',
+  scoring: 'Scoring',
   club: 'My club',
   'dataset-tools': 'Dataset tools',
 };

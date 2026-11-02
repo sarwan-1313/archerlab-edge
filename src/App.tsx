@@ -36,6 +36,7 @@ const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then(
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
 const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').then((module) => ({ default: module.SessionDashboardPage })));
 const ClubPage = lazy(() => import('./pages/ClubPage').then((module) => ({ default: module.ClubPage })));
+const ScoringPage = lazy(() => import('./pages/ScoringPage').then((module) => ({ default: module.ScoringPage })));
 const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
 const VideoAnalysisPage = lazy(() => import('./pages/VideoAnalysisPage').then((module) => ({ default: module.VideoAnalysisPage })));
@@ -433,7 +434,8 @@ function App() {
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
       case 'profile': return <ProfilePage onClub={() => requestNavigation('club')} onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} onDatasetTools={() => requestNavigation('dataset-tools')} />;
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
-      case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} />;
+      case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} onScoring={() => requestNavigation('scoring')} />;
+      case 'scoring': return <ScoringPage onTraining={() => requestNavigation('training')} />;
       case 'club': return <ClubPage onProfile={() => requestNavigation('profile')} onPrivacy={() => requestNavigation('privacy')} onOpenReport={(reportId) => commitNavigation('video-analysis', { reportId })} />;
       case 'dataset-tools': return <DatasetToolsPage onProfile={() => requestNavigation('profile')} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;
