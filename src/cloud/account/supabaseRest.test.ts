@@ -84,7 +84,7 @@ describe('cloud sync rows', () => {
     expect(row.report.shots).toHaveLength(1);
     expect(row.created_at).toBe('1970-01-01T00:00:00.000Z');
     expect(JSON.stringify(row).length).toBeLessThan(JSON.stringify({ ...report, samples: report.samples.map((sample) => Array.from(sample.image ?? [])) }).length);
-    expect(cloudProfileData({ name: 'A', profilePhotoBlob: new Blob(['x']), profilePhotoUrl: 'blob:1' })).toEqual({ name: 'A' });
+    expect(cloudProfileData({ displayName: 'A', notes: 'private', profilePhotoBlob: new Blob(['x']), profilePhotoUrl: 'blob:1', formStatus: { estimatedLevel: 'intermediate', history: [1] }, updatedAt: 5 })).toEqual({ displayName: 'A', estimatedLevel: 'intermediate', updatedAt: 5 });
     expect(videoPathFor('u', 'r', 'video/quicktime')).toBe('u/r.mov');
   });
 });

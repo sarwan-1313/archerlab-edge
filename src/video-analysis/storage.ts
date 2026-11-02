@@ -9,6 +9,12 @@ import type { VideoAnalysisReport, VideoReportSummary } from './types';
 export const VIDEO_DB_NAME = 'archerlab-edge-video';
 const DB = VIDEO_DB_NAME;
 const VERSION = 1;
+/** Fired on window after a report is saved, changed or deleted (used by Google Drive auto-save). */
+export const VIDEO_REPORTS_CHANGED = 'archerlab:video-reports-changed';
+
+function changed(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(VIDEO_REPORTS_CHANGED));
+}
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -43,6 +49,7 @@ export async function saveVideoReport(report: VideoAnalysisReport, video?: Blob 
     tx.objectStore('summaries').put(summary);
     if (video) tx.objectStore('videos').put({ id: report.id, blob: video, type: video.type });
   });
+  changed();
   return summary;
 }
 
@@ -54,6 +61,7 @@ export async function updateVideoReport(report: VideoAnalysisReport): Promise<Vi
     tx.objectStore('reports').put(report);
     tx.objectStore('summaries').put(summary);
   });
+  changed();
   return summary;
 }
 
@@ -77,6 +85,7 @@ export async function deleteVideoReport(id: string): Promise<void> {
     tx.objectStore('summaries').delete(id);
     tx.objectStore('videos').delete(id);
   });
+  changed();
 }
 
 /** A JSON-safe copy of a report (typed arrays become plain arrays). */

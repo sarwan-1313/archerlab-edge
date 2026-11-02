@@ -15,6 +15,7 @@ import { HomePage } from './pages/HomePage';
 import { runPresentationTransition } from './motion/runPresentationTransition';
 import { pageForPathname, readReportParam, resolvePageFromPathname, routeForPage } from './navigation/routes';
 import { useAthleteProfile } from './hooks/useAthleteProfile';
+import { accountsEnabled, driveBackupEnabled } from './cloud/config';
 import { useHoldUpdates } from './pwa/updateStore';
 import { useOnlineStatus } from './pwa/useOnlineStatus';
 import { createSampleSession, isSampleShot } from './demo/sampleSession';
@@ -243,6 +244,12 @@ function App() {
       { cameraSafe: activePage === 'live-analysis' || page === 'live-analysis', kind: 'page' },
     );
   }, [activePage]);
+
+  // Optional cloud features load only when this copy of the app has them switched on.
+  useEffect(() => {
+    if (driveBackupEnabled) void import('./cloud/drive/useDriveSync').then((drive) => drive.startDriveAutoSave());
+    if (accountsEnabled) void import('./cloud/account/useCloudAccount').then((account) => account.startAccountProfileSync());
+  }, []);
 
   useEffect(() => {
     const initialPage = initialPageRef.current;

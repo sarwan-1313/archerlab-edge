@@ -59,7 +59,10 @@ export function useAthleteProfile() {
     const refresh = listeners.size === 0;
     const unsubscribe = subscribe(() => setCurrent(snapshot));
     void ensureLoaded(refresh);
-    return () => { unsubscribe(); };
+    // A profile restored from Google Drive is written straight to storage, so load it again.
+    const reload = () => { void ensureLoaded(true); };
+    window.addEventListener('archerlab:profile-restored', reload);
+    return () => { unsubscribe(); window.removeEventListener('archerlab:profile-restored', reload); };
   }, []);
 
   const save = async (data: Profile) => {

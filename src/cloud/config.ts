@@ -25,3 +25,12 @@ export const CLOUD_CONFIG = {
 export const accountsEnabled = Boolean(CLOUD_CONFIG.supabaseUrl && CLOUD_CONFIG.supabaseAnonKey);
 export const dropboxEnabled = Boolean(CLOUD_CONFIG.dropboxAppKey);
 export const googleDriveEnabled = Boolean(CLOUD_CONFIG.googleApiKey && CLOUD_CONFIG.googleClientId);
+/** Saving the athlete's data to their own Google Drive needs only the Google client id. */
+export const driveBackupEnabled = Boolean(CLOUD_CONFIG.googleClientId);
+/**
+ * Whether full copies of the practice log and video reports can also be kept
+ * in the ArcherLab account (Supabase). Off when Drive saving is available, so
+ * the account holds only the sign-in and a small profile; VITE_ACCOUNT_DATA_BACKUP=on
+ * turns it back on (coach and club sharing read these copies).
+ */
+export const accountDataBackup = accountsEnabled && (!driveBackupEnabled || value('VITE_ACCOUNT_DATA_BACKUP') === 'on');

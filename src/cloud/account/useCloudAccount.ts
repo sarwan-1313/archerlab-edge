@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CLOUD_CONFIG, accountsEnabled } from '../config';
 import { takePendingAuthRedirect } from './authRedirect';
-import { describeCloudError } from './cloudSync';
+import { describeCloudError, pushProfile } from './cloudSync';
+import { loadProfile } from '../../profile/profileStorage';
 import { createSupabaseRest, type CloudSession, type SupabaseRest } from './supabaseRest';
 
 let client: SupabaseRest | null = null;
@@ -22,6 +23,30 @@ function publish(session: CloudSession | null) {
   currentSession = session;
   resolved = true;
   listeners.forEach((listener) => listener(session));
+}
+
+let profileSyncStarted = false;
+
+/**
+ * Keeps the small account profile (name, hand, bow, level) up to date after the
+ * athlete saves their profile while signed in. Safe to call more than once.
+ */
+export function startAccountProfileSync(): void {
+  const api = cloudClient();
+  if (!api || profileSyncStarted) return;
+  profileSyncStarted = true;
+  window.addEventListener('archerlab:profile-updated', () => {
+    if (!currentSession) return;
+    void (async () => {
+      try {
+        const session = await api.validSession();
+        const profile = await loadProfile('default');
+        if (session && profile) await pushProfile(api, session, profile);
+      } catch (error) {
+        console.warn('The account profile could not be updated', error);
+      }
+    })();
+  });
 }
 
 /** Optional sign-in. Returns `configured: false` when the deployment has no cloud project. */

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { backupReport, describeCloudError, listCloudReports, loadCloudReport } from '../cloud/account/cloudSync';
+import { accountDataBackup, driveBackupEnabled } from '../cloud/config';
+import { DriveReportButtons } from '../components/video/DriveReportButtons';
 import { memberLabel } from '../cloud/account/clubRoster';
 import type { ClubMember } from '../cloud/account/clubs';
 import { listSharedWithMe, loadReviewReport, type ReportShare, type SharedReport } from '../cloud/account/coachReview';
@@ -640,7 +642,10 @@ export function VideoAnalysisPage({ onOpenInAnalytics, online = true, onProcessi
               ) : null}
               {view.source !== 'shared' ? <ActionButton variant="secondary" type="button" onClick={() => exportJson(view.report)}><AppIcon name="download" size={16} /> Export report (JSON)</ActionButton> : null}
               {view.source === 'file' ? <ActionButton variant="primary" type="button" onClick={() => void saveFileReport(view)}><AppIcon name="check" size={16} /> Save to this device</ActionButton> : null}
-              {account.configured && view.source !== 'cloud' && view.source !== 'file' && view.source !== 'shared' ? (
+              {driveBackupEnabled && view.source !== 'cloud' && view.source !== 'file' && view.source !== 'shared' ? (
+                <DriveReportButtons reportId={view.report.id} videoBlob={view.videoBlob} />
+              ) : null}
+              {accountDataBackup && view.source !== 'cloud' && view.source !== 'file' && view.source !== 'shared' ? (
                 <>
                   <ActionButton variant="secondary" type="button" disabled={backingUp || !account.session} title={account.session ? undefined : 'Sign in on your Profile page first'} onClick={() => void backup(view.report, null)}>
                     <AppIcon name="cloud" size={16} /> {backingUp ? 'Backing up…' : account.session ? 'Back up report' : 'Sign in to back up'}

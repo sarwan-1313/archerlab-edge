@@ -45,7 +45,10 @@ export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub, onD
     try { await save({ ...profile, ...form, experienceLevel }); setSaved(true); } catch { setError('Your profile could not be saved. Check browser storage and try again.'); }
   };
   const onRestoreProfile = async (data: Record<string, unknown>) => {
-    await save({ ...data, profilePhotoBlob: profile?.profilePhotoBlob });
+    // The account keeps only a few fields, so merge them over the profile here rather than replacing it.
+    const { estimatedLevel: _estimated, ...fields } = data;
+    void _estimated;
+    await save({ ...profile, ...fields, profilePhotoBlob: profile?.profilePhotoBlob });
   };
   return (<div className="page-container page-container--wide"><PageHeader title="Athlete Profile" subtitle="Local athlete identity stored on this device" />
     {loadError ? <p role="alert">Your profile could not be loaded from this device. Try again or save the form to recreate it.</p> : null}
