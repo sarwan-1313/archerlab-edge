@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coarse, directionsLinks, distanceKm, findRanges, fitZoom, geocode, overpassQuery, parseRanges, worldPixel } from './ranges';
+import { COUNTRIES, coarse, defaultCountry, directionsLinks, distanceKm, findRanges, fitZoom, geocode, geocodeUrls, overpassQuery, parseRanges, worldPixel } from './ranges';
 
 const home = { lat: 37.7219, lon: -122.4782 };
 
@@ -39,8 +39,43 @@ describe('archery ranges', () => {
   });
 
   it('geocodes a place name', async () => {
-    const found = await geocode('San Francisco', (async () => new Response(JSON.stringify([{ lat: '37.77', lon: '-122.41', display_name: 'San Francisco, CA' }]))) as typeof fetch);
+    const found = await geocode('San Francisco', 'us', (async () => new Response(JSON.stringify([{ lat: '37.77', lon: '-122.41', display_name: 'San Francisco, CA' }]))) as typeof fetch);
     expect(found).toEqual({ lat: 37.77, lon: -122.41, label: 'San Francisco, CA' });
+  });
+
+  it('searches a postcode inside the chosen country, then falls back to plain text', async () => {
+    const urls = geocodeUrls('94587', 'US');
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).toContain('postalcode=94587');
+    expect(urls[0]).toContain('countrycodes=us');
+    expect(urls[1]).toContain('q=94587');
+    expect(geocodeUrls('Union City, CA', 'us')).toHaveLength(1);
+    const asked: string[] = [];
+    const found = await geocode('94587', 'us', (async (url: string) => {
+      asked.push(url);
+      return new Response(JSON.stringify(url.includes('postalcode') ? [] : [{ lat: '37.59', lon: '-122.02', display_name: 'Union City, CA' }]));
+    }) as unknown as typeof fetch);
+    expect(asked).toHaveLength(2);
+    expect(found?.label).toBe('Union City, CA');
+    expect(await geocode('nowhere', 'us', (async () => new Response('[]')) as typeof fetch)).toBeNull();
+  });
+
+  it('picks a starting country from the browser language', () => {
+    expect(defaultCountry('en-IN')).toBe('in');
+    expect(defaultCountry('pa_IN')).toBe('in');
+    expect(defaultCountry('en')).toBe('us');
+    expect(defaultCountry('en-ZZ')).toBe('us');
+    expect(COUNTRIES.every((country) => /^[a-z]{2}$/.test(country.code))).toBe(true);
+  });
+
+  it('stops waiting on a server that never answers, and tries the backup', async () => {
+    const hang = ((_: string, init?: RequestInit) => new Promise((_resolve, reject) => { init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))); })) as unknown as typeof fetch;
+    await expect(findRanges(home, 10, hang, 20)).rejects.toThrow('too long');
+    await expect(geocode('x', 'us', hang, 20)).rejects.toThrow('too long');
+    let calls = 0;
+    const flaky = (async () => { calls += 1; return calls === 1 ? new Response('', { status: 504 }) : new Response(JSON.stringify({ elements: [] })); }) as typeof fetch;
+    expect(await findRanges(home, 10, flaky)).toEqual([]);
+    expect(calls).toBe(2);
   });
 
   it('places points on map tiles and picks a zoom that fits them', () => {

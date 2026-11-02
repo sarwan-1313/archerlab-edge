@@ -2,13 +2,22 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
-import { TILE_SIZE, directionsLinks, findRanges, fitZoom, geocode, worldPixel, type LatLon, type Range } from '../ranges/ranges';
+import { COUNTRIES, TILE_SIZE, defaultCountry, directionsLinks, findRanges, fitZoom, geocode, worldPixel, type LatLon, type Range } from '../ranges/ranges';
 import { useLanguage } from '../i18n/i18n';
 import '../styles/video.css';
 
 const MAP_W = 640;
 const MAP_H = 380;
 const RADII = [10, 25, 50, 100];
+const COUNTRY_KEY = 'archerlab-edge:range-country';
+
+function initialCountry(): string {
+  try {
+    const saved = localStorage.getItem(COUNTRY_KEY);
+    if (saved && COUNTRIES.some((country) => country.code === saved)) return saved;
+  } catch { /* fall back to the browser language */ }
+  return defaultCountry(typeof navigator === 'undefined' ? undefined : navigator.language);
+}
 
 /** A small OpenStreetMap tile map with numbered markers. */
 function RangeMap({ centre, ranges, selected, onSelect }: { centre: LatLon; ranges: readonly Range[]; selected: string | null; onSelect: (id: string) => void }) {
@@ -60,6 +69,7 @@ export function RangesPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [place, setPlace] = useState('');
+  const [country, setCountry] = useState(initialCountry);
   const [selected, setSelected] = useState<string | null>(null);
   const { t } = useLanguage();
 
@@ -94,8 +104,10 @@ export function RangesPage() {
     if (!place.trim()) return;
     setBusy(true);
     try {
-      const found = await geocode(place.trim());
-      if (!found) { setBusy(false); setStatus(`“${place.trim()}” was not found. Try a town, city or postcode.`); return; }
+      try { localStorage.setItem(COUNTRY_KEY, country); } catch { /* remembered for this visit only */ }
+      const found = await geocode(place.trim(), country);
+      const countryName = COUNTRIES.find((item) => item.code === country)?.name ?? 'that country';
+      if (!found) { setBusy(false); setStatus(`“${place.trim()}” was not found in ${countryName}. Check the country, then try the postcode again or a nearby town.`); return; }
       await search({ ...found, label: found.label.split(',').slice(0, 2).join(',') });
     } catch (error) {
       setBusy(false);
@@ -117,7 +129,12 @@ export function RangesPage() {
           </label>
         </div>
         <form className="scoring-fields" onSubmit={(event) => void submit(event)}>
-          <label>Or search a town or postcode<input value={place} onChange={(event) => setPlace(event.target.value)} placeholder="e.g. San Francisco, or 94132" /></label>
+          <label>Country
+            <select value={country} onChange={(event) => setCountry(event.target.value)}>
+              {COUNTRIES.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </select>
+          </label>
+          <label>Postcode, town or city<input value={place} onChange={(event) => setPlace(event.target.value)} placeholder="e.g. 94587 or Union City" autoComplete="postal-code" /></label>
           <ActionButton variant="secondary" type="submit" disabled={busy}>{busy ? 'Searching…' : t('ranges.search', 'Search')}</ActionButton>
         </form>
         {status ? <p className="va-import-status" role="status">{status}</p> : null}

@@ -5,6 +5,8 @@
  */
 
 export const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+/** Tried in order, so one busy or slow server does not leave the search hanging. */
+export const OVERPASS_URLS = [OVERPASS_URL, 'https://overpass.private.coffee/api/interpreter'];
 export const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 export interface LatLon { lat: number; lon: number }
@@ -44,7 +46,7 @@ export function distanceKm(a: LatLon, b: LatLon): number {
 export function overpassQuery(centre: LatLon, radiusKm: number): string {
   const { lat, lon } = coarse(centre);
   const around = `(around:${Math.round(radiusKm * 1000)},${lat},${lon})`;
-  return `[out:json][timeout:25];(nwr["sport"="archery"]${around};nwr["club"="archery"]${around};);out center tags 80;`;
+  return `[out:json][timeout:15];(nwr["sport"="archery"]${around};nwr["club"="archery"]${around};);out center tags 80;`;
 }
 
 interface OverpassElement { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }
@@ -119,27 +121,94 @@ export function directionsLinks(range: Pick<Range, 'lat' | 'lon' | 'name'>) {
   };
 }
 
-export async function findRanges(centre: LatLon, radiusKm: number, fetcher: typeof fetch = (...args) => fetch(...args)): Promise<Range[]> {
-  let response: Response;
+/** fetch that gives up after a while instead of leaving the screen on "Searching…" forever. */
+async function fetchWithTimeout(fetcher: typeof fetch, url: string, init: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
   try {
-    response = await fetcher(OVERPASS_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `data=${encodeURIComponent(overpassQuery(centre, radiusKm))}` });
-  } catch {
-    throw new Error('OpenStreetMap could not be reached. Check your connection and try again.');
+    return await fetcher(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('TIMEOUT');
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  if (response.status === 429 || response.status === 504) throw new Error('The map service is busy. Wait a minute and try again.');
-  if (!response.ok) throw new Error(`The map service returned an error (${response.status}).`);
-  return parseRanges(await response.json(), centre);
 }
 
-/** Looks up a town or postcode, for athletes who would rather not share their location. */
-export async function geocode(query: string, fetcher: typeof fetch = (...args) => fetch(...args)): Promise<(LatLon & { label: string }) | null> {
-  const url = `${NOMINATIM_URL}?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
-  let response: Response;
-  try { response = await fetcher(url, { headers: { accept: 'application/json' } }); } catch { throw new Error('The place search could not be reached. Check your connection.'); }
-  if (!response.ok) throw new Error(`The place search returned an error (${response.status}).`);
-  const results = await response.json() as Array<{ lat: string; lon: string; display_name: string }>;
-  const first = results[0];
-  return first ? { lat: Number(first.lat), lon: Number(first.lon), label: first.display_name } : null;
+export async function findRanges(centre: LatLon, radiusKm: number, fetcher: typeof fetch = (...args) => fetch(...args), timeoutMs = 20000): Promise<Range[]> {
+  const body = `data=${encodeURIComponent(overpassQuery(centre, radiusKm))}`;
+  let failure = 'The map service returned an error. Try again in a moment.';
+  for (const url of OVERPASS_URLS) {
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(fetcher, url, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body }, timeoutMs);
+    } catch (error) {
+      failure = error instanceof Error && error.message === 'TIMEOUT'
+        ? 'The map service took too long to answer. Try again, or pick a smaller distance.'
+        : 'OpenStreetMap could not be reached. Check your connection and try again.';
+      continue;
+    }
+    if (response.status === 429 || response.status === 504) { failure = 'The map service is busy. Wait a minute and try again.'; continue; }
+    if (!response.ok) { failure = `The map service returned an error (${response.status}).`; continue; }
+    try {
+      return parseRanges(await response.json(), centre);
+    } catch {
+      failure = 'The map service sent back something unreadable. Try again in a moment.';
+    }
+  }
+  throw new Error(failure);
+}
+
+export interface Country { code: string; name: string }
+
+/** Countries offered in the search (ISO 3166-1 alpha-2 codes, which the place search uses to stay inside one country). */
+export const COUNTRIES: readonly Country[] = [
+  { code: 'us', name: 'United States' }, { code: 'in', name: 'India' }, { code: 'gb', name: 'United Kingdom' }, { code: 'ca', name: 'Canada' },
+  { code: 'au', name: 'Australia' }, { code: 'nz', name: 'New Zealand' }, { code: 'ie', name: 'Ireland' }, { code: 'de', name: 'Germany' },
+  { code: 'fr', name: 'France' }, { code: 'it', name: 'Italy' }, { code: 'es', name: 'Spain' }, { code: 'pt', name: 'Portugal' },
+  { code: 'nl', name: 'Netherlands' }, { code: 'be', name: 'Belgium' }, { code: 'ch', name: 'Switzerland' }, { code: 'at', name: 'Austria' },
+  { code: 'se', name: 'Sweden' }, { code: 'no', name: 'Norway' }, { code: 'dk', name: 'Denmark' }, { code: 'fi', name: 'Finland' },
+  { code: 'pl', name: 'Poland' }, { code: 'cz', name: 'Czechia' }, { code: 'tr', name: 'Türkiye' }, { code: 'ua', name: 'Ukraine' },
+  { code: 'kr', name: 'South Korea' }, { code: 'jp', name: 'Japan' }, { code: 'cn', name: 'China' }, { code: 'tw', name: 'Taiwan' },
+  { code: 'th', name: 'Thailand' }, { code: 'my', name: 'Malaysia' }, { code: 'sg', name: 'Singapore' }, { code: 'id', name: 'Indonesia' },
+  { code: 'ph', name: 'Philippines' }, { code: 'bd', name: 'Bangladesh' }, { code: 'np', name: 'Nepal' }, { code: 'lk', name: 'Sri Lanka' },
+  { code: 'pk', name: 'Pakistan' }, { code: 'ae', name: 'United Arab Emirates' }, { code: 'sa', name: 'Saudi Arabia' }, { code: 'za', name: 'South Africa' },
+  { code: 'br', name: 'Brazil' }, { code: 'mx', name: 'Mexico' }, { code: 'ar', name: 'Argentina' }, { code: 'co', name: 'Colombia' },
+];
+
+/** The country a browser language points to (en-US → US), or the United States when it says nothing. */
+export function defaultCountry(locale: string | undefined): string {
+  const region = /[-_]([A-Za-z]{2})\b/.exec(locale ?? '')?.[1]?.toLowerCase();
+  return region && COUNTRIES.some((country) => country.code === region) ? region : 'us';
+}
+
+/** The place-search addresses to try, most precise first: a postcode when the text looks like one, then a plain search inside the country. */
+export function geocodeUrls(query: string, countryCode?: string): string[] {
+  const text = query.trim();
+  const country = countryCode ? `&countrycodes=${encodeURIComponent(countryCode.toLowerCase())}` : '';
+  const base = `${NOMINATIM_URL}?format=jsonv2&limit=1${country}`;
+  const urls: string[] = [];
+  // Postcodes have digits and no commas (94587, SW1A 1AA, 160022); a structured search matches them far better than free text.
+  if (/\d/.test(text) && !text.includes(',') && text.length <= 10) urls.push(`${base}&postalcode=${encodeURIComponent(text)}`);
+  urls.push(`${base}&q=${encodeURIComponent(text)}`);
+  return urls;
+}
+
+/** Looks up a town or postcode (inside a country when given), for athletes who would rather not share their location. */
+export async function geocode(query: string, countryCode?: string, fetcher: typeof fetch = (...args) => fetch(...args), timeoutMs = 10000): Promise<(LatLon & { label: string }) | null> {
+  for (const url of geocodeUrls(query, countryCode)) {
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(fetcher, url, { headers: { accept: 'application/json' } }, timeoutMs);
+    } catch (error) {
+      throw new Error(error instanceof Error && error.message === 'TIMEOUT' ? 'The place search took too long to answer. Try again.' : 'The place search could not be reached. Check your connection.');
+    }
+    if (!response.ok) throw new Error(`The place search returned an error (${response.status}).`);
+    const results = await response.json() as Array<{ lat: string; lon: string; display_name: string }>;
+    const first = results[0];
+    if (first) return { lat: Number(first.lat), lon: Number(first.lon), label: first.display_name };
+  }
+  return null;
 }
 
 // ---------- map tiles ----------
