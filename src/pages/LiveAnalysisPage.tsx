@@ -17,6 +17,7 @@ import { EndSessionDialog } from '../components/training/EndSessionDialog';
 import { ReadinessCheck, type ReadinessCheckItem } from '../components/training/ReadinessCheck';
 import { SessionSummary } from '../components/training/SessionSummary';
 import { ShotReviewPanel } from '../components/training/ShotReviewPanel';
+import { VoiceNotePanel } from '../components/VoiceNotePanel';
 import { TrainingProgress } from '../components/training/TrainingProgress';
 import { useBiomechanics } from '../hooks/useBiomechanics';
 import { useGestureScoreEntry } from '../hooks/useGestureScoreEntry';
@@ -25,6 +26,8 @@ import { usePoseLandmarker } from '../hooks/usePoseLandmarker';
 import { useSessionRecorder } from '../hooks/useSessionRecorder';
 import { useShotAnalyzer } from '../hooks/useShotAnalyzer';
 import { runPresentationTransition } from '../motion/runPresentationTransition';
+import { entryFromLiveSession } from '../practice-log/sources';
+import { recordPracticeEntry } from '../practice-log/storage';
 import { isActiveTrainingState, isSetupTrainingState, transitionTrainingWorkflow, type TrainingWorkflowEvent, type TrainingWorkflowState } from '../training/trainingWorkflow';
 import type { ArcherHandedness, BiomechanicsReference, CameraView } from '../types/biomechanics';
 import type { ReportedShotResult, ScoreEntryMethod } from '../types/gestureScore';
@@ -69,6 +72,8 @@ type LiveAnalysisPageProps = {
   shots: ShotAnalysis[];
   onShotCaptured: (shot: ShotAnalysis) => void;
   onAttachResult: (shotId: string, result: ReportedShotResult) => void;
+  /** Saves the athlete's note for a shot (a voice note transcribed on the device). */
+  onAttachNotes?: (shotId: string, notes: string) => void;
   onUndoLastShot: () => void;
   onGestureGuide: () => void;
   onSessionActiveChange?: (active: boolean) => void;
@@ -80,7 +85,7 @@ type LiveAnalysisPageProps = {
   onHome: () => void;
 };
 
-export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, reference, scoreEntryMethod, autoReleaseDefault, shots, onShotCaptured, onAttachResult, onUndoLastShot, onGestureGuide, onSessionActiveChange, navigationEndRequest, onNavigationEndComplete, onViewSessions, onViewAnalytics, onStartNewSession, onHome }: LiveAnalysisPageProps) {
+export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, reference, scoreEntryMethod, autoReleaseDefault, shots, onShotCaptured, onAttachResult, onAttachNotes, onUndoLastShot, onGestureGuide, onSessionActiveChange, navigationEndRequest, onNavigationEndComplete, onViewSessions, onViewAnalytics, onStartNewSession, onHome }: LiveAnalysisPageProps) {
   const [initialWorkflow] = useState(readInitialWorkflow);
   const [workflowState, dispatch] = useReducer(
     (state: TrainingWorkflowState, event: TrainingWorkflowEvent) => transitionTrainingWorkflow(state, event),
@@ -93,6 +98,15 @@ export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, r
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [isStartingSession, setIsStartingSession] = useState(false);
   const startingSessionRef = useRef(false);
+  // The running session, for its practice log entry; cleared once logged.
+  const loggedSessionRef = useRef<{ id: string; startedAt: number } | null>(null);
+  const shotsRef = useRef(shots);
+  shotsRef.current = shots;
+  const logSession = useCallback(() => {
+    const session = loggedSessionRef.current;
+    loggedSessionRef.current = null;
+    if (session && shotsRef.current.length) recordPracticeEntry(entryFromLiveSession(session.id, shotsRef.current, session.startedAt));
+  }, []);
   const [sessionStartError, setSessionStartError] = useState<string>();
   const [sessionSaveError, setSessionSaveError] = useState<string>();
   const [finalDurationMs, setFinalDurationMs] = useState(0);
@@ -236,9 +250,10 @@ export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, r
     if (!navigationEndRequest || handledNavigationRequestRef.current === navigationEndRequest || !sessionActive) return;
     handledNavigationRequestRef.current = navigationEndRequest;
     setFinalDurationMs(sessionRecorder.durationMs);
+    logSession();
     dispatch('END_SESSION_CONFIRMED');
     sessionRecorder.stop();
-  }, [navigationEndRequest, sessionActive, sessionRecorder]);
+  }, [logSession, navigationEndRequest, sessionActive, sessionRecorder]);
 
   const deviceLabel = useMemo(
     () => devices.find((device) => device.deviceId === selectedDeviceId)?.label ?? 'Local Camera',
@@ -298,6 +313,8 @@ export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, r
       setSessionStartError(result.error || 'The local session could not be started.');
       return;
     }
+    const startedAt = Date.now();
+    loggedSessionRef.current = { id: `${startedAt.toString(36)}-${Math.random().toString(36).slice(2, 8)}`, startedAt };
     dispatch('SESSION_STARTED');
   };
 
@@ -310,6 +327,7 @@ export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, r
   const confirmEndSession = () => {
     setShowEndConfirmation(false);
     setFinalDurationMs(sessionRecorder.durationMs);
+    logSession();
     dispatch('END_SESSION_CONFIRMED');
     sessionRecorder.stop();
   };
@@ -426,7 +444,7 @@ export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, r
 
           {pose.error ? <div className="pose-error"><AppIcon name="sensors" size={18} /><span>{pose.error}</span></div> : null}
 
-          {workflowState === 'SHOT_REVIEW' && reviewShot ? createPortal(<ShotReviewPanel shot={reviewShot} shotNumber={shots.findIndex((shot) => shot.id === reviewShot.id) + 1 || shots.length} scoreEntryMethod={scoreEntryMethod} gestureActive={Boolean(awaitingScoreShotId) && !manualEntryRequested} manualEntryRequested={manualEntryRequested} onScore={(result) => handleScoreResult(reviewShot.id, result)} onContinue={continueSession} />, document.body) : <section className="shot-phase-panel motion-section-enter" aria-label="Shot cycle status" aria-live="polite"><div className="shot-phase-panel__header"><div><span className="eyebrow">Shot cycle</span><h2>{captureStatus.label}</h2><p>{captureStatus.detail}</p></div><StatusBadge label={`Shot ${String(shots.length + 1).padStart(2, '0')}`} tone={captureStatus.tone} compact /></div><div className="shot-phase-track">{SHOT_PHASES.map((phase, index) => { const active = index === activePhaseIndex; const complete = isShotComplete || activePhaseIndex > index; return <div key={phase.id} className={`shot-phase-step ${active ? 'is-active' : ''} ${complete ? 'is-complete' : ''}`}><span className="shot-phase-step__marker">{complete ? <AppIcon name="check" size={13} /> : String(index + 1).padStart(2, '0')}</span><span className="shot-phase-step__label"><span>{phase.shortLabel}</span><strong>{phase.label}</strong></span></div>; })}</div><button type="button" className="context-help-link" title="This shows the current stage of your shooting cycle." onClick={onGestureGuide}>How shot phases work</button></section>}
+          {workflowState === 'SHOT_REVIEW' && reviewShot ? createPortal(<ShotReviewPanel shot={reviewShot} shotNumber={shots.findIndex((shot) => shot.id === reviewShot.id) + 1 || shots.length} scoreEntryMethod={scoreEntryMethod} gestureActive={Boolean(awaitingScoreShotId) && !manualEntryRequested} manualEntryRequested={manualEntryRequested} onScore={(result) => handleScoreResult(reviewShot.id, result)} onContinue={continueSession} voiceNote={onAttachNotes ? <VoiceNotePanel key={reviewShot.id} autoListenKey={reviewShot.id} showAutoListen existing={reviewShot.notes} onSave={(text, score) => { onAttachNotes(reviewShot.id, text); if (score) handleScoreResult(reviewShot.id, { score: score.score, isX: score.isX, source: 'voice', capturedAt: Date.now(), notes: text }); }} /> : null} />, document.body) : <section className="shot-phase-panel motion-section-enter" aria-label="Shot cycle status" aria-live="polite"><div className="shot-phase-panel__header"><div><span className="eyebrow">Shot cycle</span><h2>{captureStatus.label}</h2><p>{captureStatus.detail}</p></div><StatusBadge label={`Shot ${String(shots.length + 1).padStart(2, '0')}`} tone={captureStatus.tone} compact /></div><div className="shot-phase-track">{SHOT_PHASES.map((phase, index) => { const active = index === activePhaseIndex; const complete = isShotComplete || activePhaseIndex > index; return <div key={phase.id} className={`shot-phase-step ${active ? 'is-active' : ''} ${complete ? 'is-complete' : ''}`}><span className="shot-phase-step__marker">{complete ? <AppIcon name="check" size={13} /> : String(index + 1).padStart(2, '0')}</span><span className="shot-phase-step__label"><span>{phase.shortLabel}</span><strong>{phase.label}</strong></span></div>; })}</div><button type="button" className="context-help-link" title="This shows the current stage of your shooting cycle." onClick={onGestureGuide}>How shot phases work</button></section>}
 
           <section className="session-control-panel motion-section-enter" aria-label="Session controls">
             <div className="session-control-panel__header"><div><span className="eyebrow">Session controls</span><h2>Camera and capture</h2></div><RecordingControls state={sessionRecorder.state} durationMs={sessionRecorder.durationMs} onStart={() => void startSession()} onPause={() => sessionRecorder.pause()} onResume={() => sessionRecorder.resume()} onStop={openEndConfirmation} /></div>

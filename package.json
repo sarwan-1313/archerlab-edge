@@ -1,32 +1,52 @@
 {
   "name": "archerlab-edge",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:vercel": "node scripts/fetch-pose-models.mjs full heavy --optional --if-missing && node scripts/fetch-whisper-model.mjs --optional --if-missing && npm run build",
     "lint": "oxlint src",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "e2e:clip": "node scripts/make-e2e-clip.mjs",
+    "pwa:icons": "node scripts/make-pwa-icons.mjs",
+    "ffmpeg:core": "node scripts/copy-ffmpeg-core.mjs",
+    "ort:wasm": "node scripts/copy-ort-wasm.mjs",
+    "models:whisper": "node scripts/fetch-whisper-model.mjs",
     "preview": "vite preview",
-    "check": "npm run lint && npm test && npm run build"
+    "check": "npm run lint && npm test && npm run build",
+    "models:pose": "node scripts/fetch-pose-models.mjs",
+    "validate:fixtures": "vitest run src/video-analysis/validation/validateFixtures.test.ts --disable-console-intercept"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "@huggingface/transformers": "4.3.1",
     "@mediapipe/tasks-vision": "^1.0.1",
+    "@mlc-ai/web-llm": "0.2.86",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "workbox-window": "7.4.1",
+    "three": "^0.186.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@ffmpeg/core": "0.12.10",
+    "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.0.4",
     "jsdom": "^30.0.1",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
-    "vitest": "^4.1.10"
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "^4.1.10",
+    "workbox-build": "7.4.1"
   }
 }

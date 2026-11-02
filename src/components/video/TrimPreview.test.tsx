@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TrimPreview } from './TrimPreview';
+
+let duration = 0;
+let currentTime = 0;
+let realDuration = 0;
+
+beforeEach(() => {
+  currentTime = 0;
+  Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 1280, configurable: true });
+  Object.defineProperty(HTMLMediaElement.prototype, 'duration', { get: () => duration, configurable: true });
+  Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
+    get: () => currentTime,
+    set(this: HTMLMediaElement, value: number) {
+      currentTime = value;
+      // Like a recorder WebM: seeking far past the end makes the browser work out the real length.
+      if (duration === Infinity && value > 1e9) { duration = realDuration; this.dispatchEvent(new Event('durationchange')); }
+    },
+    configurable: true,
+  });
+});
+afterEach(cleanup);
+
+async function renderPreview(length: number, reported = length) {
+  duration = reported;
+  realDuration = length;
+  const onAnalyse = vi.fn();
+  render(<TrimPreview file={new File(['x'], 'session.mp4', { type: 'video/mp4' })} url="blob:clip" onAnalyse={onAnalyse} onCancel={() => undefined} />);
+  fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+  await screen.findByText(/Selected:/);
+  return onAnalyse;
+}
+
+const analyse = () => screen.getByRole('button', { name: /Analyse/ });
+
+describe('TrimPreview', () => {
+  it('selects a short clip whole', async () => {
+    const onAnalyse = await renderPreview(95);
+    expect(screen.getByText(/The whole clip is selected/)).toBeTruthy();
+    expect(screen.getByText('1:35.0')).toBeTruthy();
+    fireEvent.click(analyse());
+    expect(onAnalyse).toHaveBeenCalledWith({ start: 0, end: 95 });
+  });
+
+  it('limits the selection, not the file, to 15 minutes', async () => {
+    const onAnalyse = await renderPreview(40 * 60);
+    expect(screen.getByText(/This video is 40:00 long/)).toBeTruthy();
+    expect(screen.getByText('15:00.0')).toBeTruthy();
+    expect((analyse() as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.change(screen.getByLabelText('End of the analysed part'), { target: { value: '2400' } });
+    expect(screen.getByRole('alert').textContent).toMatch(/up to 15 minutes/);
+    expect((analyse() as HTMLButtonElement).disabled).toBe(true);
+
+    // Move to 26:40 in the preview and start the range there.
+    currentTime = 1600;
+    fireEvent.timeUpdate(screen.getByLabelText('Video preview'));
+    fireEvent.click(screen.getByRole('button', { name: 'Set start here' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.click(analyse());
+    expect(onAnalyse).toHaveBeenCalledWith({ start: 1600, end: 2400 });
+  });
+
+  it('sets the end at the current frame and keeps a minimum length', async () => {
+    const onAnalyse = await renderPreview(60);
+    currentTime = 0.5;
+    fireEvent.timeUpdate(screen.getByLabelText('Video preview'));
+    fireEvent.click(screen.getByRole('button', { name: 'Set end here' }));
+    fireEvent.click(analyse());
+    expect(onAnalyse).toHaveBeenCalledWith({ start: 0, end: 2 });
+  });
+
+  it('works out the length of a recorder file that reports an infinite one', async () => {
+    const onAnalyse = await renderPreview(42, Infinity);
+    expect(screen.getByText('0:42.0')).toBeTruthy();
+    expect(currentTime).toBe(0);
+    fireEvent.click(analyse());
+    expect(onAnalyse).toHaveBeenCalledWith({ start: 0, end: 42 });
+  });
+
+  it('explains a video the browser cannot play', async () => {
+    await renderPreview(10);
+    fireEvent.error(screen.getByLabelText('Video preview'));
+    expect(screen.getByRole('alert').textContent).toMatch(/cannot play this video/);
+    expect((analyse() as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+  });
+
+  describe('with conversion available', () => {
+    const renderWithConversion = (online?: boolean) => {
+      duration = 10;
+      realDuration = 10;
+      const onConverted = vi.fn();
+      render(<TrimPreview file={new File(['x'], 'IMG_0042.MOV', { type: 'video/quicktime' })} url="blob:clip" onAnalyse={() => undefined} onCancel={() => undefined} onConverted={onConverted} online={online} />);
+      return onConverted;
+    };
+
+    it('offers to convert a video the browser cannot play', () => {
+      renderWithConversion();
+      expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+      fireEvent.error(screen.getByLabelText('Video preview'));
+      expect(screen.getByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
+    });
+
+    it('offers it when the file opens but the picture cannot be decoded', async () => {
+      Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 0, configurable: true });
+      renderWithConversion();
+      fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+      expect(await screen.findByRole('button', { name: /Convert to MP4 on this device/ })).toBeTruthy();
+      expect(screen.getByText(/cannot play this video/)).toBeTruthy();
+    });
+
+    it('tells the offer when the device is offline, so it does not start a download that cannot happen', async () => {
+      renderWithConversion(false);
+      fireEvent.error(screen.getByLabelText('Video preview'));
+      // jsdom has no Cache API, so no converter is stored on this "device".
+      expect(await screen.findByText(/You are offline, and the converter has not been downloaded/)).toBeTruthy();
+      expect((screen.getByRole('button', { name: /Convert to MP4 on this device/ }) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('does not offer it for a video that plays', async () => {
+      renderWithConversion();
+      fireEvent.loadedMetadata(screen.getByLabelText('Video preview'));
+      await screen.findByText(/Selected:/);
+      expect(screen.queryByRole('button', { name: /Convert to MP4/ })).toBeNull();
+    });
+  });
+});

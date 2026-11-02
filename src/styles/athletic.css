@@ -1083,3 +1083,238 @@ body {
 .landing-scene__score text { font-family: var(--ath-display) !important; font-style: italic; }
 .landing-card__icon, .landing-flow__icon { transform: rotate(-6deg); border-radius: 10px !important; }
 .landing-flow__index { color: var(--ath-blaze) !important; }
+
+/* ==========================================================================
+   PWA: offline indicator and "Update available" toast
+   ========================================================================== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Offline: the same skewed mono badge as the status badges, in warning amber. */
+.offline-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 11px 0 9px;
+  border: 1px solid rgba(255, 176, 32, .45);
+  border-radius: 4px;
+  background: rgba(255, 176, 32, .1);
+  color: var(--ath-warn);
+  font: 700 11px/1 var(--ath-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: skewX(-8deg);
+}
+.offline-indicator > * { transform: skewX(8deg); }
+.offline-indicator-slot { display: flex; align-items: center; }
+
+/* Update toast: a scoreboard-style panel with a blaze-to-gold edge. */
+.update-toast-region {
+  position: fixed;
+  z-index: 70;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  justify-content: flex-end;
+  width: min(430px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.update-toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 10px 12px 22px;
+  overflow: hidden;
+  border: 1px solid var(--ath-line-strong);
+  border-radius: var(--ath-radius-lg);
+  background: linear-gradient(120deg, #0f141d, #070a10 70%);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55);
+  pointer-events: auto;
+  animation: update-toast-enter .22s ease both;
+}
+.update-toast::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--ath-blaze), var(--ath-gold));
+}
+.update-toast__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(46, 230, 255, .3);
+  border-radius: 10px;
+  background: rgba(46, 230, 255, .08);
+  color: var(--ath-volt);
+  transform: rotate(-6deg);
+}
+.update-toast__copy { flex: 1 1 auto; min-width: 0; }
+.update-toast__copy strong {
+  display: block;
+  color: var(--ath-text);
+  font: italic 800 21px/1 var(--ath-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.update-toast__copy span { display: block; margin-top: 4px; color: var(--ath-muted); font-size: 13px; line-height: 1.3; }
+.update-toast .button { flex: 0 0 auto; min-height: 40px; padding: 0 16px; }
+.update-toast__dismiss {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--ath-radius);
+  background: transparent;
+  color: var(--ath-muted);
+  cursor: pointer;
+}
+.update-toast__dismiss:hover { background: rgba(255, 255, 255, .06); color: var(--ath-text); }
+@keyframes update-toast-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 767px) {
+  /* Above the bottom navigation, including its raised Live Analysis button. */
+  .update-toast-region { right: 16px; bottom: calc(100px + env(safe-area-inset-bottom)); left: 16px; width: auto; }
+  .update-toast__copy span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-toast { animation: none; }
+}
+
+/* Guide: "Install on your phone" */
+.app-shell .guide-install { margin-top: 12px; }
+.guide-install__body { display: grid; gap: 16px; padding: 18px 20px 20px; }
+.guide-install__body p { margin: 0; color: var(--ath-muted); font-size: 14px; line-height: 1.6; }
+.guide-install__platforms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.guide-install__platforms > div { padding: 14px 16px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius); background: rgba(255, 255, 255, .02); }
+.guide-install__platforms h3 { margin: 0 0 8px; color: var(--ath-text); font: 700 18px/1.1 var(--ath-display); letter-spacing: .02em; text-transform: uppercase; }
+.guide-install__platforms ol { display: grid; gap: 6px; margin: 0; padding-left: 20px; color: var(--ath-muted); font-size: 14px; line-height: 1.5; }
+.guide-install__platforms strong { color: var(--ath-text); font-weight: 600; }
+.guide-install__body .guide-install__note { color: var(--ath-faint); font-size: 13px; }
+@media (max-width: 767px) {
+  .guide-install__platforms { grid-template-columns: 1fr; }
+}
+
+/* Voice notes */
+.voice-note { display: grid; gap: 10px; margin-top: 12px; }
+.voice-note__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.voice-note__language select { max-width: 100%; padding: 4px 8px; border: 1px solid var(--ath-line, rgba(255,255,255,.18)); border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 13px; }
+.voice-note__live { color: var(--ath-text); font-size: 14px; }
+.voice-note__text { margin: 0; color: var(--ath-muted); font-style: italic; overflow-wrap: anywhere; }
+.voice-note__review { display: grid; gap: 8px; }
+.voice-note__review label { display: grid; gap: 4px; font-size: 13px; color: var(--ath-muted); }
+.voice-note__review textarea { width: 100%; min-height: 56px; padding: 8px; border: 1px solid var(--ath-line, rgba(255,255,255,.18)); border-radius: 8px; background: transparent; color: var(--ath-text); font: inherit; }
+.voice-note__auto { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ath-muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.replay-notes { margin: 6px 0 0; color: var(--ath-muted); overflow-wrap: anywhere; }
+.coach-tools-setting { margin-top: 18px; display: grid; gap: 8px; }
+.coach-tools-setting h2 { margin: 0; font-size: 16px; }
+.coach-tools-setting__toggle { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+/* Training: practice log, heat-map and goals */
+.training-page { display: flex; flex-direction: column; gap: 18px; }
+.training-stats { margin: 0; }
+.training-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.training-chart__bar { fill: var(--ath-volt-deep); }
+.training-chart__line { fill: none; stroke: var(--ath-volt); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.training-chart__dot { fill: var(--ath-volt); stroke: var(--ath-ink); stroke-width: .4; vector-effect: non-scaling-stroke; }
+.training-heatmap { margin: 0; padding: 14px 14px 10px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius); background: rgba(0, 0, 0, .25); }
+.training-heatmap figcaption { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--ath-muted); font: 700 12px var(--ath-body); text-transform: uppercase; letter-spacing: .06em; }
+.training-heatmap figcaption strong { color: var(--ath-text); font: 800 28px/1 var(--ath-display); text-transform: none; letter-spacing: 0; }
+.training-heatmap figcaption small { margin-left: 4px; color: var(--ath-muted); font: 600 12px var(--ath-body); }
+.training-heatmap__scroll { overflow-x: auto; }
+.training-heatmap svg { display: block; width: 100%; min-width: 420px; height: auto; }
+.training-heatmap__day--0 { fill: rgba(255, 255, 255, .05); }
+.training-heatmap__day--1 { fill: rgba(46, 230, 255, .28); }
+.training-heatmap__day--2 { fill: rgba(46, 230, 255, .5); }
+.training-heatmap__day--3 { fill: rgba(46, 230, 255, .75); }
+.training-heatmap__day--4 { fill: var(--ath-volt); }
+.training-heatmap__day--future { fill: transparent; stroke: rgba(255, 255, 255, .06); }
+.training-form__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.training-form label, .training-form__notes { display: flex; flex-direction: column; gap: 5px; color: var(--ath-muted); font: 600 12px var(--ath-body); }
+.training-form small { color: var(--ath-faint); font-weight: 500; }
+.training-form input, .training-form select, .training-form textarea { min-height: 40px; padding: 8px 10px; border: 1px solid var(--ath-line-strong); border-radius: var(--ath-radius); background: var(--ath-panel-2); color: var(--ath-text); font: 500 14px var(--ath-body); }
+.training-form__feeling { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 12px; padding: 0; border: 0; }
+.training-form__feeling legend { margin-bottom: 6px; color: var(--ath-muted); font: 600 12px var(--ath-body); }
+.training-form__feeling label { flex-direction: row; align-items: center; color: var(--ath-text); font-size: 13px; }
+.training-form__notes { margin-bottom: 12px; }
+.training-log { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.training-entry { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; border-top: 1px solid var(--ath-line); }
+.training-entry:first-child { border-top: 0; }
+.training-entry__date { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+.training-entry__date strong { font: 800 24px/1 var(--ath-display); }
+.training-entry__date span { color: var(--ath-muted); font: 600 11px var(--ath-mono); text-transform: uppercase; }
+.training-entry__body { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; color: var(--ath-muted); font-size: 13px; }
+.training-entry__body strong { color: var(--ath-text); font-size: 15px; }
+.training-entry__body small { margin-left: 6px; color: var(--ath-faint); font-weight: 500; }
+.training-entry__notes { color: var(--ath-text); overflow-wrap: anywhere; }
+.training-entry__delete { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: var(--ath-radius); background: transparent; color: var(--ath-faint); cursor: pointer; }
+.training-entry__delete:hover, .training-entry__delete:focus-visible { background: rgba(255, 77, 94, .12); color: var(--ath-bad); }
+.goal-progress { display: flex; flex-direction: column; gap: 12px; }
+.goal-progress__item > div:first-child { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; color: var(--ath-muted); font: 600 12px var(--ath-body); text-transform: uppercase; letter-spacing: .06em; }
+.goal-progress__item strong { color: var(--ath-text); font: 800 22px/1 var(--ath-display); letter-spacing: 0; }
+.goal-progress__item small { color: var(--ath-muted); font: 600 13px var(--ath-body); }
+.goal-progress__track { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, .07); }
+.goal-progress__track span { display: block; height: 100%; border-radius: inherit; background: var(--ath-volt); transition: width .3s ease; }
+.goal-progress__track span.is-done { background: var(--ath-good); }
+.goal-progress__focus { display: flex; flex-direction: column; gap: 3px; margin: 0; }
+.goal-progress__focus span { color: var(--ath-muted); font: 600 12px var(--ath-body); text-transform: uppercase; letter-spacing: .06em; }
+.goal-progress__focus strong { color: var(--ath-text); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .goal-progress__track span { transition: none; } }
+/* Home has no video.css, so the compact card brings its own panel. */
+.landing-goals { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+.landing-goals:empty { display: none; }
+.goal-progress--compact { margin: 24px 0; padding: 20px; border: 1px solid var(--ath-line); border-radius: var(--ath-radius-lg); background: linear-gradient(180deg, var(--ath-panel-2), var(--ath-panel)); }
+.goal-progress > h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 800 20px/1.1 var(--ath-display); text-transform: uppercase; letter-spacing: .02em; }
+.club-roster { display: flex; flex-direction: column; margin: 0 0 10px; padding: 0; list-style: none; }
+.club-roster__row { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 12px; align-items: center; width: 100%; padding: 12px 8px; border: 0; border-top: 1px solid var(--ath-line); background: transparent; color: var(--ath-text); text-align: left; cursor: pointer; }
+.club-roster li:first-child .club-roster__row { border-top: 0; }
+.club-roster__row:hover, .club-roster__row.is-selected { background: rgba(46, 230, 255, .06); }
+.club-roster__row > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 14px; }
+.club-roster__row small { color: var(--ath-faint); font: 500 12px var(--ath-body); }
+.club-roster__name strong { overflow-wrap: anywhere; }
+.club-spark { display: block; width: 100%; max-width: 120px; height: 22px; }
+.club-focus { font-size: 22px !important; overflow-wrap: anywhere; }
+.club-code { font-family: var(--ath-mono); letter-spacing: .12em; }
+.club-explainer { display: flex; flex-direction: column; gap: 10px; margin: 0 0 14px; padding: 0; list-style: none; color: var(--ath-muted); font-size: 13px; }
+.club-explainer li { display: flex; gap: 10px; align-items: flex-start; }
+.club-explainer svg { flex: none; margin-top: 2px; color: var(--ath-volt); }
+.club-explainer strong { color: var(--ath-text); }
+.club-age { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 12px; padding: 0; border: 0; }
+.club-age legend { margin-bottom: 6px; color: var(--ath-muted); font: 600 12px var(--ath-body); }
+.club-details { margin: 6px 0 12px; color: var(--ath-muted); font-size: 13px; }
+.club-details summary { margin-bottom: 10px; cursor: pointer; color: var(--ath-text); font-weight: 600; }
+@media (max-width: 640px) {
+  .club-roster__row { grid-template-columns: 1fr 1fr; }
+  .club-roster__name { grid-column: 1 / -1; }
+}
+
+/* ---------- Lite mode: fewer animations ---------- */
+html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}
+.lite-suggestion { display: grid; gap: 8px; margin-bottom: 14px; }
+.lite-suggestion p { margin: 0; }
+.lite-suggestion__actions { display: flex; flex-wrap: wrap; gap: 8px; }

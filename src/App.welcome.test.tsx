@@ -132,8 +132,8 @@ describe('Welcome navigation', () => {
 
   it('honors Home during an unfinished guide transition', async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'User Guide' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Go to Home' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore User Guide' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ArcherLab Edge: go to Home' }));
     expect(window.location.pathname).toBe('/');
     await present();
     expect(screen.getByRole('heading', { name: 'ArcherLab Edge', level: 1 })).toBeTruthy();
@@ -142,7 +142,7 @@ describe('Welcome navigation', () => {
 
   it('does not let an older transition overwrite the latest Start request', async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'User Guide' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore User Guide' }));
     fireEvent.click(screen.getByRole('button', { name: 'Start Analysis' }));
     const [older, newer] = runtime.updates.splice(0);
     await act(async () => { newer(); });
@@ -168,8 +168,8 @@ describe('Welcome navigation', () => {
   it('keeps repeated Home actions out of history', () => {
     render(<App />);
     const push = vi.spyOn(window.history, 'pushState');
-    fireEvent.click(screen.getByRole('button', { name: 'Go to Home' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Go to Home' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ArcherLab Edge: go to Home' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ArcherLab Edge: go to Home' }));
     expect(push).not.toHaveBeenCalled();
     expect(runtime.updates).toHaveLength(0);
     expect(screen.queryByRole('button', { name: 'Go back' })).toBeNull();

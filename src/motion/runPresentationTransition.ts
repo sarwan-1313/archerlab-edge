@@ -21,6 +21,8 @@ let transitionSequence = 0;
 let activeTransition: ViewTransitionLike | null = null;
 
 function prefersReducedMotion(): boolean {
+  // Lite mode (low-end phones) skips view transitions too.
+  if (document.documentElement.dataset.lite === 'on') return true;
   return typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

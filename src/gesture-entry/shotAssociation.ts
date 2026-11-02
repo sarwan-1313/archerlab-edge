@@ -6,6 +6,10 @@ export function attachReportedResult(shots: readonly ShotAnalysis[], shotId: str
   return shots.map((shot) => shot.id === shotId ? { ...shot, actualResult: result } : shot);
 }
 
+export function attachShotNotes(shots: readonly ShotAnalysis[], shotId: string, notes: string): ShotAnalysis[] {
+  return shots.map((shot) => shot.id === shotId ? { ...shot, notes: notes || undefined } : shot);
+}
+
 export function clearReportedResult(shots: readonly ShotAnalysis[], shotId: string): ShotAnalysis[] {
   return shots.map((shot) => shot.id === shotId ? { ...shot, actualResult: undefined } : shot);
 }

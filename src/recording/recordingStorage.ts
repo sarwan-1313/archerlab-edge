@@ -1,6 +1,7 @@
 // Minimal IndexedDB storage for recordings and telemetry
 
-const DB_NAME = 'archerlab-edge-recordings';
+export const RECORDINGS_DB_NAME = 'archerlab-edge-recordings';
+const DB_NAME = RECORDINGS_DB_NAME;
 const DB_VERSION = 1;
 const STORE_RECORDINGS = 'recordings';
 const STORE_CHUNKS = 'chunks';

@@ -1,0 +1,14 @@
+{
+  "version": "0.12.10",
+  "license": "GPL-2.0-or-later",
+  "cores": {
+    "single": {
+      "bytes": {
+        "js": 111804,
+        "wasm": 32232419
+      },
+      "js": "single/ffmpeg-core.js",
+      "wasm": "single/ffmpeg-core.wasm"
+    }
+  }
+}

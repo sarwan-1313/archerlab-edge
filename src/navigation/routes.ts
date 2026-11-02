@@ -5,6 +5,7 @@ export const PAGE_PATHS = {
   'new-session': '/camera',
   calibration: '/readiness',
   'live-analysis': '/analysis',
+  'video-analysis': '/video',
   'manual-shot-entry': '/manual-shot-entry',
   'replay-analysis': '/replay-analysis',
   dashboard: '/analytics',
@@ -23,6 +24,10 @@ export const PAGE_PATHS = {
   'guide-analytics': '/guide/analytics',
   'saved-recordings': '/sessions',
   profile: '/profile',
+  training: '/training',
+  club: '/club',
+  'dataset-tools': '/dataset-tools',
+  privacy: '/privacy',
 } as const satisfies Readonly<Record<PageKey, string>>;
 
 const PAGE_BY_PATH = new Map<string, PageKey>(
@@ -39,12 +44,20 @@ function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
 }
 
-export function routeForPage(page: PageKey, params?: { shotId?: string }): string {
+export function routeForPage(page: PageKey, params?: { shotId?: string; reportId?: string }): string {
   const path = PAGE_PATHS[page];
   if (page === 'replay-analysis' && params?.shotId) {
     return `${path}?shot=${encodeURIComponent(params.shotId)}`;
   }
+  // A video report shared with a coach, opened from the cloud.
+  if (page === 'video-analysis' && params?.reportId) {
+    return `${path}?report=${encodeURIComponent(params.reportId)}`;
+  }
   return path;
+}
+
+export function readReportParam(search: string): string | undefined {
+  return new URLSearchParams(search).get('report') || undefined;
 }
 
 export function resolvePageFromPathname(pathname: string): PageKey | undefined {

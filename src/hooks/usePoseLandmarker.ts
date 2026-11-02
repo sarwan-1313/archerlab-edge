@@ -7,6 +7,7 @@ import {
   toPoseResult,
 } from '../services/poseLandmarkerService';
 import type { PoseDebugStats, PoseEngineStatus, PoseResult } from '../types/pose';
+import { LITE_SETTINGS, readLiteMode } from '../settings/liteMode';
 
 const EMPTY_DEBUG_STATS: PoseDebugStats = {
   fps: 0,
@@ -36,7 +37,7 @@ export function usePoseLandmarker({ videoRef, active }: UsePoseLandmarkerOptions
     let lastUiUpdateTime = 0;
     let fpsWindowStarted = performance.now();
     let fpsFrameCount = 0;
-    const inferenceInterval = 1000 / POSE_CONFIG.targetInferenceFps;
+    const inferenceInterval = 1000 / (readLiteMode() ? LITE_SETTINGS.liveInferenceFps : POSE_CONFIG.targetInferenceFps);
 
     latestResultRef.current = null;
     setResult(null);

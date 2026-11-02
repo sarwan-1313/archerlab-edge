@@ -1,16 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { ActionButton } from '../components/ActionButton';
+import { GoalProgressCard } from '../components/training/GoalProgressCard';
+import { usePracticeLog } from '../practice-log/usePracticeLog';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { mountScrollScene } from '../landing/scrollScene';
 import '../landing/landing.css';
 
 type HomePageProps = {
   onStart: () => void;
+  onVideo?: () => void;
   onGuide: () => void;
   onProfile?: () => void;
   onSample?: () => void;
   hasProfile?: boolean;
   hasTrainingHistory?: boolean;
+  onPrivacy?: () => void;
+  onTraining?: () => void;
 };
 
 const sceneSteps = [
@@ -25,6 +30,7 @@ const capabilities: Array<{ icon: AppIconName; title: string; body: string }> = 
   { icon: 'target', title: 'Shot-cycle analysis', body: 'Each shot is split into draw, hold, release and follow-through, with metrics for every phase.' },
   { icon: 'scan', title: 'Gesture scoring', body: 'Show your score with your hand after each end. No phone tapping between arrows.' },
   { icon: 'grid', title: 'Session analytics', body: 'Consistency across shots, and how form differs between your high- and low-scoring arrows.' },
+  { icon: 'film', title: 'Video analysis', body: 'Upload a clip filmed from any angle. Every frame and the sound of each release are analysed to rate your level and plan your practice.' },
 ];
 
 const sessionFlow: Array<{ icon: AppIconName; title: string; body: string }> = [
@@ -33,7 +39,8 @@ const sessionFlow: Array<{ icon: AppIconName; title: string; body: string }> = [
   { icon: 'history', title: 'Review and compare', body: 'Replay any shot, check its metrics, and track consistency across the session.' },
 ];
 
-export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
+export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPrivacy, onTraining, hasProfile = false, hasTrainingHistory = false }: HomePageProps) {
+  const practice = usePracticeLog();
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => (rootRef.current ? mountScrollScene(rootRef.current) : undefined), []);
 
@@ -61,7 +68,13 @@ export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = f
               Start Analysis
               <AppIcon name="arrow-right" size={18} />
             </ActionButton>
-            <ActionButton variant="ghost" className="landing-ghost" aria-label="User Guide" onClick={onGuide}>Explore User Guide</ActionButton>
+            {onVideo ? (
+              <ActionButton variant="secondary" className="landing-video" onClick={onVideo}>
+                <AppIcon name="film" size={18} />
+                Analyse a Video
+              </ActionButton>
+            ) : null}
+            <ActionButton variant="ghost" className="landing-ghost" onClick={onGuide}>Explore User Guide</ActionButton>
           </div>
           {onSample ? (
             <button type="button" className="landing-sample-link" onClick={onSample}>
@@ -69,7 +82,7 @@ export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = f
             </button>
           ) : null}
           <ul className="landing-hero__facts" aria-label="Key facts">
-            <li><strong>100%</strong><span>on-device processing</span></li>
+            <li><strong>2</strong><span>engines: live camera &amp; recorded video</span></li>
             <li><strong>33</strong><span>body landmarks tracked</span></li>
             <li><strong>0</strong><span>sensors or wearables</span></li>
           </ul>
@@ -79,6 +92,11 @@ export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = f
           <AppIcon name="chevron-down" size={18} />
         </button>
       </section>
+
+      {/* Shown only once the athlete has set goals. */}
+      <div className="landing-goals">
+        <GoalProgressCard compact entries={practice.entries} goals={practice.goals} onOpen={onTraining} />
+      </div>
 
       <section className="landing-story" id="landing-story" data-scene="track" aria-labelledby="landing-story-title">
         <div className="landing-story__sticky">
@@ -207,8 +225,8 @@ export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = f
       <section className="landing-privacy" aria-labelledby="landing-privacy-title" data-reveal>
         <span className="landing-privacy__icon"><AppIcon name="shield" size={26} /></span>
         <div>
-          <h2 id="landing-privacy-title">Your video never leaves your device</h2>
-          <p>Pose models run in the browser with WebAssembly. No uploads, no accounts, no cloud processing. Recordings stay on the device you trained with.</p>
+          <h2 id="landing-privacy-title">Your video stays on your device</h2>
+          <p>Pose models run in the browser with WebAssembly, for live sessions and uploaded clips alike. Nothing is uploaded unless you choose to: AI coach reviews and account backup are optional and off by default.</p>
         </div>
       </section>
 
@@ -231,8 +249,8 @@ export function HomePage({ onStart, onGuide, onProfile, onSample, hasProfile = f
       </section>
 
       <footer className="landing-footer">
-        <span><AppIcon name="shield" size={14} /> Video processing stays on your device</span>
-        <span>Built by an archer · Version 0.1.0</span>
+        <span><AppIcon name="shield" size={14} /> Video processing stays on your device unless you opt in{onPrivacy ? <> · <button type="button" className="landing-footer__link" onClick={onPrivacy}>Privacy</button></> : null}</span>
+        <span>Built by an archer · Version 0.2.0</span>
       </footer>
     </div>
   );

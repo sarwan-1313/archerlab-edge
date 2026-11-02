@@ -1,0 +1,17 @@
+ffmpeg.wasm core (public/ffmpeg/single/ffmpeg-core.js and ffmpeg-core.wasm)
+
+These two files are @ffmpeg/core 0.12.10 from the ffmpeg.wasm project: FFmpeg compiled to
+WebAssembly together with libx264 and other libraries. The build is licensed under the
+GNU General Public License, version 2 or (at your option) any later version (GPL-2.0-or-later).
+
+  Licence text:   https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+  Build recipe and the exact library sources it compiles (Dockerfile, version pins):
+                  https://github.com/ffmpegwasm/ffmpeg.wasm/tree/v0.12.10
+  FFmpeg source:  https://ffmpeg.org/download.html
+  x264 source:    https://code.videolan.org/videolan/x264
+
+ArcherLab Edge's own code is MIT-licensed. It loads this core only when an athlete chooses
+"Convert to MP4 on this device", runs it as a separate program in a Web Worker, and talks to it by
+messages (the MIT-licensed @ffmpeg/ffmpeg wrapper). The files are not modified.
+
+To refresh them from the pinned npm package: npm run ffmpeg:core

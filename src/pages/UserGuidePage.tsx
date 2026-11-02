@@ -65,6 +65,35 @@ export function UserGuidePage({ onStart, onHome, onOnboarding, onOpenStep }: Use
         })}
       </div>
 
+      <section className="guide-section guide-install" aria-labelledby="guide-install-title">
+        <header className="guide-section__header">
+          <span className="guide-section__icon"><AppIcon name="smartphone" size={21} /></span>
+          <div><span className="eyebrow">Optional</span><h2 id="guide-install-title">Install on your phone</h2></div>
+        </header>
+        <div className="guide-install__body">
+          <p>Open ArcherLab Edge from your home screen, full screen, and keep analysing at the range without a signal. Visit once on Wi-Fi first: the app saves itself to your phone (roughly 26 MB).</p>
+          <div className="guide-install__platforms">
+            <div>
+              <h3>iPhone or iPad (Safari)</h3>
+              <ol>
+                <li>Open ArcherLab Edge in Safari.</li>
+                <li>Tap the <strong>Share</strong> button.</li>
+                <li>Choose <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li>
+              </ol>
+            </div>
+            <div>
+              <h3>Android (Chrome)</h3>
+              <ol>
+                <li>Open ArcherLab Edge in Chrome.</li>
+                <li>Tap the <strong>⋮</strong> menu.</li>
+                <li>Choose <strong>Install app</strong> (or <strong>Add to Home screen</strong>).</li>
+              </ol>
+            </div>
+          </div>
+          <p className="guide-install__note">Live and video analysis work offline. Backup, AI review and imports need a connection.</p>
+        </div>
+      </section>
+
       <aside className="guide-note">
         <AppIcon name="sensors" size={19} />
         <div><strong>Metrics pause when visibility drops</strong><span>Improve lighting or framing before using a value for comparison. The app keeps unavailable and low-confidence readings explicit.</span></div>

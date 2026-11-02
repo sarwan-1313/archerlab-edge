@@ -1,4 +1,5 @@
-const DB = 'archerlab-edge-profiles';
+export const PROFILE_DB_NAME = 'archerlab-edge-profiles';
+const DB = PROFILE_DB_NAME;
 const VERSION = 1;
 const STORE = 'profiles';
 

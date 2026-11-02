@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { ReportedShotResult, ScoreEntryMethod } from '../../types/gestureScore';
 import type { BiomechanicsMetric } from '../../types/biomechanics';
 import type { ShotAnalysis } from '../../types/shotAnalysis';
@@ -12,7 +12,7 @@ function metricValue(metric: BiomechanicsMetric): string {
   return `${metric.value.toFixed(1)} ${metric.unit}`;
 }
 
-export function ShotReviewPanel({ shot, shotNumber, scoreEntryMethod, gestureActive, manualEntryRequested = false, onScore, onContinue }: {
+export function ShotReviewPanel({ shot, shotNumber, scoreEntryMethod, gestureActive, manualEntryRequested = false, onScore, onContinue, voiceNote }: {
   shot: ShotAnalysis;
   shotNumber: number;
   scoreEntryMethod: ScoreEntryMethod;
@@ -20,6 +20,8 @@ export function ShotReviewPanel({ shot, shotNumber, scoreEntryMethod, gestureAct
   manualEntryRequested?: boolean;
   onScore: (result: ReportedShotResult) => void;
   onContinue: () => void;
+  /** The voice note control for this shot. */
+  voiceNote?: ReactNode;
 }) {
   const [manualEntry, setManualEntry] = useState(scoreEntryMethod === 'manual-only');
   const [manualCandidate, setManualCandidate] = useState<string>();
@@ -59,6 +61,8 @@ export function ShotReviewPanel({ shot, shotNumber, scoreEntryMethod, gestureAct
         <div><span>Alignment change</span><strong>{metricValue(shot.summary.releaseShoulderDeltaDeg)}</strong></div>
         <div><span>Follow-through</span><strong>{metricValue(shot.summary.followThroughShoulderVariationDeg)}</strong></div>
       </div>
+
+      {voiceNote}
 
       {(manualEntry || (!shot.actualResult && scoreEntryMethod !== 'none')) ? (
         <div className="shot-review-panel__scoring">
