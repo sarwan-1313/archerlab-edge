@@ -1,6 +1,7 @@
 import { AppIcon } from './AppIcon';
 import type { NavItem, PageKey } from '../types';
 import { ProfilePreview } from './ProfilePreview';
+import { useLanguage } from '../i18n/i18n';
 
 type SidebarNavProps = {
   items: NavItem[];
@@ -9,6 +10,7 @@ type SidebarNavProps = {
 };
 
 export function SidebarNav({ items, active, onSelect }: SidebarNavProps) {
+  const { t } = useLanguage();
   return (
     <nav className="sidebar-nav" aria-label="Primary navigation">
       <button type="button" className="sidebar-nav__brand" onClick={() => onSelect('home')} aria-label="ArcherLab Edge: go to Home from sidebar">
@@ -34,7 +36,7 @@ export function SidebarNav({ items, active, onSelect }: SidebarNavProps) {
             aria-current={active === item.key ? 'page' : undefined}
           >
             <AppIcon name={item.icon} size={18} strokeWidth={1.8} />
-            <span className="font-body-md text-body-md">{item.label}</span>
+            <span className="font-body-md text-body-md">{t(`nav.${item.key}`, item.label)}</span>
           </button>
         ))}
       </div>

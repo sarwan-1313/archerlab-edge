@@ -6,6 +6,8 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Punjabi and Hindi** (Profile → Language): the main menu and the Scoring, Drills and Find a range pages in ਪੰਜਾਬੀ (Gurmukhi) or हिन्दी, with English for anything not translated yet. The choice stays on the device and saves with Google Drive.
+- **Share progress** (Training): makes a portrait image (1080 × 1350, Instagram size) of this week's arrows and sessions, your streak, your latest form score and its change, and your best round. It opens the phone's share sheet, or downloads the image on a computer.
 - **Find a range** (`/ranges`): archery ranges, clubs and shops near you from OpenStreetMap, found from your location (rounded to about 1 km, and only when you press the button) or a town or postcode, within 10 to 100 km. They are shown on a map with numbered pins and in a list with distance, indoor and members-only notes, address, hours, website, phone, and directions in Google or Apple Maps. No API key is needed.
 - **Shot rhythm** (in every video report): each shot's draw, hold at anchor and follow-through drawn as bars lined up at the release. It shows the average hold and draw, how steady they are (very steady to varies a lot) and shots with an unusually long or short hold.
 - **Drills** (`/drills`, from Training): six timed drills (holding at anchor, reversals, blank bale, follow-through freeze, posture at the wall, rhythm count), each with steps, safety notes, work and rest prompts with signals, and pause and resume. Drills for your focus area from the latest video analysis come first, and a finished drill can be logged.

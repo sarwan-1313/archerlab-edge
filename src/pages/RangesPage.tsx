@@ -3,6 +3,7 @@ import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
 import { TILE_SIZE, directionsLinks, findRanges, fitZoom, geocode, worldPixel, type LatLon, type Range } from '../ranges/ranges';
+import { useLanguage } from '../i18n/i18n';
 import '../styles/video.css';
 
 const MAP_W = 640;
@@ -60,6 +61,7 @@ export function RangesPage() {
   const [busy, setBusy] = useState(false);
   const [place, setPlace] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const search = async (point: LatLon & { label: string }, km = radius) => {
     setBusy(true);
@@ -105,18 +107,18 @@ export function RangesPage() {
 
   return (
     <div className="page-container page-container--wide scoring-page">
-      <PageHeader title="Find a range" subtitle="Archery ranges, clubs and shops near you, from OpenStreetMap. Your location is only used when you ask, rounded to about 1 km." />
+      <PageHeader title={t('ranges.title', 'Find a range')} subtitle={t('ranges.subtitle', 'Archery ranges, clubs and shops near you, from OpenStreetMap. Your location is only used when you ask, rounded to about 1 km.')} />
       <section className="va-panel" aria-labelledby="ranges-search-title">
-        <h2 id="ranges-search-title">Where are you?</h2>
+        <h2 id="ranges-search-title">{t('ranges.where', 'Where are you?')}</h2>
         <div className="va-actions">
-          <ActionButton variant="primary" type="button" disabled={busy} onClick={useLocation}><AppIcon name="target" size={16} /> Use my location</ActionButton>
+          <ActionButton variant="primary" type="button" disabled={busy} onClick={useLocation}><AppIcon name="map" size={16} /> {t('ranges.useLocation', 'Use my location')}</ActionButton>
           <label className="end-timer__sound">Within
             <select value={radius} onChange={(event) => { const km = Number(event.target.value); setRadius(km); if (centre) void search(centre, km); }}>{RADII.map((km) => <option key={km} value={km}>{km} km</option>)}</select>
           </label>
         </div>
         <form className="scoring-fields" onSubmit={(event) => void submit(event)}>
           <label>Or search a town or postcode<input value={place} onChange={(event) => setPlace(event.target.value)} placeholder="e.g. San Francisco, or 94132" /></label>
-          <ActionButton variant="secondary" type="submit" disabled={busy}>{busy ? 'Searching…' : 'Search'}</ActionButton>
+          <ActionButton variant="secondary" type="submit" disabled={busy}>{busy ? 'Searching…' : t('ranges.search', 'Search')}</ActionButton>
         </form>
         {status ? <p className="va-import-status" role="status">{status}</p> : null}
       </section>
@@ -139,7 +141,7 @@ export function RangesPage() {
                     {range.address ? <span className="va-faint">{range.address}</span> : null}
                     {range.openingHours ? <span className="va-faint">Hours: {range.openingHours}</span> : null}
                     <span className="range-list__links">
-                      <a href={links.google} target="_blank" rel="noreferrer">Directions</a>
+                      <a href={links.google} target="_blank" rel="noreferrer">{t('ranges.directions', 'Directions')}</a>
                       <a href={links.apple} target="_blank" rel="noreferrer">Apple Maps</a>
                       {range.website ? <a href={range.website} target="_blank" rel="noreferrer">Website</a> : null}
                       {range.phone ? <a href={`tel:${range.phone.replace(/[^+\d]/g, '')}`}>Call</a> : null}

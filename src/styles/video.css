@@ -676,3 +676,7 @@
 .range-list__name small { grid-column: 2; color: var(--ath-muted); }
 .range-list__number { grid-row: span 2; display: inline-grid; place-items: center; width: 24px; height: 24px; font: 800 12px/1 var(--ath-mono); color: #04060a; background: var(--ath-gold); border-radius: 50%; }
 .range-list__links { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
+.language-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.progress-card { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; gap: 14px; padding: 16px; background: rgba(4, 6, 10, .9); }
+.progress-card img { max-width: min(92vw, 420px); max-height: 74vh; border-radius: var(--ath-radius-lg); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.progress-card .va-actions { justify-content: center; }

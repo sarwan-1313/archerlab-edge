@@ -1,4 +1,5 @@
 import { AppIcon } from './AppIcon';
+import { useLanguage } from '../i18n/i18n';
 import type { NavItem, PageKey } from '../types';
 
 type BottomNavProps = {
@@ -8,6 +9,8 @@ type BottomNavProps = {
 };
 
 export function BottomNav({ items, active, onSelect }: BottomNavProps) {
+  const { t } = useLanguage();
+  const short: Partial<Record<PageKey, string>> = { 'video-analysis': 'nav.video', 'live-analysis': 'nav.live' };
   return (
     <nav className="bottom-nav" aria-label="Primary navigation">
       <div className="bottom-nav__inner">
@@ -24,7 +27,7 @@ export function BottomNav({ items, active, onSelect }: BottomNavProps) {
             aria-current={active === item.key ? 'page' : undefined}
           >
             <AppIcon name={item.icon} size={18} strokeWidth={1.8} />
-            <span className="block text-center leading-none">{item.label}</span>
+            <span className="block text-center leading-none">{t(short[item.key] ?? `nav.${item.key}`, item.label)}</span>
           </button>
         ))}
       </div>

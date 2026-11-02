@@ -8,12 +8,14 @@ import { savePracticeEntry } from '../practice-log/storage';
 import { usePracticeLog } from '../practice-log/usePracticeLog';
 import { formatClock } from '../scoring/timer';
 import { beep } from '../utils/beep';
+import { useLanguage } from '../i18n/i18n';
 import { CATEGORY_INFO } from '../video-analysis/rubric';
 import '../styles/video.css';
 
 const PHASE_TEXT: Record<DrillPhase, string> = { ready: 'Get ready', work: '', rest: 'Rest', done: 'Done' };
 
 function DrillRunner({ drill, onClose }: { drill: Drill; onClose: () => void }) {
+  const { t } = useLanguage();
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -47,20 +49,20 @@ function DrillRunner({ drill, onClose }: { drill: Drill; onClose: () => void }) 
       <h2 id="drill-runner-title">{drill.name} <small>{drill.reps} × {drill.workS} s {drill.workLabel.toLowerCase()}, {drill.restS} s rest · {formatClock(drillDurationS(drill))}</small></h2>
       <div className="drill-runner__clock" role="timer">
         <strong>{startedAt === null ? formatClock(drill.workS) : formatClock(state.remaining)}</strong>
-        <span>{startedAt === null ? 'Press start when you are in position' : state.phase === 'work' ? `${drill.workLabel}: rep ${state.rep} of ${drill.reps}` : state.phase === 'rest' ? `Rest: next is rep ${state.rep + 1}` : PHASE_TEXT[state.phase]}</span>
+        <span>{startedAt === null ? 'Press start when you are in position' : state.phase === 'work' ? `${drill.workLabel}: rep ${state.rep} of ${drill.reps}` : state.phase === 'rest' ? `${t('drills.rest', 'Rest')}: ${state.rep + 1}/${drill.reps}` : t(`drills.${state.phase}`, PHASE_TEXT[state.phase])}</span>
       </div>
       <ol className="drill-steps">{drill.steps.map((step) => <li key={step}>{step}</li>)}</ol>
       {drill.safety ? <p className="va-callout"><AppIcon name="shield" size={16} /> {drill.safety}</p> : null}
       <div className="va-actions">
         {startedAt === null || state.phase === 'done' ? (
-          <ActionButton variant="primary" type="button" onClick={() => { last.current = null; setPausedAt(null); setNow(Date.now()); setStartedAt(Date.now()); setLogged(false); }}><AppIcon name="play" size={16} /> {state.phase === 'done' ? 'Again' : 'Start'}</ActionButton>
+          <ActionButton variant="primary" type="button" onClick={() => { last.current = null; setPausedAt(null); setNow(Date.now()); setStartedAt(Date.now()); setLogged(false); }}><AppIcon name="play" size={16} /> {state.phase === 'done' ? 'Again' : t('drills.start', 'Start')}</ActionButton>
         ) : pausedAt === null ? (
-          <ActionButton variant="secondary" type="button" onClick={() => setPausedAt(Date.now())}><AppIcon name="pause" size={16} /> Pause</ActionButton>
+          <ActionButton variant="secondary" type="button" onClick={() => setPausedAt(Date.now())}><AppIcon name="pause" size={16} /> {t('drills.pause', 'Pause')}</ActionButton>
         ) : (
-          <ActionButton variant="primary" type="button" onClick={() => { setStartedAt((value) => (value ?? 0) + Date.now() - pausedAt); setPausedAt(null); setNow(Date.now()); }}><AppIcon name="play" size={16} /> Resume</ActionButton>
+          <ActionButton variant="primary" type="button" onClick={() => { setStartedAt((value) => (value ?? 0) + Date.now() - pausedAt); setPausedAt(null); setNow(Date.now()); }}><AppIcon name="play" size={16} /> {t('drills.resume', 'Resume')}</ActionButton>
         )}
         {state.phase === 'done' && startedAt !== null ? <ActionButton variant="secondary" type="button" disabled={logged} onClick={() => void log()}><AppIcon name="check" size={16} /> {logged ? 'Logged' : 'Log in practice log'}</ActionButton> : null}
-        <label className="end-timer__sound"><input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} /> Signals</label>
+        <label className="end-timer__sound"><input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} /> {t('timer.signals', 'Signals')}</label>
         <ActionButton variant="ghost" type="button" onClick={onClose} disabled={running && pausedAt === null}>Choose another drill</ActionButton>
       </div>
     </section>
@@ -73,12 +75,13 @@ export function DrillsPage({ onTraining }: { onTraining?: () => void } = {}) {
   const focus = goals.focus?.category ?? null;
   const drills = useMemo(() => drillsFor(focus), [focus]);
   const [chosen, setChosen] = useState<Drill | null>(null);
+  const { t } = useLanguage();
 
   return (
     <div className="page-container page-container--wide scoring-page">
       <PageHeader
-        title="Drills"
-        subtitle="Timed drills for each part of your shot, with work and rest prompts. Choose one, get into position, and follow the timer."
+        title={t('drills.title', 'Drills')}
+        subtitle={t('drills.subtitle', 'Timed drills for each part of your shot, with work and rest prompts. Choose one, get into position, and follow the timer.')}
         actions={onTraining ? <div className="va-actions"><ActionButton variant="secondary" type="button" onClick={onTraining}><AppIcon name="calendar" size={16} /> Practice log</ActionButton></div> : undefined}
       />
       {chosen ? <DrillRunner key={chosen.id} drill={chosen} onClose={() => setChosen(null)} /> : null}

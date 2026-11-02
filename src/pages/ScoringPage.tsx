@@ -15,6 +15,7 @@ import {
 } from '../scoring/scoring';
 import { PHASE_LABEL, beepsFor, formatClock, timerState, type TimerPhase } from '../scoring/timer';
 import { beep } from '../utils/beep';
+import { useLanguage } from '../i18n/i18n';
 import { loadEquipment } from '../equipment/equipment';
 import { summariseHeartRate } from '../sensors/heartRate';
 import { useHeartRate } from '../sensors/useHeartRate';
@@ -45,6 +46,7 @@ function storeInProgress(round: ScoredRound | null) {
 
 /** Remounted for each end (keyed by end number), so it starts idle every end. */
 function EndTimer({ secondsPerEnd }: { secondsPerEnd: number }) {
+  const { t } = useLanguage();
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [sound, setSound] = useState(true);
@@ -68,19 +70,20 @@ function EndTimer({ secondsPerEnd }: { secondsPerEnd: number }) {
       <div className="end-timer__light" aria-hidden="true" />
       <div className="end-timer__read" role="timer" aria-live="off">
         <strong>{state ? formatClock(state.remaining) : formatClock(secondsPerEnd)}</strong>
-        <span>{state ? PHASE_LABEL[state.phase] : `${formatClock(secondsPerEnd)} per end`}</span>
+        <span>{state ? t(`timer.${state.phase}`, PHASE_LABEL[state.phase]) : `${formatClock(secondsPerEnd)} per end`}</span>
       </div>
       <div className="va-actions">
         {startedAt === null || state?.phase === 'stop'
-          ? <ActionButton variant="secondary" type="button" onClick={() => { lastPhase.current = null; setNow(Date.now()); setStartedAt(Date.now()); }}><AppIcon name="play" size={16} /> {state?.phase === 'stop' ? 'Restart timer' : 'Start timer'}</ActionButton>
+          ? <ActionButton variant="secondary" type="button" onClick={() => { lastPhase.current = null; setNow(Date.now()); setStartedAt(Date.now()); }}><AppIcon name="play" size={16} /> {state?.phase === 'stop' ? 'Restart timer' : t('timer.start', 'Start timer')}</ActionButton>
           : <ActionButton variant="ghost" type="button" onClick={() => setStartedAt(null)}><AppIcon name="stop" size={16} /> Stop</ActionButton>}
-        <label className="end-timer__sound"><input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} /> Signals</label>
+        <label className="end-timer__sound"><input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} /> {t('timer.signals', 'Signals')}</label>
       </div>
     </section>
   );
 }
 
 function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
+  const { t } = useLanguage();
   const [roundId, setRoundId] = useState(ROUNDS[0].id);
   const preset = roundById(roundId);
   const [faceId, setFaceId] = useState(preset.faceId);
@@ -103,7 +106,7 @@ function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
 
   return (
     <section className="va-panel scoring-setup" aria-labelledby="scoring-setup-title">
-      <h2 id="scoring-setup-title">Choose a round</h2>
+      <h2 id="scoring-setup-title">{t('scoring.choose', 'Choose a round')}</h2>
       <div className="scoring-rounds" role="radiogroup" aria-label="Round">
         {ROUNDS.map((round) => (
           <button key={round.id} type="button" role="radio" aria-checked={round.id === roundId} className={`scoring-round${round.id === roundId ? ' is-selected' : ''}`} onClick={() => choose(round.id)}>
@@ -114,11 +117,11 @@ function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
       </div>
       <p className="va-muted">{preset.description}</p>
       <div className="scoring-fields">
-        <label>Face<select value={faceId} onChange={(event) => setFaceId(event.target.value)}>{FACES.map((face) => <option key={face.id} value={face.id}>{face.label}</option>)}</select></label>
-        <label>Distance (m)<input inputMode="numeric" value={distance} onChange={(event) => setDistance(event.target.value)} /></label>
-        <label>Ends<input inputMode="numeric" value={ends} disabled={!custom} onChange={(event) => setEnds(event.target.value)} /></label>
-        <label>Arrows per end<input inputMode="numeric" value={perEnd} disabled={!custom} onChange={(event) => setPerEnd(event.target.value)} /></label>
-        {equipment.bows.length ? <label>Bow<select value={bowId} onChange={(event) => setBowId(event.target.value)}><option value="">(not recorded)</option>{equipment.bows.map((bow) => <option key={bow.id} value={bow.id}>{bow.name}</option>)}</select></label> : null}
+        <label>{t('scoring.face', 'Face')}<select value={faceId} onChange={(event) => setFaceId(event.target.value)}>{FACES.map((face) => <option key={face.id} value={face.id}>{face.label}</option>)}</select></label>
+        <label>{t('scoring.distance', 'Distance (m)')}<input inputMode="numeric" value={distance} onChange={(event) => setDistance(event.target.value)} /></label>
+        <label>{t('scoring.ends', 'Ends')}<input inputMode="numeric" value={ends} disabled={!custom} onChange={(event) => setEnds(event.target.value)} /></label>
+        <label>{t('scoring.perEnd', 'Arrows per end')}<input inputMode="numeric" value={perEnd} disabled={!custom} onChange={(event) => setPerEnd(event.target.value)} /></label>
+        {equipment.bows.length ? <label>{t('scoring.bow', 'Bow')}<select value={bowId} onChange={(event) => setBowId(event.target.value)}><option value="">(not recorded)</option>{equipment.bows.map((bow) => <option key={bow.id} value={bow.id}>{bow.name}</option>)}</select></label> : null}
       </div>
       <div className="va-actions">
         <ActionButton variant="primary" type="button" onClick={() => onStart(newRound(preset, {
@@ -127,13 +130,14 @@ function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
           ends: custom ? number(ends, preset.ends, 60) : preset.ends,
           arrowsPerEnd: custom ? number(perEnd, preset.arrowsPerEnd, 12) : preset.arrowsPerEnd,
           bow: equipment.bows.find((bow) => bow.id === bowId)?.name,
-        }))}><AppIcon name="target" size={16} /> Start round</ActionButton>
+        }))}><AppIcon name="target" size={16} /> {t('scoring.start', 'Start round')}</ActionButton>
       </div>
     </section>
   );
 }
 
 function GroupPanel({ round, handedness }: { round: ScoredRound; handedness: 'left' | 'right' }) {
+  const { t } = useLanguage();
   const face = faceById(round.faceId);
   const all = round.ends.flat();
   const group = grouping(all);
@@ -142,9 +146,9 @@ function GroupPanel({ round, handedness }: { round: ScoredRound; handedness: 'le
   return (
     <div className="scoring-group">
       <div className="va-stat-row">
-        <div className="va-stat"><span>Group size</span><strong>{toCm(group.meanSpread * 2, face).toFixed(1)} cm</strong><small>average spread across, {group.count} arrows</small></div>
+        <div className="va-stat"><span>{t('scoring.groupSize', 'Group size')}</span><strong>{toCm(group.meanSpread * 2, face).toFixed(1)} cm</strong><small>average spread across, {group.count} arrows</small></div>
         <div className="va-stat"><span>Widest pair</span><strong>{toCm(group.extremeSpread, face).toFixed(1)} cm</strong><small>between the two furthest arrows</small></div>
-        <div className="va-stat"><span>Group sits</span><strong>{group.direction}</strong><small>{group.direction === 'centred' ? 'on the middle' : `${toCm(group.offset, face).toFixed(1)} cm from the centre`}</small></div>
+        <div className="va-stat"><span>{t('scoring.groupSits', 'Group sits')}</span><strong>{group.direction}</strong><small>{group.direction === 'centred' ? 'on the middle' : `${toCm(group.offset, face).toFixed(1)} cm from the centre`}</small></div>
       </div>
       {hints.length ? (
         <details className="scoring-hints">
@@ -181,6 +185,7 @@ function Scoresheet({ round }: { round: ScoredRound }) {
 
 function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound; onChange: (round: ScoredRound) => void; onFinish: (notes: string) => void; onAbandon: () => void }) {
   const [notes, setNotes] = useState('');
+  const { t } = useLanguage();
   const { profile } = useAthleteProfile();
   const handedness = profile?.handedness === 'left' ? 'left' : 'right';
   const face = faceById(round.faceId);
@@ -201,8 +206,8 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
     <>
       <section className="session-summary-cards scoring-totals" aria-label="Round so far">
         <article><span>{round.name}</span><strong>{totals.total}</strong><small>of {maxRoundScore({ ends: round.plannedEnds, arrowsPerEnd: round.arrowsPerEnd })} · {round.distanceM} m</small></article>
-        <article><span>End</span><strong>{Math.min(endNumber, round.plannedEnds)}<small>/{round.plannedEnds}</small></strong><small>{done ? 'Round complete' : endFull ? 'Next end ready' : `${current.length} of ${round.arrowsPerEnd} arrows`}</small></article>
-        <article><span>Average</span><strong>{totals.average === null ? '–' : totals.average.toFixed(2)}</strong><small>{totals.tens} tens · {totals.xs} X</small></article>
+        <article><span>{t('scoring.end', 'End')}</span><strong>{Math.min(endNumber, round.plannedEnds)}<small>/{round.plannedEnds}</small></strong><small>{done ? 'Round complete' : endFull ? 'Next end ready' : `${current.length} of ${round.arrowsPerEnd} arrows`}</small></article>
+        <article><span>{t('scoring.average', 'Average')}</span><strong>{totals.average === null ? '–' : totals.average.toFixed(2)}</strong><small>{totals.tens} tens · {totals.xs} X</small></article>
       </section>
 
       {heart.supported || hr ? (
@@ -224,7 +229,7 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
           <h2 id="scoring-face-title">{done ? 'All arrows' : `End ${Math.min(endNumber, round.plannedEnds)}`} <small>{face.label}</small></h2>
           <TargetFaceInput
             kind={face.kind}
-            label={`${face.label} target face. ${done ? '' : 'Tap where each arrow landed.'}`}
+            label={`${face.label}. ${done ? '' : t('scoring.tap', 'Tap where each arrow landed.')}`}
             markers={[...markersFor(showAll || done ? earlier : [], 'earlier'), ...markersFor(endFull ? [] : current, 'current', true)]}
             group={group ? { ...group.centre, spread: group.meanSpread } : null}
             onPlace={done ? undefined : (x, y) => add(arrowAt(x, y, face.kind))}
@@ -235,19 +240,19 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
             </div>
           ) : null}
           <div className="va-actions">
-            <ActionButton variant="ghost" type="button" disabled={!round.ends.flat().length} onClick={() => onChange(undoArrow(round))}><AppIcon name="undo" size={16} /> Undo arrow</ActionButton>
+            <ActionButton variant="ghost" type="button" disabled={!round.ends.flat().length} onClick={() => onChange(undoArrow(round))}><AppIcon name="undo" size={16} /> {t('scoring.undo', 'Undo arrow')}</ActionButton>
             <label className="end-timer__sound"><input type="checkbox" checked={showAll} onChange={(event) => setShowAll(event.target.checked)} /> Show earlier ends</label>
           </div>
         </section>
         <section className="va-panel" aria-labelledby="scoring-sheet-title">
-          <h2 id="scoring-sheet-title">Score sheet</h2>
+          <h2 id="scoring-sheet-title">{t('scoring.sheet', 'Score sheet')}</h2>
           {totals.arrows ? <Scoresheet round={round} /> : <p className="va-faint">Arrows appear here as you score them, best first in each end, as on a paper score sheet.</p>}
           <h3>{showAll ? 'Whole round' : 'This end'} grouping</h3>
           <GroupPanel round={showAll ? round : { ...round, ends: [endFull ? [] : current] }} handedness={handedness} />
-          <label className="scoring-notes">Notes (optional)<input value={notes} placeholder="Wind, equipment, how it felt" onChange={(event) => setNotes(event.target.value)} /></label>
+          <label className="scoring-notes">{t('scoring.notes', 'Notes (optional)')}<input value={notes} placeholder="Wind, equipment, how it felt" onChange={(event) => setNotes(event.target.value)} /></label>
           <div className="va-actions">
-            <ActionButton variant={done ? 'primary' : 'secondary'} type="button" disabled={!totals.arrows} onClick={() => onFinish(notes)}><AppIcon name="check" size={16} /> {done ? 'Save round' : 'Finish early and save'}</ActionButton>
-            <ActionButton variant="danger" type="button" onClick={() => { if (window.confirm('Discard this round? The arrows scored so far will be lost.')) onAbandon(); }}><AppIcon name="trash" size={16} /> Discard</ActionButton>
+            <ActionButton variant={done ? 'primary' : 'secondary'} type="button" disabled={!totals.arrows} onClick={() => onFinish(notes)}><AppIcon name="check" size={16} /> {done ? t('scoring.save', 'Save round') : t('scoring.finishEarly', 'Finish early and save')}</ActionButton>
+            <ActionButton variant="danger" type="button" onClick={() => { if (window.confirm('Discard this round? The arrows scored so far will be lost.')) onAbandon(); }}><AppIcon name="trash" size={16} /> {t('scoring.discard', 'Discard')}</ActionButton>
           </div>
         </section>
       </div>
@@ -257,6 +262,7 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
 
 function History({ onPick }: { onPick: (id: string) => void }) {
   const { entries } = usePracticeLog();
+  const { t } = useLanguage();
   const rounds = useMemo(() => entries.filter((entry) => entry.source === 'round' && entry.round).sort((a, b) => b.date - a.date), [entries]);
   const bests = useMemo(() => {
     const best = new Map<string, number>();
@@ -269,7 +275,7 @@ function History({ onPick }: { onPick: (id: string) => void }) {
   if (!rounds.length) return null;
   return (
     <section className="va-panel" aria-labelledby="scoring-history-title">
-      <h2 id="scoring-history-title">Your rounds</h2>
+      <h2 id="scoring-history-title">{t('scoring.yourRounds', 'Your rounds')}</h2>
       <ul className="scoring-history">
         {rounds.slice(0, 12).map((entry) => {
           const key = `${entry.round!.name}|${entry.distanceM ?? ''}|${entry.arrows}`;
@@ -313,6 +319,7 @@ function SavedRound({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 export function ScoringPage({ onTraining }: { onTraining?: () => void } = {}) {
+  const { t } = useLanguage();
   const [round, setRound] = useState<ScoredRound | null>(() => loadInProgress());
   const [saved, setSaved] = useState<string | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
@@ -336,8 +343,8 @@ export function ScoringPage({ onTraining }: { onTraining?: () => void } = {}) {
   return (
     <div className="page-container page-container--wide scoring-page">
       <PageHeader
-        title="Scoring"
-        subtitle="Score a round end by end with the competition timer, and tap where each arrow lands to see your groups. Saved to your practice log on this device."
+        title={t('scoring.title', 'Scoring')}
+        subtitle={t('scoring.subtitle', 'Score a round end by end with the competition timer, and tap where each arrow lands to see your groups. Saved to your practice log on this device.')}
         actions={onTraining ? <div className="va-actions"><ActionButton variant="secondary" type="button" onClick={onTraining}><AppIcon name="calendar" size={16} /> Practice log</ActionButton></div> : undefined}
       />
       {saved ? <p className="va-import-status" role="status">{saved}</p> : null}

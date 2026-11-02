@@ -29,6 +29,7 @@ export const SYNCED_SETTING_KEYS = [
   'archerlab-edge:onboarding-complete',
   'archerlab-edge:ghost-reference',
   'archerlab-edge:equipment',
+  'archerlab-edge:language',
 ] as const;
 
 export interface DriveBackupFile {
