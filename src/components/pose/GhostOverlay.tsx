@@ -37,13 +37,16 @@ export function GhostOverlay({ videoRef, resultRef, active, mirrored = false }: 
     const reference = moment === 'followThrough' && ghost.followThrough ? ghost.followThrough : ghost.fullDraw;
     const source = flip ? mirrorPoints(reference) : reference;
 
+    // Measured when the size changes, not every frame (reading layout each frame slows phones down).
+    let bounds = container.getBoundingClientRect();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => { bounds = container.getBoundingClientRect(); });
+    observer?.observe(container);
+    const context = canvas.getContext('2d');
     const draw = () => {
       frame = window.requestAnimationFrame(draw);
-      const context = canvas.getContext('2d');
       const video = videoRef.current;
       const result = resultRef.current;
       if (!context || !video) return;
-      const bounds = container.getBoundingClientRect();
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
       const width = Math.max(1, Math.round(bounds.width * ratio));
       const height = Math.max(1, Math.round(bounds.height * ratio));
@@ -90,6 +93,7 @@ export function GhostOverlay({ videoRef, resultRef, active, mirrored = false }: 
     frame = window.requestAnimationFrame(draw);
     return () => {
       window.cancelAnimationFrame(frame);
+      observer?.disconnect();
       canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     };
   }, [active, flip, ghost, mirrored, moment, on, resultRef, videoRef]);

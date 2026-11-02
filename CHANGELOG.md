@@ -6,6 +6,14 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **VIP: Daily challenge** in the Wind Challenge. Everyone gets the same wind and conditions each day, so friends can compare scores, with a best score per day. **VIP: Calm before the shot** is a box-breathing coach (in, hold, out, hold, 4 seconds each, 4 rounds) with a breathing circle.
+
+### Changed
+
+- **Smoother VIP mode on phones.** The Wind Challenge sight pin now moves without re-rendering the game every frame. The target face is drawn once. Confetti draws at 1× resolution with fewer pieces on small screens. The VIP code screen no longer blurs the page behind it. The ghost overlay in Live Analysis no longer measures the layout every frame.
+
+### Added (earlier)
+
 - **VIP mode** (just for fun). A gold **VIP** button at the bottom of the sidebar (or Profile → VIP Lounge on phones) asks for a secret 4-character code. Only a salted hash of the code ships in the app; set your own with `node scripts/vip-hash.mjs CODE` and `VITE_VIP_CODE_HASH`. After 5 wrong tries it waits a minute. VIP mode turns the app gold, adds a VIP Lounge with the **Wind Challenge** aiming game (sight wobble, wind and group bonus, at three levels with best scores), confetti and an arrow thunk for every 10 while scoring, a score predictor and archery facts. **VIP mode · Log out** in the bottom-right corner leaves and goes back to Profile. It is a playful lock, not security.
 - **Welcome screen** for first-time visitors: create a profile (name, drawing hand, bow, experience), continue with Google (when accounts are set up), or skip as a guest. **Guest mode** keeps nothing: everything works while the app is open, and the visit's data is deleted the next time ArcherLab opens. It warns first if the device already has saved work, shows a banner while it is on, and ends as soon as a profile is saved or you sign in.
 - The sidebar athlete card now opens the Profile page, and the top bar's profile button uses a person icon.

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
 import { VipCodeDialog } from '../components/vip/VipCodeDialog';
+import { BreathCoach } from '../components/vip/BreathCoach';
 import { WindChallenge } from '../components/vip/WindChallenge';
 import { usePracticeLog } from '../practice-log/usePracticeLog';
 import { CELEBRATE_KEY, celebrationsOn, confetti, thunk } from '../vip/confetti';
@@ -89,7 +90,10 @@ export function VipPage({ onUnlocked }: { onUnlocked?: () => void } = {}) {
         </section>
       </div>
 
-      <Predictor />
+      <div className="scoring-layout">
+        <BreathCoach />
+        <Predictor />
+      </div>
     </div>
   );
 }

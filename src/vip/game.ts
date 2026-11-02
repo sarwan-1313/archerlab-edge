@@ -71,3 +71,10 @@ export function roundBonus(points: readonly Vec[]): number {
 }
 
 export const BEST_KEY = 'archerlab-edge:vip-game-best';
+
+/** The same seed for everyone on the same day (UTC date, e.g. "2026-11-03"), for the daily challenge. */
+export function dailySeed(date: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < date.length; index += 1) hash = Math.imul(hash ^ date.charCodeAt(index), 16777619);
+  return hash >>> 0;
+}

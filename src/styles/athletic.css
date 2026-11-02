@@ -1376,7 +1376,7 @@ html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::
 .sidebar-nav__vip { position: relative; display: grid; place-items: center; width: 46px; height: 46px; margin: auto 0 8px 10px; color: #ffc53d; font: 800 12px/1 var(--ath-mono); letter-spacing: .08em; background: radial-gradient(circle at 35% 30%, rgba(255, 197, 61, .25), rgba(255, 197, 61, .04)); border: 1px solid rgba(255, 197, 61, .5); border-radius: 50%; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
 .sidebar-nav__vip:hover, .sidebar-nav__vip:focus-visible { transform: scale(1.06); box-shadow: 0 0 18px rgba(255, 197, 61, .45); }
 .sidebar-nav__item--vip { color: #ffc53d !important; }
-.vip-dialog { position: fixed; inset: 0; z-index: 320; display: grid; place-items: center; padding: 16px; background: rgba(4, 6, 10, .82); backdrop-filter: blur(6px); }
+.vip-dialog { position: fixed; inset: 0; z-index: 320; display: grid; place-items: center; padding: 16px; background: rgba(4, 6, 10, .9); }
 .vip-dialog__card { position: relative; display: grid; justify-items: center; gap: 10px; width: min(380px, 100%); padding: 30px 22px 20px; color: var(--ath-text); text-align: center; background: linear-gradient(160deg, #1a1508, #0a0e15 60%); border: 1px solid rgba(255, 197, 61, .45); border-radius: 22px; box-shadow: 0 0 60px rgba(255, 197, 61, .18); }
 .vip-dialog__card.is-shaking { animation: vip-shake .45s ease; }
 @keyframes vip-shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
@@ -1416,3 +1416,13 @@ html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::
 .vip-game__done { display: grid; gap: 10px; }
 .vip-game__done strong { font: 800 26px/1 var(--ath-display); color: #ffd23f; }
 @media (prefers-reduced-motion: reduce) { .vip-dialog__card.is-shaking { animation: none; } }
+/* Breathing coach: one CSS animation keeps the circle moving without JavaScript. */
+.breath__stage { position: relative; display: grid; place-items: center; height: 260px; }
+.breath__circle { width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 210, 63, .55), rgba(255, 197, 61, .12)); border: 2px solid rgba(255, 197, 61, .7); transform: scale(1); will-change: transform; }
+.breath__stage[class*='breath__stage--'] .breath__circle { animation: breath-box linear infinite; }
+@keyframes breath-box { 0% { transform: scale(1); } 25% { transform: scale(2); } 50% { transform: scale(2); } 75% { transform: scale(1); } 100% { transform: scale(1); } }
+.breath__text { position: absolute; display: grid; justify-items: center; gap: 2px; text-align: center; color: var(--ath-text); }
+.breath__text strong { font: 800 24px/1 var(--ath-display); }
+.breath__text span { font: 800 40px/1 var(--ath-display); color: #ffd23f; font-variant-numeric: tabular-nums; }
+.breath__text small { color: var(--ath-muted); }
+@media (prefers-reduced-motion: reduce) { .breath__stage[class*='breath__stage--'] .breath__circle { animation: none; } }

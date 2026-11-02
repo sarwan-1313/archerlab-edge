@@ -4,7 +4,9 @@ export function confetti(origin: { x: number; y: number } = { x: 0.5, y: 0.4 }, 
   const canvas = document.createElement('canvas');
   canvas.className = 'vip-confetti';
   canvas.setAttribute('aria-hidden', 'true');
-  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  // Full-screen canvases are costly on phones: draw at 1× and with fewer pieces on small screens.
+  const ratio = 1;
+  if (window.innerWidth < 700) count = Math.round(count * 0.6);
   canvas.width = window.innerWidth * ratio;
   canvas.height = window.innerHeight * ratio;
   document.body.appendChild(canvas);
