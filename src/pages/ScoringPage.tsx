@@ -16,6 +16,8 @@ import {
 import { PHASE_LABEL, beepsFor, formatClock, timerState, type TimerPhase } from '../scoring/timer';
 import { beep } from '../utils/beep';
 import { useLanguage } from '../i18n/i18n';
+import { isVip } from '../vip/vip';
+import { celebrationsOn, confetti, thunk } from '../vip/confetti';
 import { loadEquipment } from '../equipment/equipment';
 import { summariseHeartRate } from '../sensors/heartRate';
 import { useHeartRate } from '../sensors/useHeartRate';
@@ -199,7 +201,12 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
   const group = grouping(showAll ? round.ends.flat() : current.length >= 3 ? current : []);
 
   const heart = useHeartRate();
-  const add = (arrow: Arrow) => { if (!done) onChange(addArrow(round, heart.bpm ? { ...arrow, hr: heart.bpm } : arrow)); };
+  const add = (arrow: Arrow) => {
+    if (done) return;
+    onChange(addArrow(round, heart.bpm ? { ...arrow, hr: heart.bpm } : arrow));
+    // VIP celebrations: confetti and a thunk for every 10.
+    if (isVip() && celebrationsOn() && arrow.score === 10) { thunk(); confetti({ x: 0.5, y: 0.45 }, arrow.isX ? 100 : 50); }
+  };
   const hr = summariseHeartRate(round.ends.flat().map((arrow) => arrow.hr));
 
   return (

@@ -29,6 +29,7 @@ export const PAGE_PATHS = {
   drills: '/drills',
   equipment: '/equipment',
   ranges: '/ranges',
+  vip: '/vip',
   club: '/club',
   'dataset-tools': '/dataset-tools',
   privacy: '/privacy',

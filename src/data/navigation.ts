@@ -51,6 +51,7 @@ export const pageTitles: Record<PageKey, string> = {
   drills: 'Drills',
   equipment: 'Equipment',
   ranges: 'Find a range',
+  vip: 'VIP Lounge',
   club: 'My club',
   'dataset-tools': 'Dataset tools',
 };

@@ -3,6 +3,8 @@ import { AppIcon } from './components/AppIcon';
 import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { GuestBanner } from './components/GuestBanner';
+import { VipCodeDialog } from './components/vip/VipCodeDialog';
+import { VipLogout } from './components/vip/VipLogout';
 import { OnboardingModal } from './components/OnboardingModal';
 import { shouldWelcome } from './onboarding/guestMode';
 import { PageTransition } from './components/PageTransition';
@@ -42,6 +44,7 @@ const DrillsPage = lazy(() => import('./pages/DrillsPage').then((module) => ({ d
 const EquipmentPage = lazy(() => import('./pages/EquipmentPage').then((module) => ({ default: module.EquipmentPage })));
 const RangesPage = lazy(() => import('./pages/RangesPage').then((module) => ({ default: module.RangesPage })));
 const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
+const VipPage = lazy(() => import('./pages/VipPage').then((module) => ({ default: module.VipPage })));
 const ScoringPage = lazy(() => import('./pages/ScoringPage').then((module) => ({ default: module.ScoringPage })));
 const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
@@ -86,6 +89,7 @@ const ROUTE_LOADING_STATUS = {
   drills: 'Loading drills...',
   equipment: 'Loading equipment...',
   ranges: 'Loading map...',
+  vip: 'Opening the VIP Lounge...',
   club: 'Loading club...',
   'dataset-tools': 'Loading dataset tools...',
 } as const satisfies Record<PageKey, string>;
@@ -212,6 +216,7 @@ function App() {
   const { profile, loading: profileLoading } = useAthleteProfile();
   // First visit without a profile: offer to create one, sign in, or continue as a guest (not in end-to-end test builds).
   const [welcomeClosed, setWelcomeClosed] = useState(false);
+  const [vipCode, setVipCode] = useState(false);
   const showWelcome = !welcomeClosed && !profileLoading && !profile && import.meta.env.VITE_E2E !== '1' && initialPageRef.current !== 'privacy' && shouldWelcome(false);
   // A new version waits for the end of a live session or a video analysis rather than reloading under it.
   const [videoProcessing, setVideoProcessing] = useState(false);
@@ -445,11 +450,12 @@ function App() {
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
-      case 'profile': return <ProfilePage onClub={() => requestNavigation('club')} onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} onDatasetTools={() => requestNavigation('dataset-tools')} onEquipment={() => requestNavigation('equipment')} />;
+      case 'profile': return <ProfilePage onClub={() => requestNavigation('club')} onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} onDatasetTools={() => requestNavigation('dataset-tools')} onEquipment={() => requestNavigation('equipment')} onVip={() => requestNavigation('vip')} />;
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
       case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} onScoring={() => requestNavigation('scoring')} onDrills={() => requestNavigation('drills')} onEquipment={() => requestNavigation('equipment')} />;
       case 'drills': return <DrillsPage onTraining={() => requestNavigation('training')} />;
       case 'ranges': return <RangesPage />;
+      case 'vip': return <VipPage />;
       case 'equipment': return <EquipmentPage onProfile={() => requestNavigation('profile')} />;
       case 'scoring': return <ScoringPage onTraining={() => requestNavigation('training')} />;
       case 'club': return <ClubPage onProfile={() => requestNavigation('profile')} onPrivacy={() => requestNavigation('privacy')} onOpenReport={(reportId) => commitNavigation('video-analysis', { reportId })} />;
@@ -482,7 +488,7 @@ function App() {
     <>
       <div className="app-shell">
         <div className="app-frame">
-          <SidebarNav items={desktopNavItems} active={navActive} onSelect={handleNavSelect} />
+          <SidebarNav items={desktopNavItems} active={navActive} onSelect={handleNavSelect} onVipCode={() => setVipCode(true)} />
           <div className="app-content">
             <header className="app-topbar">
               <div className="app-topbar__inner">
@@ -505,6 +511,8 @@ function App() {
         </div>
         <BottomNav items={mobileNavItems} active={navActive} onSelect={handleNavSelect} />
         <UpdateToast />
+        {vipCode ? <VipCodeDialog onClose={() => setVipCode(false)} onUnlocked={() => { setVipCode(false); requestNavigation('vip'); }} /> : null}
+        <VipLogout onLoggedOut={() => requestNavigation('profile')} />
         {showOnboarding ? <OnboardingModal onClose={closeOnboarding} onStart={startFromOnboarding} /> : null}
         {showWelcome ? <Suspense fallback={null}><WelcomeScreen onDone={() => setWelcomeClosed(true)} onOpenPrivacy={() => requestNavigation('privacy')} /></Suspense> : null}
       </div>
