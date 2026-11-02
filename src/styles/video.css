@@ -668,6 +668,10 @@
 .range-map { margin: 0; }
 .range-map svg { display: block; width: 100%; height: auto; background: #dfe6ea; border-radius: var(--ath-radius); }
 .range-map__pin { cursor: pointer; }
+.range-map__frame { position: relative; }
+.range-map__controls { position: absolute; top: 8px; right: 8px; display: grid; gap: 4px; }
+.range-map__controls button { width: 36px; height: 36px; font-size: 20px; line-height: 1; color: #04060a; background: rgba(255, 255, 255, 0.92); border: 1px solid #04060a; border-radius: 6px; cursor: pointer; }
+.range-map__controls button:disabled { opacity: 0.45; cursor: default; }
 .range-map figcaption { margin-top: 6px; color: var(--ath-faint); font-size: 12px; }
 .range-map figcaption a, .range-list a { color: var(--ath-volt); }
 .range-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }

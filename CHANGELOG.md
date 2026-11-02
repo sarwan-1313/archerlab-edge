@@ -10,6 +10,7 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Changed
 
+- **Find a range map.** The map now always shows once you search (it used to be hidden whenever no ranges were mapped nearby), you can drag it and zoom with + and −, and a ◎ button returns to your search. When nothing is found within the chosen distance, the search widens automatically (to 50 and then 100 km) and says so. If the map pictures cannot load, a message explains it.
 - **Find a range** now asks for the country first, then a postcode, town or city, and searches inside that country (a bare postcode such as 94587 used to match nothing). The country starts from your browser language and is remembered on this device. A search that gets no answer now stops after 10 to 20 seconds with a clear message instead of staying on "Searching…", and a backup map server is tried when the first one is busy.
 - **Smoother VIP mode on phones.** The Wind Challenge sight pin now moves without re-rendering the game every frame. The target face is drawn once. Confetti draws at 1× resolution with fewer pieces on small screens. The VIP code screen no longer blurs the page behind it. The ghost overlay in Live Analysis no longer measures the layout every frame.
 

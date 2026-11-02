@@ -222,6 +222,14 @@ export function worldPixel(point: LatLon, zoom: number): { x: number; y: number 
   return { x: ((point.lon + 180) / 360) * scale, y: (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale };
 }
 
+/** The point on the earth under a world pixel position (the reverse of worldPixel), used to pan a map by dragging. */
+export function fromWorldPixel(pixel: { x: number; y: number }, zoom: number): LatLon {
+  const scale = TILE_SIZE * 2 ** zoom;
+  const y = Math.max(0, Math.min(scale, pixel.y));
+  const lon = (((pixel.x / scale) * 360 - 180 + 540) % 360) - 180;
+  return { lat: (180 / Math.PI) * Math.atan(Math.sinh(Math.PI - (2 * Math.PI * y) / scale)), lon };
+}
+
 /** The highest zoom (up to 16) at which every point fits in a width × height view with some padding. */
 export function fitZoom(points: readonly LatLon[], width: number, height: number, padding = 40): number {
   if (points.length < 2) return 13;
