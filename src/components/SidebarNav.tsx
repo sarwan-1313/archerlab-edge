@@ -17,7 +17,7 @@ export function SidebarNav({ items, active, onSelect }: SidebarNavProps) {
         <span className="sidebar-nav__brand-mark"><AppIcon name="target" size={18} /></span>
         <span>ArcherLab <strong>Edge</strong></span>
       </button>
-      <button type="button" className="sidebar-nav__profile" onClick={() => onSelect('profile')} aria-current={active === 'profile' ? 'page' : undefined} aria-label="Open your profile">
+      <button type="button" className="sidebar-nav__profile" onClick={() => onSelect('profile')} aria-current={active === 'profile' ? 'page' : undefined} title="Open your profile">
         <ProfilePreview />
       </button>
 
