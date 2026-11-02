@@ -630,3 +630,25 @@
 .end-timer__read span { color: var(--ath-muted); }
 .end-timer__sound { display: inline-flex; align-items: center; gap: 6px; color: var(--ath-muted); font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .end-timer__light { box-shadow: none !important; } }
+
+/* ---------- Ghost overlay and shot comparison ---------- */
+.ghost-overlay { z-index: 4; }
+.ghost-controls { position: absolute; z-index: 6; left: 12px; bottom: 52px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ghost-controls button, .ghost-controls span { min-height: 32px; padding: 0 10px; font: 700 12px/32px var(--ath-mono); color: var(--ath-text); background: rgba(4, 6, 10, .78); border: 1px solid rgba(255, 197, 61, .6); border-radius: 16px; }
+.ghost-controls button { cursor: pointer; }
+.ghost-controls button[aria-pressed='true'] { background: rgba(255, 197, 61, .22); }
+.ghost-controls button:disabled { opacity: .5; cursor: default; }
+.compare-panel { display: grid; gap: 12px; }
+.compare-pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.compare-pickers label { display: grid; gap: 4px; color: var(--ath-muted); font-size: 13px; }
+.compare-pickers select { min-height: 42px; padding: 0 10px; color: var(--ath-text); background: var(--ath-ink); border: 1px solid var(--ath-line-strong); border-radius: 6px; }
+.compare-stage { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .compare-stage--side { grid-template-columns: 1fr 1fr; } }
+.compare-stage canvas { width: 100%; aspect-ratio: 4 / 3; background: #070a10; border: 1px solid var(--ath-line); border-radius: var(--ath-radius); }
+.compare-legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--ath-muted); font-size: 13px; }
+.compare-legend i { display: inline-block; width: 18px; height: 4px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+.compare-scrub { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.compare-scrub input { width: 100%; }
+.compare-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.compare-table th, .compare-table td { padding: 6px 8px; border-bottom: 1px solid var(--ath-line); text-align: left; }
+.compare-table thead th { color: var(--ath-muted); font: 700 10px/1.2 var(--ath-mono); letter-spacing: .1em; text-transform: uppercase; }
