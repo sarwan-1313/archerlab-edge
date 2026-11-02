@@ -28,6 +28,7 @@ export const PAGE_PATHS = {
   scoring: '/scoring',
   drills: '/drills',
   equipment: '/equipment',
+  ranges: '/ranges',
   club: '/club',
   'dataset-tools': '/dataset-tools',
   privacy: '/privacy',

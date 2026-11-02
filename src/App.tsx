@@ -38,6 +38,7 @@ const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').t
 const ClubPage = lazy(() => import('./pages/ClubPage').then((module) => ({ default: module.ClubPage })));
 const DrillsPage = lazy(() => import('./pages/DrillsPage').then((module) => ({ default: module.DrillsPage })));
 const EquipmentPage = lazy(() => import('./pages/EquipmentPage').then((module) => ({ default: module.EquipmentPage })));
+const RangesPage = lazy(() => import('./pages/RangesPage').then((module) => ({ default: module.RangesPage })));
 const ScoringPage = lazy(() => import('./pages/ScoringPage').then((module) => ({ default: module.ScoringPage })));
 const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
@@ -81,6 +82,7 @@ const ROUTE_LOADING_STATUS = {
   scoring: 'Loading scoring...',
   drills: 'Loading drills...',
   equipment: 'Loading equipment...',
+  ranges: 'Loading map...',
   club: 'Loading club...',
   'dataset-tools': 'Loading dataset tools...',
 } as const satisfies Record<PageKey, string>;
@@ -441,6 +443,7 @@ function App() {
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
       case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} onScoring={() => requestNavigation('scoring')} onDrills={() => requestNavigation('drills')} onEquipment={() => requestNavigation('equipment')} />;
       case 'drills': return <DrillsPage onTraining={() => requestNavigation('training')} />;
+      case 'ranges': return <RangesPage />;
       case 'equipment': return <EquipmentPage onProfile={() => requestNavigation('profile')} />;
       case 'scoring': return <ScoringPage onTraining={() => requestNavigation('training')} />;
       case 'club': return <ClubPage onProfile={() => requestNavigation('profile')} onPrivacy={() => requestNavigation('privacy')} onOpenReport={(reportId) => commitNavigation('video-analysis', { reportId })} />;

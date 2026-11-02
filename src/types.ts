@@ -33,6 +33,7 @@ export type PageKey =
   | 'scoring'
   | 'drills'
   | 'equipment'
+  | 'ranges'
   | 'club'
   | 'dataset-tools'
   | GuideDetailPageKey;

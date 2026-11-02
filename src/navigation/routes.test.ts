@@ -31,6 +31,7 @@ const EXPECTED_ROUTES = {
   scoring: '/scoring',
   drills: '/drills',
   equipment: '/equipment',
+  ranges: '/ranges',
   club: '/club',
   'dataset-tools': '/dataset-tools',
 } as const satisfies Record<PageKey, string>;

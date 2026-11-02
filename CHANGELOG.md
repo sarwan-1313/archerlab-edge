@@ -6,6 +6,7 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Find a range** (`/ranges`): archery ranges, clubs and shops near you from OpenStreetMap, found from your location (rounded to about 1 km, and only when you press the button) or a town or postcode, within 10 to 100 km. They are shown on a map with numbered pins and in a list with distance, indoor and members-only notes, address, hours, website, phone, and directions in Google or Apple Maps. No API key is needed.
 - **Shot rhythm** (in every video report): each shot's draw, hold at anchor and follow-through drawn as bars lined up at the release. It shows the average hold and draw, how steady they are (very steady to varies a lot) and shots with an unusually long or short hold.
 - **Drills** (`/drills`, from Training): six timed drills (holding at anchor, reversals, blank bale, follow-through freeze, posture at the wall, rhythm count), each with steps, safety notes, work and rest prompts with signals, and pause and resume. Drills for your focus area from the latest video analysis come first, and a finished drill can be logged.
 - **Equipment** (`/equipment`, from Training or Profile): bows with draw weight, draw length, arrows, spine, length and point weight, plus sight marks per distance. It estimates the mark for a distance you have not shot (a line through two marks, a least-squares curve through three or more) and says when the estimate is outside your recorded range. Scoring can tag a round with the bow you used.

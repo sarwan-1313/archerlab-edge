@@ -664,3 +664,15 @@
 .drill-runner--rest .drill-runner__clock { border-color: var(--ath-warn); }
 .drill-runner--ready .drill-runner__clock { border-color: var(--ath-volt); }
 .drill-steps { margin: 0; padding-left: 20px; color: var(--ath-text); line-height: 1.6; }
+.range-map { margin: 0; }
+.range-map svg { display: block; width: 100%; height: auto; background: #dfe6ea; border-radius: var(--ath-radius); }
+.range-map__pin { cursor: pointer; }
+.range-map figcaption { margin-top: 6px; color: var(--ath-faint); font-size: 12px; }
+.range-map figcaption a, .range-list a { color: var(--ath-volt); }
+.range-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.range-list li { display: grid; gap: 4px; padding: 10px 12px; background: var(--ath-ink); border: 1px solid var(--ath-line); border-radius: 6px; }
+.range-list li.is-selected { border-color: var(--ath-blaze); }
+.range-list__name { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: baseline; padding: 0; color: var(--ath-text); text-align: left; background: none; border: 0; cursor: pointer; }
+.range-list__name small { grid-column: 2; color: var(--ath-muted); }
+.range-list__number { grid-row: span 2; display: inline-grid; place-items: center; width: 24px; height: 24px; font: 800 12px/1 var(--ath-mono); color: #04060a; background: var(--ath-gold); border-radius: 50%; }
+.range-list__links { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
