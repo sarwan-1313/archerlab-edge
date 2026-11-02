@@ -6,6 +6,7 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Install ArcherLab, free** (Home): an Install app button where the browser offers one (Chrome and Edge), Share → Add to Home Screen steps on iPhone and iPad, Chrome menu steps on Android, a QR code that opens the app on a phone (and highlights the card), and a button to send the link to a friend. It hides once the app is installed. `docs/microsoft-store.md` explains listing it free on the Microsoft Store.
 - **Ready for the Play Store** as a Trusted Web Activity: home-screen shortcuts in the manifest, a build step that writes `/.well-known/assetlinks.json` from `TWA_PACKAGE_NAME` and `TWA_SHA256_FINGERPRINTS`, a Bubblewrap config in `android/`, and a step-by-step guide in `docs/play-store.md` (developer account, the 12-tester closed test, building with PWABuilder or Bubblewrap, the listing and the data safety answers).
 - **Punjabi and Hindi** (Profile → Language): the main menu and the Scoring, Drills and Find a range pages in ਪੰਜਾਬੀ (Gurmukhi) or हिन्दी, with English for anything not translated yet. The choice stays on the device and saves with Google Drive.
 - **Share progress** (Training): makes a portrait image (1080 × 1350, Instagram size) of this week's arrows and sessions, your streak, your latest form score and its change, and your best round. It opens the phone's share sheet, or downloads the image on a computer.

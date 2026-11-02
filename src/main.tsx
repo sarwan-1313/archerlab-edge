@@ -6,11 +6,15 @@ import App from './App.tsx'
 import './styles/athletic.css'
 import { captureAuthRedirect } from './cloud/account/authRedirect'
 import { accountsEnabled } from './cloud/config'
+import { captureInstallPrompt } from './pwa/install'
 import { registerServiceWorker } from './pwa/serviceWorker'
 import { applyLiteMode } from './settings/liteMode'
 
 // Optional accounts: keep sign-in tokens from the URL before the router rewrites it.
 if (accountsEnabled) captureAuthRedirect()
+
+// Keep the browser's install offer for the Home page's Install button (it can fire before React mounts).
+captureInstallPrompt()
 
 // Lite mode cuts animations through a data attribute on <html>.
 applyLiteMode()

@@ -1318,3 +1318,17 @@ html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::
 .lite-suggestion { display: grid; gap: 8px; margin-bottom: 14px; }
 .lite-suggestion p { margin: 0; }
 .lite-suggestion__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Install card on Home */
+.landing-install { width: min(1120px, calc(100% - 32px)); margin: 24px auto 0; }
+.landing-install:empty { display: none; }
+.install-card { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; padding: 20px; color: var(--ath-text); background: linear-gradient(135deg, rgba(46, 230, 255, .08), rgba(255, 197, 61, .05)); border: 1px solid var(--ath-line-strong); border-radius: var(--ath-radius-lg); }
+.install-card--highlight { border-color: var(--ath-volt); box-shadow: 0 0 0 2px rgba(46, 230, 255, .25); }
+.install-card__body { display: grid; gap: 10px; flex: 1 1 320px; }
+.install-card h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 800 26px/1.1 var(--ath-display); }
+.install-card p { margin: 0; color: var(--ath-muted); }
+.install-card__steps { margin: 0; padding-left: 20px; line-height: 1.7; }
+.install-card__status { color: var(--ath-good) !important; }
+.install-card__qr { display: grid; justify-items: center; gap: 6px; margin: 0; }
+.install-card__qr img { width: 164px; height: 164px; padding: 8px; background: #fff; border-radius: 10px; image-rendering: pixelated; }
+.install-card__qr figcaption { color: var(--ath-faint); font-size: 12px; }

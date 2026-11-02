@@ -5,6 +5,7 @@ import { usePracticeLog } from '../practice-log/usePracticeLog';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { mountScrollScene } from '../landing/scrollScene';
 import '../landing/landing.css';
+import { InstallCard } from '../components/InstallCard';
 
 type HomePageProps = {
   onStart: () => void;
@@ -92,6 +93,10 @@ export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPri
           <AppIcon name="chevron-down" size={18} />
         </button>
       </section>
+
+      <div className="landing-install">
+        <InstallCard />
+      </div>
 
       {/* Shown only once the athlete has set goals. */}
       <div className="landing-goals">
