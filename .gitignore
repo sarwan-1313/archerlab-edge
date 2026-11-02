@@ -56,3 +56,7 @@ playwright-report/
 
 # Voice-note model: fetched at build time (npm run models:whisper), not committed
 public/models/whisper-tiny/
+
+# Android (Play Store) packaging: only the Bubblewrap config is kept
+android/*
+!android/twa-manifest.json

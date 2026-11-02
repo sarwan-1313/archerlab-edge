@@ -6,6 +6,7 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Ready for the Play Store** as a Trusted Web Activity: home-screen shortcuts in the manifest, a build step that writes `/.well-known/assetlinks.json` from `TWA_PACKAGE_NAME` and `TWA_SHA256_FINGERPRINTS`, a Bubblewrap config in `android/`, and a step-by-step guide in `docs/play-store.md` (developer account, the 12-tester closed test, building with PWABuilder or Bubblewrap, the listing and the data safety answers).
 - **Punjabi and Hindi** (Profile → Language): the main menu and the Scoring, Drills and Find a range pages in ਪੰਜਾਬੀ (Gurmukhi) or हिन्दी, with English for anything not translated yet. The choice stays on the device and saves with Google Drive.
 - **Share progress** (Training): makes a portrait image (1080 × 1350, Instagram size) of this week's arrows and sessions, your streak, your latest form score and its change, and your best round. It opens the phone's share sheet, or downloads the image on a computer.
 - **Find a range** (`/ranges`): archery ranges, clubs and shops near you from OpenStreetMap, found from your location (rounded to about 1 km, and only when you press the button) or a town or postcode, within 10 to 100 km. They are shown on a map with numbered pins and in a list with distance, indoor and members-only notes, address, hours, website, phone, and directions in Google or Apple Maps. No API key is needed.
