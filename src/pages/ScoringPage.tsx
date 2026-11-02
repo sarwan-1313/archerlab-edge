@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
-import { TargetFaceInput, markersFor } from '../components/scoring/TargetFaceInput';
+import { TargetFaceInput } from '../components/scoring/TargetFaceInput';
+import { markersFor } from '../scoring/markers';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
 import { savePracticeEntry } from '../practice-log/storage';
 import { usePracticeLog } from '../practice-log/usePracticeLog';
@@ -21,7 +22,7 @@ import '../styles/video.css';
  * goes into the practice log. Everything stays on the device.
  */
 
-export const ROUND_IN_PROGRESS_KEY = 'archerlab-edge:round-in-progress';
+const ROUND_IN_PROGRESS_KEY = 'archerlab-edge:round-in-progress';
 
 function loadInProgress(): ScoredRound | null {
   try {

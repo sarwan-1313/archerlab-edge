@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent } from 'react';
 import type { FaceKind } from '../../scoring/rounds';
-import { arrowLabel, scorePoint, type Arrow } from '../../scoring/scoring';
+import { arrowLabel, scorePoint } from '../../scoring/scoring';
+import type { FaceMarker } from '../../scoring/markers';
 
 /** Ring colours from the outside in (World Archery: white, black, blue, red, gold). */
 const FULL_RINGS = ['#f4f4f0', '#f4f4f0', '#1d1d1f', '#1d1d1f', '#2f8fd8', '#2f8fd8', '#e0393e', '#e0393e', '#ffd23f', '#ffd23f'];
@@ -14,7 +15,6 @@ function ringLine(index: number, kind: FaceKind): string {
   return colour === '#1d1d1f' ? '#f4f4f0' : '#1d1d1f';
 }
 
-export interface FaceMarker { x: number; y: number; tone?: 'current' | 'earlier'; label?: string }
 
 interface TargetFaceProps {
   kind: FaceKind;
@@ -99,13 +99,4 @@ export function TargetFaceInput({ kind, markers = [], group, onPlace, label, siz
       </svg>
     </figure>
   );
-}
-
-/** Markers for arrows placed on the face. Arrows entered with a button have no position and are left out. */
-export function markersFor(arrows: readonly Arrow[], tone: FaceMarker['tone'], numbered = false): FaceMarker[] {
-  const markers: FaceMarker[] = [];
-  arrows.forEach((arrow, index) => {
-    if (arrow.x !== null && arrow.y !== null) markers.push({ x: arrow.x, y: arrow.y, tone, label: numbered ? String(index + 1) : undefined });
-  });
-  return markers;
 }

@@ -76,6 +76,7 @@ const ROUTE_LOADING_STATUS = {
   profile: 'Loading profile...',
   privacy: 'Loading privacy...',
   training: 'Loading training log...',
+  scoring: 'Loading scoring...',
   club: 'Loading club...',
   'dataset-tools': 'Loading dataset tools...',
 } as const satisfies Record<PageKey, string>;
