@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TRACKING_SMOOTHING_KEY, readTrackingSmoothing, writeTrackingSmoothing } from './trackingSmoothing';
 
