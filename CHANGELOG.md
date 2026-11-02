@@ -6,6 +6,7 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Community, inside clubs.** A new Community page for the members of one club and their coach: live club chat (new messages every few seconds), a forum with threads and replies, polls and friendly predictions with standings, a leaderboard from results members choose to share (this week, this month or all time; best round, average or most arrows), and a shoot-off bracket the coach runs. Safety is built in: club-only access, no private messages, no links, posting limits, a Report button on everything, and coach tools to hide or delete posts and mute members. Votes are private (totals only), and everything is deleted with the account. It needs the latest `supabase/schema.sql` to be run on the cloud project (see `docs/cloud-setup.md`, Club community).
 - **VIP: Daily challenge** in the Wind Challenge. Everyone gets the same wind and conditions each day, so friends can compare scores, with a best score per day. **VIP: Calm before the shot** is a box-breathing coach (in, hold, out, hold, 4 seconds each, 4 rounds) with a breathing circle.
 
 ### Changed

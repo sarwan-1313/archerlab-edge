@@ -561,3 +561,555 @@ grant execute on function public.join_club(text, text, boolean, boolean) to auth
 grant execute on function public.set_club_sharing(uuid, boolean, boolean) to authenticated;
 grant execute on function public.leave_club(uuid) to authenticated;
 grant execute on function public.club_report_comments(text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Club community (optional). Inside a club, members and their coach can chat,
+-- run forum threads, make polls and friendly predictions, share results to a
+-- leaderboard and follow a shoot-off bracket. It is for the club only: nobody
+-- outside the club can read or post, there are no private messages, links are
+-- refused (so nothing can lure a young athlete off the app), and every post
+-- carries only the display name the member chose when joining. The coach can
+-- hide or delete anything, mute a member, and sees reports from members. A
+-- member who leaves loses access at once. Everything below is safe to run
+-- again, after the club section above.
+-- ---------------------------------------------------------------------------
+
+-- A muted member can still read, but not post, vote or share results. Only the coach changes it.
+alter table public.club_members add column if not exists muted boolean not null default false;
+
+-- Can the caller read this club's community (a current member, or the coach)?
+create or replace function public.can_read_club(p_club_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.is_club_coach(p_club_id) or public.is_club_member(p_club_id);
+$$;
+
+-- Can the caller post in it (the coach, or a current member who is not muted)?
+create or replace function public.can_post_in_club(p_club_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.is_club_coach(p_club_id) or exists (
+    select 1 from public.club_members m
+    where m.club_id = p_club_id and m.athlete_id = auth.uid() and m.left_at is null and not m.muted
+  );
+$$;
+
+-- The only name shown on a post: the coach is "Coach", a member is the display name they chose.
+create or replace function public.club_display_name(p_club_id uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when public.is_club_coach(p_club_id) then 'Coach'
+    else (select m.display_name from public.club_members m where m.club_id = p_club_id and m.athlete_id = auth.uid() and m.left_at is null)
+  end;
+$$;
+
+revoke execute on function public.can_read_club(uuid) from public, anon;
+revoke execute on function public.can_post_in_club(uuid) from public, anon;
+revoke execute on function public.club_display_name(uuid) from public, anon;
+grant execute on function public.can_read_club(uuid) to authenticated;
+grant execute on function public.can_post_in_club(uuid) to authenticated;
+grant execute on function public.club_display_name(uuid) to authenticated;
+
+-- Live chat.
+create table if not exists public.club_chat (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  author_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  author_name text not null default '',
+  body text not null check (char_length(btrim(body)) between 1 and 500 and body !~* '(https?:|www\.)'),
+  created_at timestamptz not null default now(),
+  hidden_at timestamptz
+);
+create index if not exists club_chat_club_idx on public.club_chat (club_id, created_at desc);
+
+-- Forum: a thread has a title, a reply has a parent thread.
+create table if not exists public.club_posts (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  parent_id uuid references public.club_posts (id) on delete cascade,
+  author_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  author_name text not null default '',
+  title text check (title is null or char_length(btrim(title)) between 1 and 120),
+  body text not null check (char_length(btrim(body)) between 1 and 4000 and body !~* '(https?:|www\.)'),
+  created_at timestamptz not null default now(),
+  hidden_at timestamptz,
+  constraint club_posts_title_for_threads check ((parent_id is null) = (title is not null))
+);
+create index if not exists club_posts_club_idx on public.club_posts (club_id, created_at desc);
+create index if not exists club_posts_parent_idx on public.club_posts (parent_id);
+
+-- Polls and friendly predictions. A prediction is settled later by naming the right option.
+create table if not exists public.club_polls (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  author_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  author_name text not null default '',
+  kind text not null check (kind in ('poll', 'prediction')),
+  question text not null check (char_length(btrim(question)) between 1 and 200 and question !~* '(https?:|www\.)'),
+  options jsonb not null check (jsonb_typeof(options) = 'array' and jsonb_array_length(options) between 2 and 8 and char_length(options::text) <= 1200 and options::text !~* '(https?:|www\.)'),
+  closes_at timestamptz not null,
+  correct_option int check (correct_option is null or correct_option >= 0),
+  created_at timestamptz not null default now(),
+  hidden_at timestamptz,
+  constraint club_polls_settled_prediction check (correct_option is null or kind = 'prediction')
+);
+create index if not exists club_polls_club_idx on public.club_polls (club_id, created_at desc);
+
+-- Votes are private: a member reads only their own, and everyone sees totals through club_poll_tally.
+create table if not exists public.club_poll_votes (
+  poll_id uuid not null references public.club_polls (id) on delete cascade,
+  voter_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  club_id uuid not null,
+  option_index int not null check (option_index >= 0),
+  voted_at timestamptz not null default now(),
+  primary key (poll_id, voter_id)
+);
+create index if not exists club_poll_votes_club_idx on public.club_poll_votes (club_id);
+
+-- Results a member chooses to share with the club, for the leaderboard (self-reported).
+create table if not exists public.club_results (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  author_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  author_name text not null default '',
+  round_label text not null check (char_length(btrim(round_label)) between 1 and 60 and round_label !~* '(https?:|www\.)'),
+  score int not null check (score >= 0),
+  max_score int not null check (max_score > 0),
+  arrows int not null check (arrows between 1 and 400),
+  shot_on date not null default current_date,
+  created_at timestamptz not null default now(),
+  constraint club_results_score_within_max check (score <= max_score)
+);
+create index if not exists club_results_club_idx on public.club_results (club_id, shot_on desc);
+
+-- A single-elimination shoot-off bracket the coach runs; winners is { "r0m1": 3, ... } (round, match -> entrant number).
+create table if not exists public.club_brackets (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  title text not null check (char_length(btrim(title)) between 1 and 80),
+  entrants jsonb not null check (jsonb_typeof(entrants) = 'array' and jsonb_array_length(entrants) between 2 and 16 and char_length(entrants::text) <= 1000),
+  winners jsonb not null default '{}'::jsonb check (jsonb_typeof(winners) = 'object' and char_length(winners::text) <= 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists club_brackets_club_idx on public.club_brackets (club_id, created_at desc);
+
+-- Reports from members, read only by the coach. The server fills in who and what was reported.
+create table if not exists public.club_reports (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs (id) on delete cascade,
+  reporter_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  item_table text not null check (item_table in ('club_chat', 'club_posts', 'club_polls')),
+  item_id uuid not null,
+  item_author_id uuid,
+  item_author_name text,
+  excerpt text,
+  reason text not null default '' check (char_length(reason) <= 300),
+  created_at timestamptz not null default now(),
+  unique (reporter_id, item_table, item_id)
+);
+create index if not exists club_reports_club_idx on public.club_reports (club_id, created_at desc);
+
+-- Triggers: who wrote it, posting limits, and the checks a table constraint cannot express.
+create or replace function public.club_stamp_author()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  new.author_id := auth.uid();
+  new.author_name := coalesce(public.club_display_name(new.club_id), '');
+  if new.author_name = '' then
+    raise exception 'You are not a member of this club.' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.club_rate_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_count int;
+begin
+  execute format('select count(*) from public.%I where author_id = $1 and created_at > now() - make_interval(secs => $2)', tg_table_name)
+    into v_count using new.author_id, tg_argv[1]::int;
+  if v_count >= tg_argv[0]::int then
+    raise exception 'You are posting too quickly. Wait a moment and try again.' using errcode = '54000';
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.club_check_post()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.parent_id is not null and not exists (
+    select 1 from public.club_posts p
+    where p.id = new.parent_id and p.club_id = new.club_id and p.parent_id is null and p.hidden_at is null
+  ) then
+    raise exception 'That thread is not available.' using errcode = '22023';
+  end if;
+  new.hidden_at := null;
+  return new;
+end;
+$$;
+
+create or replace function public.club_check_poll()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.closes_at <= now() then
+    raise exception 'Choose a closing time in the future.' using errcode = '22023';
+  end if;
+  if new.closes_at > now() + interval '120 days' then
+    raise exception 'A poll can stay open for up to 120 days.' using errcode = '22023';
+  end if;
+  new.correct_option := null;
+  new.hidden_at := null;
+  return new;
+end;
+$$;
+
+create or replace function public.club_check_vote()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_poll public.club_polls;
+begin
+  if tg_op = 'UPDATE' and new.poll_id <> old.poll_id then
+    raise exception 'A vote cannot move to another poll.' using errcode = '22023';
+  end if;
+  select * into v_poll from public.club_polls where id = new.poll_id;
+  if not found or v_poll.hidden_at is not null then
+    raise exception 'That poll is not available.' using errcode = 'P0002';
+  end if;
+  if v_poll.closes_at <= now() then
+    raise exception 'Voting has closed.' using errcode = '22023';
+  end if;
+  if new.option_index >= jsonb_array_length(v_poll.options) then
+    raise exception 'Choose one of the options.' using errcode = '22023';
+  end if;
+  if not public.can_post_in_club(v_poll.club_id) then
+    raise exception 'You cannot vote in this club.' using errcode = '42501';
+  end if;
+  new.club_id := v_poll.club_id;
+  new.voter_id := auth.uid();
+  new.voted_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.club_stamp_report()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_club uuid;
+  v_author uuid;
+  v_name text;
+  v_excerpt text;
+begin
+  new.reporter_id := auth.uid();
+  if new.item_table = 'club_chat' then
+    select club_id, author_id, author_name, left(body, 160) into v_club, v_author, v_name, v_excerpt from public.club_chat where id = new.item_id;
+  elsif new.item_table = 'club_posts' then
+    select club_id, author_id, author_name, left(coalesce(title || ': ', '') || body, 160) into v_club, v_author, v_name, v_excerpt from public.club_posts where id = new.item_id;
+  else
+    select club_id, author_id, author_name, left(question, 160) into v_club, v_author, v_name, v_excerpt from public.club_polls where id = new.item_id;
+  end if;
+  if v_club is null or v_club <> new.club_id or not public.can_read_club(v_club) then
+    raise exception 'That item is not available to report.' using errcode = 'P0002';
+  end if;
+  new.item_author_id := v_author;
+  new.item_author_name := v_name;
+  new.excerpt := v_excerpt;
+  return new;
+end;
+$$;
+
+revoke execute on function public.club_stamp_author() from public, anon, authenticated;
+revoke execute on function public.club_rate_limit() from public, anon, authenticated;
+revoke execute on function public.club_check_post() from public, anon, authenticated;
+revoke execute on function public.club_check_poll() from public, anon, authenticated;
+revoke execute on function public.club_check_vote() from public, anon, authenticated;
+revoke execute on function public.club_stamp_report() from public, anon, authenticated;
+
+drop trigger if exists club_chat_1_stamp on public.club_chat;
+create trigger club_chat_1_stamp before insert on public.club_chat for each row execute function public.club_stamp_author();
+drop trigger if exists club_chat_2_limit on public.club_chat;
+create trigger club_chat_2_limit before insert on public.club_chat for each row execute function public.club_rate_limit(8, 30);
+
+drop trigger if exists club_posts_1_stamp on public.club_posts;
+create trigger club_posts_1_stamp before insert on public.club_posts for each row execute function public.club_stamp_author();
+drop trigger if exists club_posts_2_check on public.club_posts;
+create trigger club_posts_2_check before insert on public.club_posts for each row execute function public.club_check_post();
+drop trigger if exists club_posts_3_limit on public.club_posts;
+create trigger club_posts_3_limit before insert on public.club_posts for each row execute function public.club_rate_limit(6, 60);
+
+drop trigger if exists club_polls_1_stamp on public.club_polls;
+create trigger club_polls_1_stamp before insert on public.club_polls for each row execute function public.club_stamp_author();
+drop trigger if exists club_polls_2_check on public.club_polls;
+create trigger club_polls_2_check before insert on public.club_polls for each row execute function public.club_check_poll();
+drop trigger if exists club_polls_3_limit on public.club_polls;
+create trigger club_polls_3_limit before insert on public.club_polls for each row execute function public.club_rate_limit(3, 300);
+
+drop trigger if exists club_results_1_stamp on public.club_results;
+create trigger club_results_1_stamp before insert on public.club_results for each row execute function public.club_stamp_author();
+drop trigger if exists club_results_2_limit on public.club_results;
+create trigger club_results_2_limit before insert on public.club_results for each row execute function public.club_rate_limit(20, 600);
+
+drop trigger if exists club_poll_votes_check on public.club_poll_votes;
+create trigger club_poll_votes_check before insert or update on public.club_poll_votes for each row execute function public.club_check_vote();
+
+drop trigger if exists club_reports_stamp on public.club_reports;
+create trigger club_reports_stamp before insert on public.club_reports for each row execute function public.club_stamp_report();
+
+alter table public.club_chat enable row level security;
+alter table public.club_posts enable row level security;
+alter table public.club_polls enable row level security;
+alter table public.club_poll_votes enable row level security;
+alter table public.club_results enable row level security;
+alter table public.club_brackets enable row level security;
+alter table public.club_reports enable row level security;
+
+-- Chat, forum, polls and results: the club reads (hidden items only for the coach), a member who may post adds their own,
+-- and the author or the coach deletes. Nothing can be edited, so what was said stays what was said.
+drop policy if exists "Club reads chat" on public.club_chat;
+create policy "Club reads chat" on public.club_chat for select to authenticated
+  using (public.can_read_club(club_id) and (hidden_at is null or public.is_club_coach(club_id)));
+drop policy if exists "Club adds chat" on public.club_chat;
+create policy "Club adds chat" on public.club_chat for insert to authenticated
+  with check (public.can_post_in_club(club_id));
+drop policy if exists "Author or coach deletes chat" on public.club_chat;
+create policy "Author or coach deletes chat" on public.club_chat for delete to authenticated
+  using ((select auth.uid()) = author_id or public.is_club_coach(club_id));
+
+drop policy if exists "Club reads posts" on public.club_posts;
+create policy "Club reads posts" on public.club_posts for select to authenticated
+  using (public.can_read_club(club_id) and (hidden_at is null or public.is_club_coach(club_id)));
+drop policy if exists "Club adds posts" on public.club_posts;
+create policy "Club adds posts" on public.club_posts for insert to authenticated
+  with check (public.can_post_in_club(club_id));
+drop policy if exists "Author or coach deletes posts" on public.club_posts;
+create policy "Author or coach deletes posts" on public.club_posts for delete to authenticated
+  using ((select auth.uid()) = author_id or public.is_club_coach(club_id));
+
+drop policy if exists "Club reads polls" on public.club_polls;
+create policy "Club reads polls" on public.club_polls for select to authenticated
+  using (public.can_read_club(club_id) and (hidden_at is null or public.is_club_coach(club_id)));
+drop policy if exists "Club adds polls" on public.club_polls;
+create policy "Club adds polls" on public.club_polls for insert to authenticated
+  with check (public.can_post_in_club(club_id));
+drop policy if exists "Author or coach deletes polls" on public.club_polls;
+create policy "Author or coach deletes polls" on public.club_polls for delete to authenticated
+  using ((select auth.uid()) = author_id or public.is_club_coach(club_id));
+
+drop policy if exists "Club reads results" on public.club_results;
+create policy "Club reads results" on public.club_results for select to authenticated
+  using (public.can_read_club(club_id));
+drop policy if exists "Club adds results" on public.club_results;
+create policy "Club adds results" on public.club_results for insert to authenticated
+  with check (public.can_post_in_club(club_id));
+drop policy if exists "Author or coach deletes results" on public.club_results;
+create policy "Author or coach deletes results" on public.club_results for delete to authenticated
+  using ((select auth.uid()) = author_id or public.is_club_coach(club_id));
+
+-- Votes: a member sees and changes only their own, while the poll is open (the trigger checks).
+drop policy if exists "Own votes" on public.club_poll_votes;
+create policy "Own votes" on public.club_poll_votes for select to authenticated
+  using ((select auth.uid()) = voter_id);
+drop policy if exists "Cast own vote" on public.club_poll_votes;
+create policy "Cast own vote" on public.club_poll_votes for insert to authenticated
+  with check (public.can_post_in_club(club_id));
+drop policy if exists "Change own vote" on public.club_poll_votes;
+create policy "Change own vote" on public.club_poll_votes for update to authenticated
+  using ((select auth.uid()) = voter_id)
+  with check (public.can_post_in_club(club_id));
+drop policy if exists "Withdraw own vote" on public.club_poll_votes;
+create policy "Withdraw own vote" on public.club_poll_votes for delete to authenticated
+  using ((select auth.uid()) = voter_id);
+
+-- Brackets: the club reads, only the coach writes.
+drop policy if exists "Club reads brackets" on public.club_brackets;
+create policy "Club reads brackets" on public.club_brackets for select to authenticated
+  using (public.can_read_club(club_id));
+drop policy if exists "Coach manages brackets" on public.club_brackets;
+create policy "Coach manages brackets" on public.club_brackets for all to authenticated
+  using (public.is_club_coach(club_id))
+  with check (public.is_club_coach(club_id));
+
+-- Reports: a member files one; only the coach reads or clears them.
+drop policy if exists "Club files reports" on public.club_reports;
+create policy "Club files reports" on public.club_reports for insert to authenticated
+  with check (public.can_read_club(club_id));
+drop policy if exists "Coach reads reports" on public.club_reports;
+create policy "Coach reads reports" on public.club_reports for select to authenticated
+  using (public.is_club_coach(club_id));
+drop policy if exists "Coach clears reports" on public.club_reports;
+create policy "Coach clears reports" on public.club_reports for delete to authenticated
+  using (public.is_club_coach(club_id) or (select auth.uid()) = reporter_id);
+
+-- Poll totals for a club, without saying who voted for what.
+create or replace function public.club_poll_tally(p_club_id uuid)
+returns table (poll_id uuid, option_index int, votes bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select v.poll_id, v.option_index, count(*)
+  from public.club_poll_votes v
+  where v.club_id = p_club_id and public.can_read_club(p_club_id)
+  group by v.poll_id, v.option_index;
+$$;
+
+-- Friendly prediction standings: how many settled predictions each current member got right.
+create or replace function public.club_prediction_standings(p_club_id uuid)
+returns table (display_name text, correct bigint, answered bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.display_name,
+    count(*) filter (where v.option_index = p.correct_option),
+    count(*)
+  from public.club_poll_votes v
+  join public.club_polls p on p.id = v.poll_id
+  join public.club_members m on m.club_id = p.club_id and m.athlete_id = v.voter_id and m.left_at is null
+  where p.club_id = p_club_id and p.kind = 'prediction' and p.correct_option is not null and p.hidden_at is null
+    and public.can_read_club(p_club_id)
+  group by m.athlete_id, m.display_name
+  order by 2 desc, 3 asc, 1 asc;
+$$;
+
+-- Name the right answer to a prediction (its author or the coach), which also closes it.
+create or replace function public.resolve_club_prediction(p_poll_id uuid, p_option int)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_poll public.club_polls;
+begin
+  select * into v_poll from public.club_polls where id = p_poll_id;
+  if not found or v_poll.kind <> 'prediction' then
+    raise exception 'That prediction was not found.' using errcode = 'P0002';
+  end if;
+  if not (public.is_club_coach(v_poll.club_id) or (v_poll.author_id = auth.uid() and public.can_read_club(v_poll.club_id))) then
+    raise exception 'Only the person who made this prediction, or the coach, can settle it.' using errcode = '42501';
+  end if;
+  if p_option is null or p_option < 0 or p_option >= jsonb_array_length(v_poll.options) then
+    raise exception 'Choose one of the options.' using errcode = '22023';
+  end if;
+  update public.club_polls set correct_option = p_option, closes_at = least(closes_at, now()) where id = p_poll_id;
+end;
+$$;
+
+-- Close a poll or prediction early (its author or the coach).
+create or replace function public.close_club_poll(p_poll_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_poll public.club_polls;
+begin
+  select * into v_poll from public.club_polls where id = p_poll_id;
+  if not found then
+    raise exception 'That poll was not found.' using errcode = 'P0002';
+  end if;
+  if not (public.is_club_coach(v_poll.club_id) or (v_poll.author_id = auth.uid() and public.can_read_club(v_poll.club_id))) then
+    raise exception 'Only the person who made this poll, or the coach, can close it.' using errcode = '42501';
+  end if;
+  update public.club_polls set closes_at = least(closes_at, now()) where id = p_poll_id;
+end;
+$$;
+
+-- Moderation, coach only: hide or show an item, and mute or unmute a member.
+create or replace function public.set_club_item_hidden(p_table text, p_id uuid, p_hidden boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_club uuid;
+  v_at timestamptz := case when p_hidden then now() else null end;
+begin
+  if p_table = 'club_chat' then
+    select club_id into v_club from public.club_chat where id = p_id;
+  elsif p_table = 'club_posts' then
+    select club_id into v_club from public.club_posts where id = p_id;
+  elsif p_table = 'club_polls' then
+    select club_id into v_club from public.club_polls where id = p_id;
+  else
+    raise exception 'Unknown item type.' using errcode = '22023';
+  end if;
+  if v_club is null or not public.is_club_coach(v_club) then
+    raise exception 'Only the coach can do that.' using errcode = '42501';
+  end if;
+  if p_table = 'club_chat' then update public.club_chat set hidden_at = v_at where id = p_id;
+  elsif p_table = 'club_posts' then update public.club_posts set hidden_at = v_at where id = p_id;
+  else update public.club_polls set hidden_at = v_at where id = p_id;
+  end if;
+end;
+$$;
+
+create or replace function public.set_club_member_muted(p_club_id uuid, p_athlete_id uuid, p_muted boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_club_coach(p_club_id) then
+    raise exception 'Only the coach can do that.' using errcode = '42501';
+  end if;
+  update public.club_members set muted = p_muted where club_id = p_club_id and athlete_id = p_athlete_id;
+end;
+$$;
+
+revoke execute on function public.club_poll_tally(uuid) from public, anon;
+revoke execute on function public.club_prediction_standings(uuid) from public, anon;
+revoke execute on function public.resolve_club_prediction(uuid, int) from public, anon;
+revoke execute on function public.close_club_poll(uuid) from public, anon;
+revoke execute on function public.set_club_item_hidden(text, uuid, boolean) from public, anon;
+revoke execute on function public.set_club_member_muted(uuid, uuid, boolean) from public, anon;
+grant execute on function public.club_poll_tally(uuid) to authenticated;
+grant execute on function public.club_prediction_standings(uuid) to authenticated;
+grant execute on function public.resolve_club_prediction(uuid, int) to authenticated;
+grant execute on function public.close_club_poll(uuid) to authenticated;
+grant execute on function public.set_club_item_hidden(text, uuid, boolean) to authenticated;
+grant execute on function public.set_club_member_muted(uuid, uuid, boolean) to authenticated;

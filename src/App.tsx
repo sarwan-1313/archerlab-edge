@@ -40,6 +40,7 @@ const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then(
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
 const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').then((module) => ({ default: module.SessionDashboardPage })));
 const ClubPage = lazy(() => import('./pages/ClubPage').then((module) => ({ default: module.ClubPage })));
+const CommunityPage = lazy(() => import('./pages/CommunityPage').then((module) => ({ default: module.CommunityPage })));
 const DrillsPage = lazy(() => import('./pages/DrillsPage').then((module) => ({ default: module.DrillsPage })));
 const EquipmentPage = lazy(() => import('./pages/EquipmentPage').then((module) => ({ default: module.EquipmentPage })));
 const RangesPage = lazy(() => import('./pages/RangesPage').then((module) => ({ default: module.RangesPage })));
@@ -91,6 +92,7 @@ const ROUTE_LOADING_STATUS = {
   ranges: 'Loading map...',
   vip: 'Opening the VIP Lounge...',
   club: 'Loading club...',
+  community: 'Loading community...',
   'dataset-tools': 'Loading dataset tools...',
 } as const satisfies Record<PageKey, string>;
 
@@ -458,6 +460,7 @@ function App() {
       case 'vip': return <VipPage />;
       case 'equipment': return <EquipmentPage onProfile={() => requestNavigation('profile')} />;
       case 'scoring': return <ScoringPage onTraining={() => requestNavigation('training')} />;
+      case 'community': return <CommunityPage onProfile={() => requestNavigation('profile')} onClub={() => requestNavigation('club')} onPrivacy={() => requestNavigation('privacy')} />;
       case 'club': return <ClubPage onProfile={() => requestNavigation('profile')} onPrivacy={() => requestNavigation('privacy')} onOpenReport={(reportId) => commitNavigation('video-analysis', { reportId })} />;
       case 'dataset-tools': return <DatasetToolsPage onProfile={() => requestNavigation('profile')} />;
       case 'user-guide': return <UserGuidePage onStart={() => beginTraining()} onHome={() => requestNavigation('home')} onOnboarding={openOnboarding} onOpenStep={requestNavigation} />;

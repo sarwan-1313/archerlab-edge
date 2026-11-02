@@ -25,6 +25,7 @@ export const DICTIONARY: Record<string, Entry> = {
   'nav.training': { pa: 'ਅਭਿਆਸ', hi: 'अभ्यास' },
   'nav.scoring': { pa: 'ਸਕੋਰਿੰਗ', hi: 'स्कोरिंग' },
   'nav.ranges': { pa: 'ਰੇਂਜ ਲੱਭੋ', hi: 'रेंज खोजें' },
+  'nav.community': { pa: 'ਭਾਈਚਾਰਾ', hi: 'समुदाय' },
   'nav.dashboard': { pa: 'ਅੰਕੜੇ', hi: 'आँकड़े' },
   'nav.user-guide': { pa: 'ਗਾਈਡ', hi: 'गाइड' },
   'nav.video': { pa: 'ਵੀਡੀਓ', hi: 'वीडियो' },
