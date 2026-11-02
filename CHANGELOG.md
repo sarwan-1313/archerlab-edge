@@ -6,6 +6,7 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Steadier live tracking.** The skeleton in Live Analysis is smoothed with an adaptive filter: heavy when a joint is still (no more shaking at full draw), light when it moves fast (so the release is not delayed). Joints the model is unsure of are held for up to 0.4 s instead of jumping, and glitch jumps are ignored. A "Tracking smoothing" choice (Balanced, Steady, Off) sits in the camera settings and is remembered on this device, and a "Tracking Excellent / Good / Fair / Weak" label shows how clearly your shoulders, arms and hips are seen. Everything runs on the device. The starting filter values are untuned estimates until they are checked against real camera footage.
 - **VIP: Daily challenge** in the Wind Challenge. Everyone gets the same wind and conditions each day, so friends can compare scores, with a best score per day. **VIP: Calm before the shot** is a box-breathing coach (in, hold, out, hold, 4 seconds each, 4 rounds) with a breathing circle.
 
 ### Changed
