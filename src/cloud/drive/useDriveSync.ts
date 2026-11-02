@@ -3,6 +3,7 @@ import { mergePracticeLog, readPracticeLog, subscribePracticeLog } from '../../p
 import { loadProfile, saveProfile } from '../../profile/profileStorage';
 import { VIDEO_REPORTS_CHANGED, listVideoReports, loadVideoReport, saveVideoReport } from '../../video-analysis/storage';
 import { driveBackupEnabled } from '../config';
+import { leaveGuestMode } from '../../onboarding/guestMode';
 import { connectDrive, disconnectDrive, driveChosen, driveToken } from './driveAuth';
 import { applySettingsTo, deleteDriveData, readSettingsFrom, restoreFromDrive, saveToDrive, saveVideoToDrive, type LocalData, type RestoreResult } from './driveBackup';
 import { DriveAuthError, createDriveRest } from './driveRest';
@@ -128,6 +129,7 @@ export async function connect(loginHint?: string): Promise<boolean> {
     set({ status: state.chosen ? 'needs-connect' : 'off', message: describe(error) });
     return false;
   }
+  leaveGuestMode();
   const firstTime = !state.lastSavedAt;
   set({ chosen: true, status: 'idle', message: null });
   // On a new device, bring the athlete's data here before saving anything over it.

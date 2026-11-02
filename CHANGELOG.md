@@ -6,6 +6,8 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ### Added
 
+- **Welcome screen** for first-time visitors: create a profile (name, drawing hand, bow, experience), continue with Google (when accounts are set up), or skip as a guest. **Guest mode** keeps nothing: everything works while the app is open, and the visit's data is deleted the next time ArcherLab opens. It warns first if the device already has saved work, shows a banner while it is on, and ends as soon as a profile is saved or you sign in.
+- The sidebar athlete card now opens the Profile page, and the top bar's profile button uses a person icon.
 - **Install ArcherLab, free** (Home): an Install app button where the browser offers one (Chrome and Edge), Share → Add to Home Screen steps on iPhone and iPad, Chrome menu steps on Android, a QR code that opens the app on a phone (and highlights the card), and a button to send the link to a friend. It hides once the app is installed. `docs/microsoft-store.md` explains listing it free on the Microsoft Store.
 - **Ready for the Play Store** as a Trusted Web Activity: home-screen shortcuts in the manifest, a build step that writes `/.well-known/assetlinks.json` from `TWA_PACKAGE_NAME` and `TWA_SHA256_FINGERPRINTS`, a Bubblewrap config in `android/`, and a step-by-step guide in `docs/play-store.md` (developer account, the 12-tester closed test, building with PWABuilder or Bubblewrap, the listing and the data safety answers).
 - **Punjabi and Hindi** (Profile → Language): the main menu and the Scoring, Drills and Find a range pages in ਪੰਜਾਬੀ (Gurmukhi) or हिन्दी, with English for anything not translated yet. The choice stays on the device and saves with Google Drive.

@@ -14,10 +14,11 @@ export function ProfilePreview() {
       {url
         ? <img alt="Athlete profile" src={url} className="sidebar-profile__avatar" />
         : <span className="sidebar-profile__avatar sidebar-profile__avatar--initials" aria-hidden="true">{initials}</span>}
-      <div className="sidebar-profile__text">
-        <h2>{name}</h2>
-        <p>{detail}</p>
-      </div>
+      <span className="sidebar-profile__text">
+        <strong>{name}</strong>
+        <span>{profile ? detail : loadError ? detail : 'Tap to set up your profile'}</span>
+      </span>
+      <span className="sidebar-profile__chevron" aria-hidden="true">›</span>
     </div>
   );
 }

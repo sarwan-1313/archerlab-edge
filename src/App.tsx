@@ -1,8 +1,10 @@
-import { lazy, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { AppIcon } from './components/AppIcon';
 import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { GuestBanner } from './components/GuestBanner';
 import { OnboardingModal } from './components/OnboardingModal';
+import { shouldWelcome } from './onboarding/guestMode';
 import { PageTransition } from './components/PageTransition';
 import { PrivacyBadge } from './components/PrivacyBadge';
 import { RouteLoadingBoundary } from './components/RouteLoadingBoundary';
@@ -39,6 +41,7 @@ const ClubPage = lazy(() => import('./pages/ClubPage').then((module) => ({ defau
 const DrillsPage = lazy(() => import('./pages/DrillsPage').then((module) => ({ default: module.DrillsPage })));
 const EquipmentPage = lazy(() => import('./pages/EquipmentPage').then((module) => ({ default: module.EquipmentPage })));
 const RangesPage = lazy(() => import('./pages/RangesPage').then((module) => ({ default: module.RangesPage })));
+const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
 const ScoringPage = lazy(() => import('./pages/ScoringPage').then((module) => ({ default: module.ScoringPage })));
 const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
@@ -206,7 +209,10 @@ function App() {
   const [sessionActive, setSessionActive] = useState(false);
   const [guardedExit, setGuardedExit] = useState<GuardedExit>();
   const [routeRevision, setRouteRevision] = useState(0);
-  const { profile } = useAthleteProfile();
+  const { profile, loading: profileLoading } = useAthleteProfile();
+  // First visit without a profile: offer to create one, sign in, or continue as a guest (not in end-to-end test builds).
+  const [welcomeClosed, setWelcomeClosed] = useState(false);
+  const showWelcome = !welcomeClosed && !profileLoading && !profile && import.meta.env.VITE_E2E !== '1' && initialPageRef.current !== 'privacy' && shouldWelcome(false);
   // A new version waits for the end of a live session or a video analysis rather than reloading under it.
   const [videoProcessing, setVideoProcessing] = useState(false);
   useHoldUpdates(sessionActive || videoProcessing);
@@ -486,9 +492,10 @@ function App() {
                   <OfflineIndicator />
                 </div>
                 <div className="app-topbar__privacy"><PrivacyBadge /></div>
-                <button type="button" className="app-topbar__profile" onClick={() => requestNavigation('profile')} aria-label="Open athlete profile"><AppIcon name="sensors" size={18} /></button>
+                <button type="button" className="app-topbar__profile" onClick={() => requestNavigation('profile')} aria-label="Open athlete profile"><AppIcon name="user" size={18} /></button>
               </div>
             </header>
+            <GuestBanner onCreateProfile={() => requestNavigation('profile')} />
             <main className={`app-main ${activePage === 'home' ? 'app-main--home' : ''}`}>
               <RouteLoadingBoundary key={activePage} status={ROUTE_LOADING_STATUS[activePage]}>
                 <PageTransition cameraSafe={activePage === 'live-analysis'}>{currentPage}</PageTransition>
@@ -499,6 +506,7 @@ function App() {
         <BottomNav items={mobileNavItems} active={navActive} onSelect={handleNavSelect} />
         <UpdateToast />
         {showOnboarding ? <OnboardingModal onClose={closeOnboarding} onStart={startFromOnboarding} /> : null}
+        {showWelcome ? <Suspense fallback={null}><WelcomeScreen onDone={() => setWelcomeClosed(true)} onOpenPrivacy={() => requestNavigation('privacy')} /></Suspense> : null}
       </div>
     </>
   );

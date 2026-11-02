@@ -6,6 +6,7 @@ import App from './App.tsx'
 import './styles/athletic.css'
 import { captureAuthRedirect } from './cloud/account/authRedirect'
 import { accountsEnabled } from './cloud/config'
+import { cleanUpGuestVisit } from './onboarding/guestMode'
 import { captureInstallPrompt } from './pwa/install'
 import { registerServiceWorker } from './pwa/serviceWorker'
 import { applyLiteMode } from './settings/liteMode'
@@ -19,11 +20,14 @@ captureInstallPrompt()
 // Lite mode cuts animations through a data attribute on <html>.
 applyLiteMode()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// Guest mode keeps nothing between visits: remove the last visit's data before the app reads it.
+void cleanUpGuestVisit().finally(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+})
 
 // Offline support and installability. A no-op in development; see pwa.config.ts.
 registerServiceWorker()

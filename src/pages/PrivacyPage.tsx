@@ -140,6 +140,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           <li><strong>The private coach’s model</strong> ({LOCAL_MODEL_SIZE_LABEL}): only if you chose to download it. It holds none of your data. Remove it from the private coach in a report, or with “Delete everything on this device”.</li>
           <li><strong>Saved AI keys</strong>: only if you enter one. They are kept for this tab, or on this device if you tick “remember”.</li>
           {accountsEnabled ? <li><strong>Your sign-in</strong>, if you sign in to an account.</li> : null}
+          <li><strong>Guest mode</strong> (if you chose “continue as guest”): all of the above is deleted the next time you open ArcherLab. Only device settings (language, Lite mode) and the private coach’s download are kept. Creating a profile or signing in ends guest mode.</li>
         </ul>
       </Section>
 
