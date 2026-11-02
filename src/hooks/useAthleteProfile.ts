@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { leaveGuestMode } from '../onboarding/guestMode';
 import { loadProfile, saveProfile } from '../profile/profileStorage';
 
 type Profile = Record<string, any> & { id?: string; profilePhotoUrl?: string | null };
@@ -69,6 +70,8 @@ export function useAthleteProfile() {
     const toSave: Profile = { id: 'default', ...data, updatedAt: Date.now(), createdAt: data.createdAt ?? Date.now() };
     delete toSave.profilePhotoUrl;
     await saveProfile({ ...toSave, id: 'default' });
+    // Saving a profile means the athlete wants their work kept.
+    leaveGuestMode();
     setSnapshot({ profile: profileWithPhoto(toSave), loading: false, loadError: null });
     window.dispatchEvent(new Event('archerlab:profile-updated'));
   };

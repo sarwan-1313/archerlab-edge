@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/write-assetlinks.mjs",
     "build:vercel": "node scripts/fetch-pose-models.mjs full heavy --optional --if-missing && node scripts/fetch-whisper-model.mjs --optional --if-missing && npm run build",
     "lint": "oxlint src",
     "test": "vitest run",

@@ -28,6 +28,11 @@ const EXPECTED_ROUTES = {
   profile: '/profile',
   privacy: '/privacy',
   training: '/training',
+  scoring: '/scoring',
+  drills: '/drills',
+  equipment: '/equipment',
+  ranges: '/ranges',
+  vip: '/vip',
   club: '/club',
   'dataset-tools': '/dataset-tools',
 } as const satisfies Record<PageKey, string>;

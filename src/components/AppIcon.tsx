@@ -39,9 +39,46 @@ export type AppIconName =
   | 'download'
   | 'user'
   | 'calendar'
+  | 'map'
+  | 'crown'
+  | 'logout'
+  | 'globe'
+  | 'share'
   | 'unknown';
 
 const iconPaths: Record<AppIconName, ReactNode> = {
+  crown: (
+    <>
+      <path d="M3.5 8.5 7.5 12l4.5-6.5L16.5 12l4-3.5-1.8 10H5.3Z" />
+      <path d="M5.5 21h13" />
+    </>
+  ),
+  logout: (
+    <>
+      <path d="M14 4.5h4.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H14" />
+      <path d="M10 8l-4 4 4 4M6 12h10" />
+    </>
+  ),
+  map: (
+    <>
+      <path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11-6.5 11Z" />
+      <circle cx="12" cy="10" r="2.4" />
+    </>
+  ),
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17M12 3.5c2.6 2.4 3.8 5.3 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.3-3.8-8.5s1.2-6.1 3.8-8.5Z" />
+    </>
+  ),
+  share: (
+    <>
+      <circle cx="17.5" cy="6" r="2.5" />
+      <circle cx="6.5" cy="12" r="2.5" />
+      <circle cx="17.5" cy="18" r="2.5" />
+      <path d="m8.7 10.8 6.6-3.6M8.7 13.2l6.6 3.6" />
+    </>
+  ),
   calendar: (
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2" />

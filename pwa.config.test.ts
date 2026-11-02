@@ -171,6 +171,11 @@ describe('manifest', () => {
     expect(icons.find((icon) => icon.sizes === '512x512' && icon.purpose === 'any')).toBeTruthy();
     expect(icons.find((icon) => icon.sizes === '512x512' && icon.purpose === 'maskable')).toBeTruthy();
   });
+
+  it('has home-screen shortcuts to real pages', () => {
+    const urls = (manifest.shortcuts ?? []).map((shortcut) => shortcut.url);
+    expect(urls).toEqual(['/scoring', '/video', '/analysis', '/ranges']);
+  });
 });
 
 describe('updates', () => {

@@ -1,7 +1,7 @@
 import type { CategoryId } from '../video-analysis/types';
 
 /** Where an entry came from: added automatically by a live session or a video analysis, or typed by the athlete. */
-export type PracticeSource = 'live' | 'video' | 'manual';
+export type PracticeSource = 'live' | 'video' | 'manual' | 'round';
 
 export type Feeling = 1 | 2 | 3 | 4 | 5;
 
@@ -26,8 +26,17 @@ export interface PracticeEntry {
   targetFace?: string;
   notes?: string;
   feeling?: Feeling;
+  /** The bow used (from Equipment). */
+  equipment?: string;
   /** The video report this entry came from. */
   videoReportId?: string;
+  /** A round scored arrow by arrow on the Scoring page, with where each arrow landed. */
+  round?: {
+    name: string;
+    faceId: string;
+    arrowsPerEnd: number;
+    ends: Array<Array<{ x: number | null; y: number | null; score: number; isX: boolean; hr?: number }>>;
+  };
 }
 
 export interface FocusGoal {

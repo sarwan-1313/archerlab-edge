@@ -3,6 +3,8 @@ import { ActionButton } from '../components/ActionButton';
 import { AppIcon } from '../components/AppIcon';
 import { PageHeader } from '../components/PageHeader';
 import { GoalProgressCard } from '../components/training/GoalProgressCard';
+import { ProgressCardButton } from '../components/training/ProgressCardButton';
+import { useAthleteProfile } from '../hooks/useAthleteProfile';
 import { dayKey, heatmap, streaks, totals, entriesInWeek, weeklySeries, type WeekBucket } from '../practice-log/aggregate';
 import { manualEntry } from '../practice-log/sources';
 import { deletePracticeEntry, savePracticeEntry, savePracticeGoals } from '../practice-log/storage';
@@ -18,7 +20,7 @@ import '../styles/video.css';
 
 const HEATMAP_WEEKS = 26;
 const CHART_WEEKS = 12;
-const SOURCE_LABELS: Record<PracticeEntry['source'], string> = { live: 'Live session', video: 'Video analysis', manual: 'Logged by hand' };
+const SOURCE_LABELS: Record<PracticeEntry['source'], string> = { live: 'Live session', video: 'Video analysis', manual: 'Logged by hand', round: 'Scored round' };
 const FEELINGS: Record<Feeling, string> = { 1: 'Rough', 2: 'Off', 3: 'Okay', 4: 'Good', 5: 'Great' };
 
 const shortDate = (date: Date | number) => new Date(date).toLocaleDateString([], { day: 'numeric', month: 'short' });
@@ -212,7 +214,7 @@ function GoalsForm({ goals, onDone, onVideo }: { goals: PracticeGoals; onDone: (
 
 function EntryRow({ entry }: { entry: PracticeEntry }) {
   const details = [
-    entry.averageScore !== null ? `avg ${entry.averageScore.toFixed(1)}${entry.totalScore !== null && entry.source === 'manual' ? ` (${entry.totalScore})` : ''}` : null,
+    entry.averageScore !== null ? `avg ${entry.averageScore.toFixed(1)}${entry.totalScore !== null && (entry.source === 'manual' || entry.source === 'round') ? ` (${entry.totalScore})` : ''}` : null,
     entry.formScore !== null ? `form ${entry.formScore} (estimate)` : null,
     entry.distanceM ? `${entry.distanceM} m` : null,
     entry.targetFace ?? null,
@@ -235,8 +237,9 @@ function EntryRow({ entry }: { entry: PracticeEntry }) {
   );
 }
 
-export function TrainingPage({ onVideo }: { onVideo?: () => void } = {}) {
+export function TrainingPage({ onVideo, onScoring, onDrills, onEquipment }: { onVideo?: () => void; onScoring?: () => void; onDrills?: () => void; onEquipment?: () => void } = {}) {
   const { entries, goals, status } = usePracticeLog();
+  const { profile } = useAthleteProfile();
   const [form, setForm] = useState<'entry' | 'goals' | null>(null);
   const week = useMemo(() => totals(entriesInWeek(entries)), [entries]);
   const streak = useMemo(() => streaks(entries), [entries]);
@@ -248,8 +251,12 @@ export function TrainingPage({ onVideo }: { onVideo?: () => void } = {}) {
         title="Training"
         subtitle="Your practice log: live sessions and video analyses are added automatically, and you can log any other practice. Stored on this device."
         actions={<div className="va-actions">
-          <ActionButton variant="primary" type="button" onClick={() => setForm('entry')}><AppIcon name="plus" size={16} /> Add entry</ActionButton>
+          {onScoring ? <ActionButton variant="primary" type="button" onClick={onScoring}><AppIcon name="target" size={16} /> Score a round</ActionButton> : null}
+          <ActionButton variant={onScoring ? 'secondary' : 'primary'} type="button" onClick={() => setForm('entry')}><AppIcon name="plus" size={16} /> Add entry</ActionButton>
           <ActionButton variant="secondary" type="button" onClick={() => setForm('goals')}><AppIcon name="target" size={16} /> Goals</ActionButton>
+          {onDrills ? <ActionButton variant="secondary" type="button" onClick={onDrills}><AppIcon name="history" size={16} /> Drills</ActionButton> : null}
+          {onEquipment ? <ActionButton variant="ghost" type="button" onClick={onEquipment}><AppIcon name="devices" size={16} /> Equipment</ActionButton> : null}
+          {entries.length ? <ProgressCardButton entries={entries} name={typeof profile?.displayName === 'string' ? profile.displayName : ''} /> : null}
         </div>}
       />
       {status === 'error' ? <p className="va-import-status" role="alert">The practice log could not be opened in this browser.</p> : null}

@@ -15,6 +15,8 @@ import { AnchorFaceDiagram } from './AnchorFaceDiagram';
 import { LabelPanel } from './LabelPanel';
 import { AnalysisPlayer, type PlayerHandle, type SeekRequest, type TimelineMarker } from './AnalysisPlayer';
 import { CommentsPanel, type CommentsPanelProps } from './CommentsPanel';
+import { CompareShotsPanel } from './CompareShotsPanel';
+import { RhythmPanel } from './RhythmPanel';
 import { LevelBadge } from './LevelBadge';
 import { PrintableReport } from './PrintableReport';
 import { renderFocusFrames, type FocusFrame } from '../../video-analysis/browser/keyFrames';
@@ -331,6 +333,8 @@ export function ReportView({ report, videoUrl, cloudCoach, sharing, actions, not
         </section>
       </div>
 
+      <RhythmPanel report={report} />
+      <CompareShotsPanel key={report.id} report={report} />
       {sharing}
       {cloudCoach}
 

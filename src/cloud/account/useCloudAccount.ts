@@ -3,6 +3,7 @@ import { CLOUD_CONFIG, accountsEnabled } from '../config';
 import { takePendingAuthRedirect } from './authRedirect';
 import { describeCloudError, pushProfile } from './cloudSync';
 import { loadProfile } from '../../profile/profileStorage';
+import { leaveGuestMode } from '../../onboarding/guestMode';
 import { createSupabaseRest, type CloudSession, type SupabaseRest } from './supabaseRest';
 
 let client: SupabaseRest | null = null;
@@ -21,6 +22,8 @@ let resolved = false;
 
 function publish(session: CloudSession | null) {
   currentSession = session;
+  // Signing in means the athlete wants their work kept.
+  if (session) leaveGuestMode();
   resolved = true;
   listeners.forEach((listener) => listener(session));
 }

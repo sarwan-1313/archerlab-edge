@@ -148,6 +148,13 @@ export const pwaOptions: Partial<VitePWAOptions> = {
       { src: '/pwa/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/pwa/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
+    // Long-press shortcuts on the Android home screen (and in the Play Store app, which wraps this site).
+    shortcuts: [
+      { name: 'Score a round', short_name: 'Score', url: '/scoring', icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Analyse a video', short_name: 'Video', url: '/video', icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Live Analysis', short_name: 'Live', url: '/analysis', icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }] },
+      { name: 'Find a range', short_name: 'Ranges', url: '/ranges', icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }] },
+    ],
   },
   workbox: {
     globPatterns: PRECACHE_GLOBS,

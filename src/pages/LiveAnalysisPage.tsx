@@ -8,6 +8,7 @@ import { GestureDebugPanel } from '../components/gestures/GestureDebugPanel';
 import { GestureScoreOverlay } from '../components/gestures/GestureScoreOverlay';
 import { PageHeader } from '../components/PageHeader';
 import { PoseDebugPanel } from '../components/pose/PoseDebugPanel';
+import { GhostOverlay } from '../components/pose/GhostOverlay';
 import { PoseOverlay } from '../components/pose/PoseOverlay';
 import { PoseStatus } from '../components/pose/PoseStatus';
 import { RecordingControls } from '../components/recording/RecordingControls';
@@ -436,6 +437,7 @@ export function LiveAnalysisPage({ handedness, cameraView, onCameraViewChange, r
             <div className="camera-hero__header"><div><span className="eyebrow">Camera feed</span><strong>{deviceLabel}</strong></div><div className="camera-hero__header-meta"><span>{activeCameraView}</span><span>{pose.debugStats.videoHeight ? `${pose.debugStats.videoHeight}p` : 'Camera resolution'}</span></div></div>
             <CameraPreview stream={stream} isLoading={isLoading} error={error} videoRef={videoRef} className="camera-hero__preview">
               <PoseOverlay videoRef={videoRef} resultRef={pose.latestResultRef} active={Boolean(stream)} />
+              <GhostOverlay videoRef={videoRef} resultRef={pose.latestResultRef} active={Boolean(stream)} />
               <div className="camera-hero__topbar"><div className="camera-badges"><span className={`camera-badge ${cameraReady ? 'camera-badge--active' : ''}`}><span className="camera-badge__dot" />{cameraReady ? 'Camera active' : 'Camera paused'}</span><PoseStatus engineStatus={pose.status} detectionState={detectionState} /></div><div className="session-timer" aria-label={`Session time ${formatDuration(sessionRecorder.durationMs)}`}><span>TIME</span>{formatDuration(sessionRecorder.durationMs)}</div></div>
               {stream && !isLoading && !error && detectionState !== 'athlete-detected' ? <div className="pose-lost-overlay" role="status"><span className="pose-lost-overlay__icon"><AppIcon name="accessibility" size={23} /></span><strong>Pose Not Detected</strong><span>Move into the camera frame and keep your shooting form visible.</span></div> : null}
               <div className="camera-hero__footer"><span><AppIcon name="shield" size={15} />Frames stay on this device</span><span>{shots.length} shot{shots.length === 1 ? '' : 's'} captured</span></div>

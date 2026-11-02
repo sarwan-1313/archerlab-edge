@@ -287,6 +287,8 @@ supabase/            SQL for optional accounts, backup, coach review and account
 | [docs/biomechanics.md](docs/biomechanics.md) | Live-engine measurement conventions (handedness, angle signs, normalisation) |
 | [docs/pose-intelligence.md](docs/pose-intelligence.md) | On-device MediaPipe setup and self-hosted assets |
 | [docs/pwa.md](docs/pwa.md) | Installing the app, what works offline and how it is cached, the update prompt, icons |
+| [docs/microsoft-store.md](docs/microsoft-store.md) | Listing the app free on the Microsoft Store for Windows with PWABuilder |
+| [docs/play-store.md](docs/play-store.md) | Publishing the Android app on Google Play (Trusted Web Activity), asset links, store listing and data safety |
 | [src/video-analysis/fixtures/README.md](src/video-analysis/fixtures/README.md) | Turning real clips into regression tests |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in each version |
 

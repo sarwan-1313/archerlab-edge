@@ -3,6 +3,7 @@ import { AccountPanel } from '../components/account/AccountPanel';
 import { PageHeader } from '../components/PageHeader';
 import { CoachToolsSetting } from '../components/profile/CoachToolsSetting';
 import { LiteModeSetting } from '../components/profile/LiteModeSetting';
+import { LanguageSetting } from '../components/profile/LanguageSetting';
 import { FormStatusCard } from '../components/profile/FormStatusCard';
 import { GoalProgressCard } from '../components/training/GoalProgressCard';
 import { useAthleteProfile } from '../hooks/useAthleteProfile';
@@ -11,7 +12,7 @@ import '../styles/video.css';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
 
-export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub, onDatasetTools }: { onAnalyzeVideo?: () => void; onPrivacy?: () => void; onTraining?: () => void; onClub?: () => void; onDatasetTools?: () => void } = {}) {
+export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub, onDatasetTools, onEquipment, onVip }: { onAnalyzeVideo?: () => void; onPrivacy?: () => void; onTraining?: () => void; onClub?: () => void; onDatasetTools?: () => void; onEquipment?: () => void; onVip?: () => void } = {}) {
   const { profile, loadError, save, removePhoto } = useAthleteProfile();
   const practice = usePracticeLog();
   const [form, setForm] = useState<any>({ displayName: '', archerId: '', handedness: 'right', bowType: '', discipline: '', experienceLevel: '', defaultCameraAngle: 'side' });
@@ -83,8 +84,11 @@ export function ProfilePage({ onAnalyzeVideo, onPrivacy, onTraining, onClub, onD
       {saved ? <p role="status">Profile saved on this device.</p> : null}
     </form>
     <AccountPanel profile={profile} onRestoreProfile={onRestoreProfile} onClub={onClub} />
+    {onEquipment ? <p className="va-faint profile-privacy">Bows, arrows and sight marks: <button type="button" className="privacy-link" onClick={onEquipment}>Equipment</button></p> : null}
+    <LanguageSetting />
     <LiteModeSetting />
     <CoachToolsSetting onDatasetTools={onDatasetTools} />
+    {onVip ? <p className="va-faint profile-privacy">Have a code? <button type="button" className="privacy-link" onClick={onVip}>VIP Lounge</button></p> : null}
     {onPrivacy ? <p className="va-faint profile-privacy">What is stored, what is sent, and how to export or delete it: <button type="button" className="privacy-link" onClick={onPrivacy}>Privacy</button></p> : null}
   </div>);
 }
