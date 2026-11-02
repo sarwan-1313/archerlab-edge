@@ -30,8 +30,8 @@ export function textProblem(text: string, max: number, label = 'Message'): strin
   return null;
 }
 
-/** Trims the options, drops blanks and repeats (ignoring case), and keeps at most MAX_OPTIONS. */
-export function cleanOptions(raw: readonly string[], max = OPTION_MAX): string[] {
+/** Trims the options, drops blanks and repeats (ignoring case), and keeps at most `limit` (poll options by default). */
+export function cleanOptions(raw: readonly string[], max = OPTION_MAX, limit = MAX_OPTIONS): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const option of raw) {
@@ -40,7 +40,7 @@ export function cleanOptions(raw: readonly string[], max = OPTION_MAX): string[]
     if (!value || seen.has(key)) continue;
     seen.add(key);
     out.push(value);
-    if (out.length >= MAX_OPTIONS) break;
+    if (out.length >= limit) break;
   }
   return out;
 }
@@ -268,7 +268,7 @@ export function setBracketWinner(entrantCount: number, winners: Readonly<Record<
 
 /** Splits typed entrants (one per line or comma separated) into clean names, without repeats. */
 export function parseEntrants(text: string): string[] {
-  return cleanOptions(text.split(/[\n,]/), ENTRANT_MAX).slice(0, BRACKET_MAX);
+  return cleanOptions(text.split(/[\n,]/), ENTRANT_MAX, BRACKET_MAX);
 }
 
 /** Name of round `round` (0 first) in a bracket with `rounds` rounds: Final, Semi-final, Quarter-final, then Round of N. */
