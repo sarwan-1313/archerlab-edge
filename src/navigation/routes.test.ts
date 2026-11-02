@@ -29,6 +29,8 @@ const EXPECTED_ROUTES = {
   privacy: '/privacy',
   training: '/training',
   scoring: '/scoring',
+  drills: '/drills',
+  equipment: '/equipment',
   club: '/club',
   'dataset-tools': '/dataset-tools',
 } as const satisfies Record<PageKey, string>;

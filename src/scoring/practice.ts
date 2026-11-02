@@ -19,6 +19,7 @@ export function entryFromRound(round: ScoredRound, notes?: string): PracticeEntr
     distanceM: round.distanceM,
     targetFace: faceById(round.faceId).label,
     ...(notes?.trim() ? { notes: notes.trim() } : {}),
+    ...(round.bow ? { equipment: round.bow } : {}),
     round: { name: round.name, faceId: round.faceId, arrowsPerEnd: round.arrowsPerEnd, ends },
   };
 }

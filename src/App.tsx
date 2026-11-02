@@ -36,6 +36,8 @@ const ReplayAnalysisPage = lazy(() => import('./pages/ReplayAnalysisPage').then(
 const SavedRecordingsPage = lazy(() => import('./pages/SavedRecordingsPage').then((module) => ({ default: module.SavedRecordingsPage })));
 const SessionDashboardPage = lazy(() => import('./pages/SessionDashboardPage').then((module) => ({ default: module.SessionDashboardPage })));
 const ClubPage = lazy(() => import('./pages/ClubPage').then((module) => ({ default: module.ClubPage })));
+const DrillsPage = lazy(() => import('./pages/DrillsPage').then((module) => ({ default: module.DrillsPage })));
+const EquipmentPage = lazy(() => import('./pages/EquipmentPage').then((module) => ({ default: module.EquipmentPage })));
 const ScoringPage = lazy(() => import('./pages/ScoringPage').then((module) => ({ default: module.ScoringPage })));
 const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
 const UserGuidePage = lazy(() => import('./pages/UserGuidePage').then((module) => ({ default: module.UserGuidePage })));
@@ -77,6 +79,8 @@ const ROUTE_LOADING_STATUS = {
   privacy: 'Loading privacy...',
   training: 'Loading training log...',
   scoring: 'Loading scoring...',
+  drills: 'Loading drills...',
+  equipment: 'Loading equipment...',
   club: 'Loading club...',
   'dataset-tools': 'Loading dataset tools...',
 } as const satisfies Record<PageKey, string>;
@@ -433,9 +437,11 @@ function App() {
       case 'multi-camera': return <MultiCameraPage />;
       case 'gesture-guide': return <GestureGuidePage onBack={goBack} />;
       case 'saved-recordings': return <SavedRecordingsPage onStart={() => beginTraining()} />;
-      case 'profile': return <ProfilePage onClub={() => requestNavigation('club')} onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} onDatasetTools={() => requestNavigation('dataset-tools')} />;
+      case 'profile': return <ProfilePage onClub={() => requestNavigation('club')} onAnalyzeVideo={() => requestNavigation('video-analysis')} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} onDatasetTools={() => requestNavigation('dataset-tools')} onEquipment={() => requestNavigation('equipment')} />;
       case 'privacy': return <PrivacyPage onProfile={() => requestNavigation('profile')} />;
-      case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} onScoring={() => requestNavigation('scoring')} />;
+      case 'training': return <TrainingPage onVideo={() => requestNavigation('video-analysis')} onScoring={() => requestNavigation('scoring')} onDrills={() => requestNavigation('drills')} onEquipment={() => requestNavigation('equipment')} />;
+      case 'drills': return <DrillsPage onTraining={() => requestNavigation('training')} />;
+      case 'equipment': return <EquipmentPage onProfile={() => requestNavigation('profile')} />;
       case 'scoring': return <ScoringPage onTraining={() => requestNavigation('training')} />;
       case 'club': return <ClubPage onProfile={() => requestNavigation('profile')} onPrivacy={() => requestNavigation('privacy')} onOpenReport={(reportId) => commitNavigation('video-analysis', { reportId })} />;
       case 'dataset-tools': return <DatasetToolsPage onProfile={() => requestNavigation('profile')} />;

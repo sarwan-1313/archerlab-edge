@@ -13,6 +13,8 @@ export interface Arrow {
   y: number | null;
   score: number;
   isX: boolean;
+  /** Heart rate when the arrow was scored, from a connected monitor. */
+  hr?: number;
 }
 
 export type End = Arrow[];
@@ -159,9 +161,11 @@ export interface ScoredRound {
   plannedEnds: number;
   startedAt: number;
   ends: End[];
+  /** The bow used, from Equipment. */
+  bow?: string;
 }
 
-export function newRound(preset: RoundPreset, overrides: Partial<Pick<RoundPreset, 'distanceM' | 'ends' | 'arrowsPerEnd' | 'faceId'>> = {}, now = Date.now()): ScoredRound {
+export function newRound(preset: RoundPreset, overrides: Partial<Pick<RoundPreset, 'distanceM' | 'ends' | 'arrowsPerEnd' | 'faceId'>> & { bow?: string } = {}, now = Date.now()): ScoredRound {
   return {
     id: `round:${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     roundId: preset.id,
@@ -172,6 +176,7 @@ export function newRound(preset: RoundPreset, overrides: Partial<Pick<RoundPrese
     plannedEnds: overrides.ends ?? preset.ends,
     startedAt: now,
     ends: [[]],
+    ...(overrides.bow ? { bow: overrides.bow } : {}),
   };
 }
 

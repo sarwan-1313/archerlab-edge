@@ -652,3 +652,15 @@
 .compare-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .compare-table th, .compare-table td { padding: 6px 8px; border-bottom: 1px solid var(--ath-line); text-align: left; }
 .compare-table thead th { color: var(--ath-muted); font: 700 10px/1.2 var(--ath-mono); letter-spacing: .1em; text-transform: uppercase; }
+.rhythm-chart { overflow-x: auto; }
+.rhythm-chart svg { width: 100%; min-width: 420px; height: auto; }
+.heart-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 14px; background: var(--ath-panel); border: 1px solid var(--ath-line); border-radius: var(--ath-radius); color: var(--ath-muted); }
+.heart-rate strong { color: var(--ath-bad); font: 800 26px/1 var(--ath-display); font-variant-numeric: tabular-nums; }
+.heart-rate strong small { font-size: 13px; color: var(--ath-muted); }
+.drill-runner__clock { display: grid; gap: 4px; padding: 16px; border-radius: var(--ath-radius-lg); background: var(--ath-ink); border: 1px solid var(--ath-line-strong); }
+.drill-runner__clock strong { font: 800 64px/1 var(--ath-display); font-variant-numeric: tabular-nums; color: var(--ath-text); }
+.drill-runner__clock span { color: var(--ath-muted); }
+.drill-runner--work .drill-runner__clock { border-color: var(--ath-good); box-shadow: inset 0 0 0 2px rgba(61,220,132,.35); }
+.drill-runner--rest .drill-runner__clock { border-color: var(--ath-warn); }
+.drill-runner--ready .drill-runner__clock { border-color: var(--ath-volt); }
+.drill-steps { margin: 0; padding-left: 20px; color: var(--ath-text); line-height: 1.6; }

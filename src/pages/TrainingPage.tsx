@@ -235,7 +235,7 @@ function EntryRow({ entry }: { entry: PracticeEntry }) {
   );
 }
 
-export function TrainingPage({ onVideo, onScoring }: { onVideo?: () => void; onScoring?: () => void } = {}) {
+export function TrainingPage({ onVideo, onScoring, onDrills, onEquipment }: { onVideo?: () => void; onScoring?: () => void; onDrills?: () => void; onEquipment?: () => void } = {}) {
   const { entries, goals, status } = usePracticeLog();
   const [form, setForm] = useState<'entry' | 'goals' | null>(null);
   const week = useMemo(() => totals(entriesInWeek(entries)), [entries]);
@@ -251,6 +251,8 @@ export function TrainingPage({ onVideo, onScoring }: { onVideo?: () => void; onS
           {onScoring ? <ActionButton variant="primary" type="button" onClick={onScoring}><AppIcon name="target" size={16} /> Score a round</ActionButton> : null}
           <ActionButton variant={onScoring ? 'secondary' : 'primary'} type="button" onClick={() => setForm('entry')}><AppIcon name="plus" size={16} /> Add entry</ActionButton>
           <ActionButton variant="secondary" type="button" onClick={() => setForm('goals')}><AppIcon name="target" size={16} /> Goals</ActionButton>
+          {onDrills ? <ActionButton variant="secondary" type="button" onClick={onDrills}><AppIcon name="history" size={16} /> Drills</ActionButton> : null}
+          {onEquipment ? <ActionButton variant="ghost" type="button" onClick={onEquipment}><AppIcon name="devices" size={16} /> Equipment</ActionButton> : null}
         </div>}
       />
       {status === 'error' ? <p className="va-import-status" role="alert">The practice log could not be opened in this browser.</p> : null}

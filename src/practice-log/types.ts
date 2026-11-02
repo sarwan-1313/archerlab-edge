@@ -26,6 +26,8 @@ export interface PracticeEntry {
   targetFace?: string;
   notes?: string;
   feeling?: Feeling;
+  /** The bow used (from Equipment). */
+  equipment?: string;
   /** The video report this entry came from. */
   videoReportId?: string;
   /** A round scored arrow by arrow on the Scoring page, with where each arrow landed. */
@@ -33,7 +35,7 @@ export interface PracticeEntry {
     name: string;
     faceId: string;
     arrowsPerEnd: number;
-    ends: Array<Array<{ x: number | null; y: number | null; score: number; isX: boolean }>>;
+    ends: Array<Array<{ x: number | null; y: number | null; score: number; isX: boolean; hr?: number }>>;
   };
 }
 

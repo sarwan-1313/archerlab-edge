@@ -14,6 +14,10 @@ import {
   roundTotals, scoreButtons, sortEnd, toCm, undoArrow, type Arrow, type ScoredRound,
 } from '../scoring/scoring';
 import { PHASE_LABEL, beepsFor, formatClock, timerState, type TimerPhase } from '../scoring/timer';
+import { beep } from '../utils/beep';
+import { loadEquipment } from '../equipment/equipment';
+import { summariseHeartRate } from '../sensors/heartRate';
+import { useHeartRate } from '../sensors/useHeartRate';
 import '../styles/video.css';
 
 /**
@@ -37,28 +41,6 @@ function storeInProgress(round: ScoredRound | null) {
     if (round) localStorage.setItem(ROUND_IN_PROGRESS_KEY, JSON.stringify(round));
     else localStorage.removeItem(ROUND_IN_PROGRESS_KEY);
   } catch { /* lasts for this page only */ }
-}
-
-let audio: AudioContext | null = null;
-function beep(count: number) {
-  if (!count) return;
-  try {
-    const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Context) return;
-    audio ??= new Context();
-    for (let index = 0; index < count; index += 1) {
-      const start = audio.currentTime + index * 0.45;
-      const tone = audio.createOscillator();
-      const gain = audio.createGain();
-      tone.frequency.value = 2900;
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.4, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
-      tone.connect(gain).connect(audio.destination);
-      tone.start(start);
-      tone.stop(start + 0.34);
-    }
-  } catch { /* sound is a convenience */ }
 }
 
 /** Remounted for each end (keyed by end number), so it starts idle every end. */
@@ -105,6 +87,8 @@ function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
   const [distance, setDistance] = useState(String(preset.distanceM));
   const [ends, setEnds] = useState(String(preset.ends));
   const [perEnd, setPerEnd] = useState(String(preset.arrowsPerEnd));
+  const [equipment] = useState(() => loadEquipment());
+  const [bowId, setBowId] = useState(() => equipment.activeBowId ?? equipment.bows[0]?.id ?? '');
 
   const choose = (id: string) => {
     const next = roundById(id);
@@ -134,6 +118,7 @@ function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
         <label>Distance (m)<input inputMode="numeric" value={distance} onChange={(event) => setDistance(event.target.value)} /></label>
         <label>Ends<input inputMode="numeric" value={ends} disabled={!custom} onChange={(event) => setEnds(event.target.value)} /></label>
         <label>Arrows per end<input inputMode="numeric" value={perEnd} disabled={!custom} onChange={(event) => setPerEnd(event.target.value)} /></label>
+        {equipment.bows.length ? <label>Bow<select value={bowId} onChange={(event) => setBowId(event.target.value)}><option value="">(not recorded)</option>{equipment.bows.map((bow) => <option key={bow.id} value={bow.id}>{bow.name}</option>)}</select></label> : null}
       </div>
       <div className="va-actions">
         <ActionButton variant="primary" type="button" onClick={() => onStart(newRound(preset, {
@@ -141,6 +126,7 @@ function Setup({ onStart }: { onStart: (round: ScoredRound) => void }) {
           distanceM: number(distance, preset.distanceM, 150),
           ends: custom ? number(ends, preset.ends, 60) : preset.ends,
           arrowsPerEnd: custom ? number(perEnd, preset.arrowsPerEnd, 12) : preset.arrowsPerEnd,
+          bow: equipment.bows.find((bow) => bow.id === bowId)?.name,
         }))}><AppIcon name="target" size={16} /> Start round</ActionButton>
       </div>
     </section>
@@ -207,7 +193,9 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
   const [showAll, setShowAll] = useState(false);
   const group = grouping(showAll ? round.ends.flat() : current.length >= 3 ? current : []);
 
-  const add = (arrow: Arrow) => { if (!done) onChange(addArrow(round, arrow)); };
+  const heart = useHeartRate();
+  const add = (arrow: Arrow) => { if (!done) onChange(addArrow(round, heart.bpm ? { ...arrow, hr: heart.bpm } : arrow)); };
+  const hr = summariseHeartRate(round.ends.flat().map((arrow) => arrow.hr));
 
   return (
     <>
@@ -216,6 +204,18 @@ function Shooting({ round, onChange, onFinish, onAbandon }: { round: ScoredRound
         <article><span>End</span><strong>{Math.min(endNumber, round.plannedEnds)}<small>/{round.plannedEnds}</small></strong><small>{done ? 'Round complete' : endFull ? 'Next end ready' : `${current.length} of ${round.arrowsPerEnd} arrows`}</small></article>
         <article><span>Average</span><strong>{totals.average === null ? '–' : totals.average.toFixed(2)}</strong><small>{totals.tens} tens · {totals.xs} X</small></article>
       </section>
+
+      {heart.supported || hr ? (
+        <section className="heart-rate" aria-label="Heart rate">
+          <AppIcon name="sensors" size={18} />
+          {heart.connected ? <strong>{heart.bpm ?? '…'} <small>bpm</small></strong> : <span>Heart rate</span>}
+          {hr ? <span className="va-faint">at your arrows: {Math.round(hr.mean)} average, {hr.min}–{hr.max}</span> : null}
+          {heart.supported ? (heart.connected
+            ? <ActionButton variant="ghost" type="button" onClick={heart.disconnect}>Disconnect {heart.name}</ActionButton>
+            : <ActionButton variant="secondary" type="button" disabled={heart.busy} onClick={() => void heart.connect()}>Connect a heart-rate strap</ActionButton>) : null}
+          {heart.error ? <span role="alert" className="va-faint">{heart.error}</span> : null}
+        </section>
+      ) : null}
 
       {!done ? <EndTimer key={endNumber} secondsPerEnd={roundById(round.roundId).secondsPerEnd} /> : null}
 
