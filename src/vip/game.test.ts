@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEVELS, impact, rng, roundBonus, windFor, wobble } from './game';
+import { LEVELS, dailySeed, impact, rng, roundBonus, windFor, wobble } from './game';
 import { predictNextRound } from './predict';
 import type { PracticeEntry } from '../practice-log/types';
 
@@ -31,6 +31,12 @@ describe('Wind Challenge', () => {
     expect(windy.x - calm.x).toBeCloseTo(0.2);
   });
 
+  it('gives everyone the same daily challenge, and a new one each day', () => {
+    expect(dailySeed('2026-11-03')).toBe(dailySeed('2026-11-03'));
+    expect(dailySeed('2026-11-03')).not.toBe(dailySeed('2026-11-04'));
+    expect(windFor('outdoor', rng(dailySeed('2026-11-03')))).toEqual(windFor('outdoor', rng(dailySeed('2026-11-03'))));
+  });
+
   it('gives a bonus for tight groups', () => {
     expect(roundBonus([{ x: 0, y: 0 }, { x: 0.01, y: 0 }, { x: 0, y: 0.01 }])).toBe(10);
     expect(roundBonus([{ x: -0.5, y: 0 }, { x: 0.5, y: 0 }, { x: 0, y: 0.5 }])).toBe(0);
@@ -49,5 +55,17 @@ describe('score predictor', () => {
   });
   it('needs three rounds', () => {
     expect(predictNextRound([round(1, 500), round(2, 510)])).toBeNull();
+  });
+});
+
+import { breathState } from './breathing';
+describe('breathing coach', () => {
+  it('goes in, hold, out, hold, and finishes after the cycles', () => {
+    expect(breathState(0)).toEqual({ step: 'in', cycle: 1, secondsLeft: 4, done: false });
+    expect(breathState(5).step).toBe('hold-full');
+    expect(breathState(9).step).toBe('out');
+    expect(breathState(13).step).toBe('hold-empty');
+    expect(breathState(17)).toMatchObject({ step: 'in', cycle: 2 });
+    expect(breathState(64).done).toBe(true);
   });
 });
