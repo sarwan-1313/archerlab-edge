@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COUNTRIES, coarse, defaultCountry, directionsLinks, distanceKm, findRanges, fitZoom, geocode, geocodeUrls, overpassQuery, parseRanges, worldPixel } from './ranges';
+import { COUNTRIES, coarse, defaultCountry, directionsLinks, distanceKm, findRanges, fitZoom, fromWorldPixel, geocode, geocodeUrls, overpassQuery, parseRanges, worldPixel } from './ranges';
 
 const home = { lat: 37.7219, lon: -122.4782 };
 
@@ -84,5 +84,9 @@ describe('archery ranges', () => {
     expect(zoom).toBeGreaterThanOrEqual(10);
     expect(zoom).toBeLessThanOrEqual(13);
     expect(fitZoom([home], 600, 360)).toBe(13);
+    const back = fromWorldPixel(worldPixel(home, 12), 12);
+    expect(back.lat).toBeCloseTo(home.lat, 5);
+    expect(back.lon).toBeCloseTo(home.lon, 5);
+    expect(fromWorldPixel({ x: 0, y: 0 }, 2).lat).toBeGreaterThan(80);
   });
 });
