@@ -8,6 +8,8 @@ import {
 } from '../services/poseLandmarkerService';
 import type { PoseDebugStats, PoseEngineStatus, PoseResult } from '../types/pose';
 import { LITE_SETTINGS, readLiteMode } from '../settings/liteMode';
+import { readTrackingSmoothing } from '../settings/trackingSmoothing';
+import { PoseSmoother, SMOOTHING_PRESETS, trackingQuality, type TrackingQuality } from '../utils/poseSmoothing';
 
 const EMPTY_DEBUG_STATS: PoseDebugStats = {
   fps: 0,
@@ -27,6 +29,7 @@ export function usePoseLandmarker({ videoRef, active }: UsePoseLandmarkerOptions
   const [result, setResult] = useState<PoseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugStats, setDebugStats] = useState<PoseDebugStats>(EMPTY_DEBUG_STATS);
+  const [quality, setQuality] = useState<TrackingQuality | null>(null);
   const latestResultRef = useRef<PoseResult | null>(null);
 
   useEffect(() => {
@@ -39,8 +42,11 @@ export function usePoseLandmarker({ videoRef, active }: UsePoseLandmarkerOptions
     let fpsFrameCount = 0;
     const inferenceInterval = 1000 / (readLiteMode() ? LITE_SETTINGS.liveInferenceFps : POSE_CONFIG.targetInferenceFps);
 
+    const smoother = new PoseSmoother();
+
     latestResultRef.current = null;
     setResult(null);
+    setQuality(null);
     setError(null);
 
     if (!active) {
@@ -73,7 +79,8 @@ export function usePoseLandmarker({ videoRef, active }: UsePoseLandmarkerOptions
               lastVideoTime = video.currentTime;
               lastInferenceTime = now;
               const mediaPipeResult = poseLandmarker.detectForVideo(video, now);
-              const nextResult = toPoseResult(mediaPipeResult, now);
+              const smoothing = readTrackingSmoothing();
+              const nextResult = smoother.smooth(toPoseResult(mediaPipeResult, now), smoothing === 'off' ? null : SMOOTHING_PRESETS[smoothing]);
               mediaPipeResult.close();
               latestResultRef.current = nextResult;
               fpsFrameCount += 1;
@@ -82,6 +89,8 @@ export function usePoseLandmarker({ videoRef, active }: UsePoseLandmarkerOptions
               if (now - lastUiUpdateTime >= POSE_CONFIG.uiUpdateIntervalMs) {
                 lastUiUpdateTime = now;
                 setResult(nextResult);
+                const nextQuality = trackingQuality(nextResult, smoother.jitter);
+                setQuality((current) => (current?.score === nextQuality?.score && current?.label === nextQuality?.label ? current : nextQuality));
               }
 
               const fpsElapsed = now - fpsWindowStarted;
@@ -127,6 +136,6 @@ export function usePoseLandmarker({ videoRef, active }: UsePoseLandmarkerOptions
     };
   }, [active, videoRef]);
 
-  return { status, result, latestResultRef, error, debugStats };
+  return { status, result, latestResultRef, error, debugStats, quality };
 }
 
