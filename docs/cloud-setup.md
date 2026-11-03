@@ -47,7 +47,7 @@ The default models think before they answer, and that thinking counts toward the
 ## 2. Accounts and backup (Supabase)
 
 1. Create a project at https://supabase.com.
-2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles`, `practice_logs` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, the `report_shares` and `report_comments` tables for [remote coach review](#remote-coach-review), the `clubs`, `club_members` and `club_invites` tables for [clubs](#clubs), and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add coach review, the practice log or clubs to an existing project. Until it is re-run, **Back up profile & log** on an older project reports that the practice log table is missing.
+2. In **SQL Editor**, run [`supabase/schema.sql`](../supabase/schema.sql). It creates the `athlete_profiles`, `practice_logs` and `video_reports` tables, a private `videos` storage bucket, row-level-security policies so each user can only reach their own rows and files, the `report_shares` and `report_comments` tables for [remote coach review](#remote-coach-review), the `clubs`, `club_members` and `club_invites` tables for [clubs](#clubs), the `club_chat`, `club_posts`, `club_polls`, `club_poll_votes`, `club_results`, `club_brackets` and `club_reports` tables for the [club community](#club-community), and the `delete_my_account()` function (see [Deleting cloud data and accounts](#deleting-cloud-data-and-accounts)). The script is safe to run again, for example to add coach review, the practice log or clubs to an existing project. Until it is re-run, **Back up profile & log** on an older project reports that the practice log table is missing.
 3. In **Authentication → URL Configuration**, set the Site URL to your deployment (e.g. `https://archerlab-edge.vercel.app`) and add `https://archerlab-edge.vercel.app/profile` (plus `http://localhost:5173/profile` for development) to the redirect URLs.
 4. Email sign-in links work out of the box. To add Google sign-in (the main button on the Profile page), enable the Google provider in **Authentication → Providers** and paste in an OAuth client ID and secret from Google Cloud (a Web application client whose authorised redirect URI is `https://<project>.supabase.co/auth/v1/callback`). It can be the same client as Drive saving. Coach review trusts the email in each user's sign-in token, so leave **Confirm email** switched on if you also enable password sign-up.
 5. Copy the project URL and the **anon** public key from **Project Settings → API** into environment variables (below). The anon key is safe to ship to browsers; row-level security protects the data.
@@ -95,6 +95,26 @@ Clubs extend coach review so one volunteer coach can follow everyone at a traini
 | Nobody | Insert or update `club_members` directly, so an athlete cannot change their club, age flag or email, and a coach cannot change an athlete's sharing |
 
 The policies use `security definer` helpers (`is_club_coach`, `is_club_member`, `club_shares_analyses`, `club_shares_practice_log`, `is_club_report_coach`) that answer yes/no questions about the caller, like the coach review ones. The "Add report comments" policy is replaced to also allow club coaches.
+
+### Club community
+
+The **Community** page (`/community`, in the menu) gives each club a place to talk and compete. It needs the clubs above and the latest `supabase/schema.sql` (run it again; it is safe to repeat). It is for one club's members and its coach only.
+
+- **Chat** (`club_chat`). Messages up to 500 characters. The page checks for new messages every 5 seconds while it is open and visible; it does not use realtime sockets, so it works with the plain REST client and no extra dependency.
+- **Forum** (`club_posts`). Threads (a title and a post of up to 4000 characters) with replies.
+- **Polls and predictions** (`club_polls`, `club_poll_votes`). A poll asks the club a question; a prediction has a right answer that its author or the coach settles later with `resolve_club_prediction`. A member reads only their own votes; everyone sees totals through `club_poll_tally`, and settled predictions feed `club_prediction_standings` (right answers per member).
+- **Leaderboard** (`club_results`). Members share a result themselves (round, score, round maximum, arrows, date). Boards rank best round, average or most arrows, for this week, this month or all time, comparing each result as a percentage of its round's maximum. Results are self-reported and unchecked, and the page says so.
+- **Bracket** (`club_brackets`). The coach sets up a single-elimination shoot-off of 2 to 16 names (the first is the top seed, and top seeds get byes in a short field) and taps the winner of each match; everyone follows it. A prediction for the champion can be made on the Polls tab.
+- **Safety.** Every post is stamped by a trigger with the author's id and the display name they chose when joining (the coach shows as "Coach"), so a post cannot be written as someone else. There are no private messages. Links are refused by a check constraint (`https?:` or `www.`), so nothing can lure a young athlete off the app. Triggers limit posting (8 chat messages per 30 seconds, 6 forum posts per minute, 3 polls per 5 minutes, 20 results per 10 minutes). A member who is muted (`club_members.muted`, set by the coach with `set_club_member_muted`) can read but not post, vote or share. The coach can hide an item (`set_club_item_hidden`, hidden items stay visible to the coach only) or delete anything, and authors can delete their own. Any member can report an item; the report (`club_reports`) is read only by the coach and the server records what was reported. Nothing can be edited, only deleted. A member who leaves the club loses access at once; posts they made stay unless they delete them.
+- **Minors.** The community adds no new personal data: only the display name chosen on joining is shown, never an email, and everything stays inside the club, which already needs a parent or guardian's agreement for under-18s. Coaches and clubs remain responsible for supervising it like any club group chat.
+- **Deleting data.** Deleting cloud data or the account removes the person's posts, votes, shared results, polls and reports. Replies others wrote under a deleted thread go with it.
+
+| Who | Can |
+| --- | --- |
+| Coach | Everything members can, plus hide or delete any item, mute or unmute members, read reports, create and update brackets |
+| Member (not muted) | Read the club's chat, forum, polls, totals, results and brackets; post, reply, vote, make polls, share results; delete their own; report anything |
+| Muted member | Read only |
+| Nobody else | Read or write any of it |
 
 ### Deleting cloud data and accounts
 

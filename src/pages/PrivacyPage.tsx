@@ -87,7 +87,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteCloud = () => {
-    if (!window.confirm('Delete all your cloud data?\n\nEvery backed-up video report, every backed-up video, your backed-up profile and your backed-up practice log will be deleted from your account, together with every share and comment on those reports and the comments you wrote on reports shared with you. You also leave every club you are in, and clubs you run are deleted with their invite codes. Your account stays, and data on this device is not affected. This cannot be undone.')) return;
+    if (!window.confirm('Delete all your cloud data?\n\nEvery backed-up video report, every backed-up video, your backed-up profile and your backed-up practice log will be deleted from your account, together with every share and comment on those reports and the comments you wrote on reports shared with you. Your votes, shared results, polls, forum posts, chat messages and reports in club communities are deleted. You also leave every club you are in, and clubs you run are deleted with their invite codes. Your account stays, and data on this device is not affected. This cannot be undone.')) return;
     void run('delete-cloud', async () => {
       if (!account.client) return;
       const session = await account.freshSession();
@@ -98,7 +98,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
   };
 
   const deleteAccount = () => {
-    if (!window.confirm('Delete your account?\n\nAll your cloud data (reports, videos, profile, practice log, shares with coaches, comments, club memberships and clubs you run) and the account itself will be deleted, and you will be signed out. Data on this device is not affected. This cannot be undone.')) return;
+    if (!window.confirm('Delete your account?\n\nAll your cloud data (reports, videos, profile, practice log, shares with coaches, comments, club memberships, club community posts and clubs you run) and the account itself will be deleted, and you will be signed out. Data on this device is not affected. This cannot be undone.')) return;
     void run('delete-account', async () => {
       if (!account.client) return;
       const session = await account.freshSession();
@@ -166,7 +166,7 @@ export function PrivacyPage({ onProfile }: { onProfile?: () => void } = {}) {
           ) : null}
           {accountsEnabled ? (
             <li>
-              <strong>Clubs</strong> (“My club”, from your Profile page): you can join a coach’s club with an invite code. The coach always sees the name you choose and the date you joined; if you are 18 or over, also your sign-in email. If you are under 18, the coach never sees your email, and joining needs a parent or guardian’s agreement. With <strong>Share my analyses with my club</strong> on (off by default), the coach can read the video reports you back up to your account, without the video, and you can both comment on them. With <strong>Share my practice log with my club</strong> on (off by default), they see your backed-up practice log as arrows and sessions per week. The coach can never change or delete anything, and never sees other members’ data or anything only on this device. Turning a switch off, or pressing <strong>Leave club</strong>, ends the coach’s access at once.
+              <strong>Clubs</strong> (“My club”, from your Profile page): you can join a coach’s club with an invite code. The coach always sees the name you choose and the date you joined; if you are 18 or over, also your sign-in email. If you are under 18, the coach never sees your email, and joining needs a parent or guardian’s agreement. With <strong>Share my analyses with my club</strong> on (off by default), the coach can read the video reports you back up to your account, without the video, and you can both comment on them. With <strong>Share my practice log with my club</strong> on (off by default), they see your backed-up practice log as arrows and sessions per week. The coach can never change or delete anything, and never sees other members’ data or anything only on this device. <strong>Community</strong> (from the menu) is a chat, forum, polls and predictions, a leaderboard and a shoot-off bracket for the members of one club and their coach, and nobody else. Posts show only the name you chose when you joined; there are no private messages and links are not allowed. What you post or share there (messages, replies, votes, results you choose to share) is visible to your club, the coach can hide or delete posts and mute members, and you can delete your own posts and results at any time. Votes are private: the club sees totals only. Turning a switch off, or pressing <strong>Leave club</strong>, ends the coach’s access at once.
             </li>
           ) : null}
           <li><strong>Find a range</strong>: when you press “Use my location” (your browser asks first) or search for a town, your location rounded to about 1 km, or the words you typed, are sent to OpenStreetMap’s public services (Overpass and Nominatim) to find archery places nearby, and the map pictures come from OpenStreetMap’s tile servers, which see the area being shown. Nothing is stored, and your exact position never leaves the device.</li>

@@ -8,6 +8,7 @@ export const desktopNavItems: NavItem[] = [
   { key: 'training', label: 'Training', icon: 'calendar' },
   { key: 'scoring', label: 'Scoring', icon: 'target' },
   { key: 'ranges', label: 'Find a range', icon: 'map' },
+  { key: 'community', label: 'Community', icon: 'share' },
   { key: 'dashboard', label: 'Analytics', icon: 'grid' },
   { key: 'user-guide', label: 'Guide', icon: 'accessibility' },
 ];
@@ -53,5 +54,6 @@ export const pageTitles: Record<PageKey, string> = {
   ranges: 'Find a range',
   vip: 'VIP Lounge',
   club: 'My club',
+  community: 'Community',
   'dataset-tools': 'Dataset tools',
 };

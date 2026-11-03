@@ -173,6 +173,12 @@ export async function deleteAllCloudData(client: SupabaseRest, session: CloudSes
   });
   // Club memberships, and clubs they coach (with those clubs' memberships and invites). Older projects have no club tables.
   const id = encodeURIComponent(session.user.id);
+  // Their club community activity: votes, shared results, polls, forum posts, chat messages and reports. Projects without community tables have none.
+  for (const [table, column] of [['club_poll_votes', 'voter_id'], ['club_results', 'author_id'], ['club_polls', 'author_id'], ['club_posts', 'author_id'], ['club_chat', 'author_id'], ['club_reports', 'reporter_id']] as const) {
+    await client.remove(table, `${column}=eq.${id}`, token).catch((error: unknown) => {
+      if (!missingTable(error)) throw error;
+    });
+  }
   await client.remove('club_members', `athlete_id=eq.${id}`, token).catch((error: unknown) => {
     if (!missingTable(error)) throw error;
   });

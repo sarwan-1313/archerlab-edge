@@ -36,6 +36,7 @@ export type PageKey =
   | 'ranges'
   | 'vip'
   | 'club'
+  | 'community'
   | 'dataset-tools'
   | GuideDetailPageKey;
 

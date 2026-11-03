@@ -31,6 +31,7 @@ export const PAGE_PATHS = {
   ranges: '/ranges',
   vip: '/vip',
   club: '/club',
+  community: '/community',
   'dataset-tools': '/dataset-tools',
   privacy: '/privacy',
 } as const satisfies Readonly<Record<PageKey, string>>;
