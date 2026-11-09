@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { describeCloudError, pullPracticeLog, pullProfile, pushPracticeLog, pushProfile } from '../../cloud/account/cloudSync';
 import { mergePracticeLog, readPracticeLog } from '../../practice-log/storage';
 import { useCloudAccount } from '../../cloud/account/useCloudAccount';
+import { EMAIL_CODE_PATTERN } from '../../cloud/account/supabaseRest';
 import { accountDataBackup, driveBackupEnabled } from '../../cloud/config';
 import { ActionButton } from '../ActionButton';
 import { AppIcon } from '../AppIcon';
@@ -22,6 +23,9 @@ type AccountPanelProps = {
 export function AccountPanel({ profile, onRestoreProfile, onClub }: AccountPanelProps) {
   const account = useCloudAccount();
   const [email, setEmail] = useState('');
+  // The address the last sign-in email went to; the code box shows once one has been sent.
+  const [codeEmail, setCodeEmail] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const [syncing, setSyncing] = useState(false);
 
   if (!account.configured) {
@@ -35,9 +39,16 @@ export function AccountPanel({ profile, onRestoreProfile, onClub }: AccountPanel
     );
   }
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (email.trim()) void account.signInWithEmail(email.trim());
+    const address = email.trim();
+    if (!address) return;
+    if (await account.signInWithEmail(address)) { setCodeEmail(address); setCode(''); }
+  };
+
+  const submitCode = (event: FormEvent) => {
+    event.preventDefault();
+    if (codeEmail && EMAIL_CODE_PATTERN.test(code)) void account.verifyEmailCode(codeEmail, code);
   };
 
   const backup = async () => {
@@ -111,10 +122,27 @@ export function AccountPanel({ profile, onRestoreProfile, onClub }: AccountPanel
           <div className="va-actions">
             <ActionButton variant="primary" type="button" onClick={account.signInWithGoogle}>Continue with Google</ActionButton>
           </div>
-          <form onSubmit={submit}>
+          <form onSubmit={(event) => void submit(event)}>
             <input type="email" required placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} aria-label="Email" />
             <ActionButton variant="secondary" type="submit" disabled={account.busy}>Email me a sign-in link</ActionButton>
           </form>
+          {codeEmail ? (
+            <form className="account-code" onSubmit={submitCode}>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                placeholder="123456"
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                aria-label={`6-digit code sent to ${codeEmail}`}
+              />
+              <ActionButton variant="secondary" type="submit" disabled={account.busy || !EMAIL_CODE_PATTERN.test(code)}>Sign in with code</ActionButton>
+            </form>
+          ) : null}
         </>
       )}
       {driveBackupEnabled ? <DriveBackupPanel loginHint={account.session?.user.email ?? undefined} /> : null}

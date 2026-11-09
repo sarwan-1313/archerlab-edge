@@ -4,7 +4,7 @@ import { takePendingAuthRedirect } from './authRedirect';
 import { describeCloudError, pushProfile } from './cloudSync';
 import { loadProfile } from '../../profile/profileStorage';
 import { leaveGuestMode } from '../../onboarding/guestMode';
-import { createSupabaseRest, type CloudSession, type SupabaseRest } from './supabaseRest';
+import { CloudError, createSupabaseRest, type CloudSession, type SupabaseRest } from './supabaseRest';
 
 let client: SupabaseRest | null = null;
 
@@ -102,15 +102,34 @@ export function useCloudAccount() {
     };
   }, [api]);
 
+  /** Emails a sign-in link and code. True when the email was sent. */
   const signInWithEmail = useCallback(async (email: string) => {
-    if (!api) return;
+    if (!api) return false;
     setBusy(true);
     shareMessage(null);
     try {
       await api.signInWithEmail(email, `${window.location.origin}/profile`);
-      shareMessage(`Check ${email} for a sign-in link.`);
+      shareMessage(`Check ${email} for a sign-in link, or enter the 6-digit code from the email.`);
+      return true;
     } catch (error) {
       shareMessage(describeCloudError(error));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [api]);
+
+  const verifyEmailCode = useCallback(async (email: string, code: string) => {
+    if (!api) return;
+    setBusy(true);
+    shareMessage(null);
+    try {
+      publish(await api.verifyEmailCode(email, code));
+      shareMessage('Signed in.');
+    } catch (error) {
+      // The auth server answers a wrong, used or expired code with 400 or 403, which elsewhere means "no access".
+      const refused = error instanceof CloudError && (error.status === 400 || error.status === 403);
+      shareMessage(refused ? 'That code is wrong or has expired. Check the latest email, or send a new one.' : describeCloudError(error));
     } finally {
       setBusy(false);
     }
@@ -140,5 +159,5 @@ export function useCloudAccount() {
     return valid;
   }, [api]);
 
-  return { configured: Boolean(api), client: api, session, ready, busy, message, setMessage: shareMessage, signInWithEmail, signInWithGoogle, signOut, freshSession };
+  return { configured: Boolean(api), client: api, session, ready, busy, message, setMessage: shareMessage, signInWithEmail, verifyEmailCode, signInWithGoogle, signOut, freshSession };
 }

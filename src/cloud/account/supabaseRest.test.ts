@@ -232,3 +232,52 @@ describe('consumeRedirect', () => {
   });
 
 });
+
+describe('verifyEmailCode', () => {
+  const SESSION_KEY = 'archerlab-edge:cloud-session';
+  const stored = new Map<string, string>();
+  const base64url = (value: unknown) => btoa(JSON.stringify(value)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const token = `${base64url({ alg: 'HS256' })}.${base64url({ sub: 'u1', email: 'a@b.co' })}.signature`;
+
+  beforeEach(() => {
+    stored.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => { stored.set(key, value); },
+      removeItem: (key: string) => { stored.delete(key); },
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('posts the code to the verify endpoint as an email OTP and stores the session', async () => {
+    const { calls, fetcher } = fakeFetch([{ status: 200, body: { access_token: token, refresh_token: 'r1', expires_at: 5000, user: { id: 'u1', email: 'a@b.co' } } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    const session = await client.verifyEmailCode('a@b.co', ' 123 456 ');
+    expect(calls[0].url).toBe('https://p.supabase.co/auth/v1/verify');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>).authorization).toBe('Bearer anon');
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ type: 'email', email: 'a@b.co', token: '123456' });
+    expect(session).toEqual({ accessToken: token, refreshToken: 'r1', expiresAt: 5000, user: { id: 'u1', email: 'a@b.co' } });
+    expect(JSON.parse(stored.get(SESSION_KEY) as string)).toEqual(session);
+  });
+
+  it('reads the user from the access token when the answer names none', async () => {
+    const { fetcher } = fakeFetch([{ status: 200, body: { access_token: token, refresh_token: 'r1', expires_in: 3600 } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    expect((await client.verifyEmailCode('a@b.co', '123456')).user).toEqual({ id: 'u1', email: 'a@b.co' });
+  });
+
+  it('refuses anything but six digits without calling the server', async () => {
+    const { calls, fetcher } = fakeFetch([]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    for (const code of ['12345', '1234567', '12a456', '']) await expect(client.verifyEmailCode('a@b.co', code)).rejects.toBeInstanceOf(CloudError);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('stores nothing when the server refuses the code', async () => {
+    const { fetcher } = fakeFetch([{ status: 403, body: { msg: 'Token has expired or is invalid' } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    await expect(client.verifyEmailCode('a@b.co', '123456')).rejects.toMatchObject({ status: 403, message: 'Token has expired or is invalid' });
+    expect(stored.has(SESSION_KEY)).toBe(false);
+  });
+});

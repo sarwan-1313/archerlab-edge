@@ -30,6 +30,9 @@ const SESSION_KEY = 'archerlab-edge:cloud-session';
 /** How the auth server answers a refresh token it does not accept (unknown, already used, expired or revoked). */
 const REFRESH_REFUSED = new Set([400, 401, 403]);
 type FetchLike = typeof fetch;
+type TokenResponse = { access_token: string; refresh_token: string; expires_at?: number; expires_in?: number; user?: { id: string; email?: string } };
+/** The one-time code in the sign-in email (Supabase's `{{ .Token }}`). */
+export const EMAIL_CODE_PATTERN = /^\d{6}$/;
 
 /** The user named in an access token (a JWT), for when the user lookup cannot be reached. Not verified here: the server checks the token on every call. */
 export function userFromAccessToken(accessToken: string): CloudUser | null {
@@ -97,19 +100,23 @@ export function createSupabaseRest(baseUrl: string, anonKey: string, fetcher: Fe
     return { id: user.id, email: user.email };
   }
 
-  /** New tokens for a session. Stores nothing. */
-  async function requestRefresh(session: CloudSession): Promise<CloudSession> {
-    const data = await call<{ access_token: string; refresh_token: string; expires_at?: number; expires_in?: number; user?: { id: string; email?: string } }>(
-      '/auth/v1/token?grant_type=refresh_token',
-      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refreshToken }) },
-    );
-    const next: CloudSession = {
+  /** A session from the auth server's token answer (refresh or verify), with `user` when the answer names none. */
+  function sessionFromTokens(data: TokenResponse, user: CloudUser): CloudSession {
+    return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       expiresAt: data.expires_at ?? Math.floor(Date.now() / 1000) + (data.expires_in ?? 3600),
-      user: data.user ? { id: data.user.id, email: data.user.email } : session.user,
+      user: data.user ? { id: data.user.id, email: data.user.email } : user,
     };
-    return next;
+  }
+
+  /** New tokens for a session. Stores nothing. */
+  async function requestRefresh(session: CloudSession): Promise<CloudSession> {
+    const data = await call<TokenResponse>(
+      '/auth/v1/token?grant_type=refresh_token',
+      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refreshToken }) },
+    );
+    return sessionFromTokens(data, session.user);
   }
 
   // Supabase rotates the refresh token on every use, so two refreshes with the same token race: the second is
@@ -158,6 +165,25 @@ export function createSupabaseRest(baseUrl: string, anonKey: string, fetcher: Fe
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, create_user: true }),
       });
+    },
+
+    /**
+     * Completes a sign-in with the 6-digit code from the sign-in email, for athletes who read their email on
+     * another device or in an app that opens links somewhere other than this browser.
+     */
+    async verifyEmailCode(email: string, code: string): Promise<CloudSession> {
+      const token = code.replace(/\s+/g, '');
+      if (!EMAIL_CODE_PATTERN.test(token)) throw new CloudError('Enter the 6-digit code from the email.', 400);
+      const data = await call<TokenResponse>('/auth/v1/verify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: 'email', email, token }),
+      });
+      const user = data.user ?? userFromAccessToken(data.access_token);
+      if (!user) throw new CloudError('Sign-in failed.', 500);
+      const session = sessionFromTokens(data, user);
+      storeSession(session);
+      return session;
     },
 
     /** URL that starts an OAuth sign-in (e.g. Google) and returns to `redirectTo`. */
