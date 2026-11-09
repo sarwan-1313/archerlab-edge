@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildReport } from '../../video-analysis/buildReport';
 import { makeScenario, scriptShots, syntheticSamples } from '../../video-analysis/testing/syntheticArcher';
 import { cloudProfileData, toCloudReportRow, videoPathFor } from './cloudSync';
-import { CloudError, createSupabaseRest, parseAuthRedirect } from './supabaseRest';
+import { CloudError, createSupabaseRest, parseAuthRedirect, userFromAccessToken } from './supabaseRest';
 
 type Call = { url: string; init: RequestInit };
 
@@ -84,7 +84,7 @@ describe('cloud sync rows', () => {
     expect(row.report.shots).toHaveLength(1);
     expect(row.created_at).toBe('1970-01-01T00:00:00.000Z');
     expect(JSON.stringify(row).length).toBeLessThan(JSON.stringify({ ...report, samples: report.samples.map((sample) => Array.from(sample.image ?? [])) }).length);
-    expect(cloudProfileData({ name: 'A', profilePhotoBlob: new Blob(['x']), profilePhotoUrl: 'blob:1' })).toEqual({ name: 'A' });
+    expect(cloudProfileData({ displayName: 'A', notes: 'private', profilePhotoBlob: new Blob(['x']), profilePhotoUrl: 'blob:1', formStatus: { estimatedLevel: 'intermediate', history: [1] }, updatedAt: 5 })).toEqual({ displayName: 'A', estimatedLevel: 'intermediate', updatedAt: 5 });
     expect(videoPathFor('u', 'r', 'video/quicktime')).toBe('u/r.mov');
   });
 });
@@ -113,25 +113,49 @@ describe('validSession', () => {
     expect(JSON.parse(stored.get(SESSION_KEY) as string).refreshToken).toBe('refresh-2');
   });
 
-  it('keeps the stored session when the device is offline, so the athlete is not signed out at the range', async () => {
+  it('keeps the stored session when the device is offline, and says so instead of looking signed out', async () => {
     const offline = (async () => { throw new TypeError('Failed to fetch'); }) as typeof fetch;
     const client = createSupabaseRest('https://p.supabase.co', 'anon', offline);
-    expect(await client.validSession()).toBeNull();
+    await expect(client.validSession()).rejects.toThrow('Failed to fetch');
     expect(JSON.parse(stored.get(SESSION_KEY) as string)).toEqual(expired);
   });
 
   it('keeps the stored session while the service is down', async () => {
     const { fetcher } = fakeFetch([{ status: 503, body: { message: 'unavailable' } }]);
     const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
-    expect(await client.validSession()).toBeNull();
+    await expect(client.validSession()).rejects.toBeInstanceOf(CloudError);
     expect(stored.has(SESSION_KEY)).toBe(true);
   });
 
   it.each([408, 429])('keeps the stored session when the refresh is only timed out or rate limited (HTTP %i)', async (status) => {
     const { fetcher } = fakeFetch([{ status, body: { message: 'try again later' } }]);
     const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
-    expect(await client.validSession()).toBeNull();
+    await expect(client.validSession()).rejects.toBeInstanceOf(CloudError);
     expect(JSON.parse(stored.get(SESSION_KEY) as string)).toEqual(expired);
+  });
+
+  it('shares one refresh between calls made at the same moment, so the rotated token is not refused', async () => {
+    const { calls, fetcher } = fakeFetch([
+      { status: 200, body: { access_token: 'new', refresh_token: 'refresh-2', expires_in: 3600 } },
+      { status: 400, body: { error_description: 'Invalid Refresh Token: Already Used' } },
+    ]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    const [a, b] = await Promise.all([client.validSession(), client.validSession()]);
+    expect(calls).toHaveLength(1);
+    expect(a?.accessToken).toBe('new');
+    expect(b?.accessToken).toBe('new');
+    expect(JSON.parse(stored.get(SESSION_KEY) as string).refreshToken).toBe('refresh-2');
+  });
+
+  it('keeps a session another tab refreshed while this refresh was refused as already used', async () => {
+    const refreshedElsewhere = { ...expired, accessToken: 'other-tab', refreshToken: 'refresh-9', expiresAt: 9_999_999_999 };
+    const fetcher = (async () => {
+      stored.set(SESSION_KEY, JSON.stringify(refreshedElsewhere));
+      return new Response(JSON.stringify({ error_description: 'Invalid Refresh Token: Already Used' }), { status: 400 });
+    }) as typeof fetch;
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    expect((await client.validSession())?.accessToken).toBe('other-tab');
+    expect(JSON.parse(stored.get(SESSION_KEY) as string).refreshToken).toBe('refresh-9');
   });
 
   it.each([400, 401, 403])('ends the session when the server refuses the refresh token (HTTP %i)', async (status) => {
@@ -140,4 +164,71 @@ describe('validSession', () => {
     expect(await client.validSession()).toBeNull();
     expect(stored.has(SESSION_KEY)).toBe(false);
   });
+
+  it('signs out on this device before the server answers, and a refresh that finishes later does not undo it', async () => {
+    let finishRefresh: (response: Response) => void = () => undefined;
+    const fetcher = ((input: RequestInfo | URL) => {
+      if (String(input).includes('grant_type=refresh_token')) return new Promise<Response>((resolve) => { finishRefresh = resolve; });
+      return new Promise<Response>(() => undefined); // The logout request hangs.
+    }) as typeof fetch;
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    const pending = client.validSession();
+    void client.signOut();
+    expect(stored.has(SESSION_KEY)).toBe(false);
+    finishRefresh(new Response(JSON.stringify({ access_token: 'new', refresh_token: 'refresh-2', expires_in: 3600 }), { status: 200 }));
+    expect(await pending).toBeNull();
+    expect(stored.has(SESSION_KEY)).toBe(false);
+  });
+
+  it('ends the server session even when the access token has expired, without storing the new tokens', async () => {
+    const { calls, fetcher } = fakeFetch([
+      { status: 401, body: { message: 'JWT expired' } },
+      { status: 200, body: { access_token: 'new', refresh_token: 'refresh-2', expires_in: 3600 } },
+      { status: 200, body: null },
+    ]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    await client.signOut();
+    expect(calls.map((call) => call.url.replace('https://p.supabase.co', ''))).toEqual(['/auth/v1/logout', '/auth/v1/token?grant_type=refresh_token', '/auth/v1/logout']);
+    expect((calls[2].init.headers as Record<string, string>).authorization).toBe('Bearer new');
+    expect(stored.has(SESSION_KEY)).toBe(false);
+  });
+});
+
+describe('consumeRedirect', () => {
+  const SESSION_KEY = 'archerlab-edge:cloud-session';
+  const stored = new Map<string, string>();
+  const base64url = (value: unknown) => btoa(JSON.stringify(value)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const token = `${base64url({ alg: 'HS256' })}.${base64url({ sub: 'u1', email: 'a@b.co' })}.signature`;
+  const hash = `#access_token=${token}&refresh_token=r1&expires_in=3600&token_type=bearer`;
+
+  beforeEach(() => {
+    stored.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => { stored.set(key, value); },
+      removeItem: (key: string) => { stored.delete(key); },
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('reads the user from the access token', () => {
+    expect(userFromAccessToken(token)).toEqual({ id: 'u1', email: 'a@b.co' });
+    expect(userFromAccessToken('not-a-token')).toBeNull();
+  });
+
+  it('keeps the sign-in when the user lookup cannot be reached', async () => {
+    const offline = (async () => { throw new TypeError('Failed to fetch'); }) as typeof fetch;
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', offline);
+    const result = await client.consumeRedirect(hash);
+    expect(result?.session?.user).toEqual({ id: 'u1', email: 'a@b.co' });
+    expect(JSON.parse(stored.get(SESSION_KEY) as string).refreshToken).toBe('r1');
+  });
+
+  it('fails the sign-in when the server refuses the token', async () => {
+    const { fetcher } = fakeFetch([{ status: 401, body: { message: 'invalid JWT' } }]);
+    const client = createSupabaseRest('https://p.supabase.co', 'anon', fetcher);
+    await expect(client.consumeRedirect(hash)).rejects.toBeInstanceOf(CloudError);
+    expect(stored.has(SESSION_KEY)).toBe(false);
+  });
+
 });

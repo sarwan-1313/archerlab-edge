@@ -24,46 +24,65 @@ function publish(session: CloudSession | null) {
   listeners.forEach((listener) => listener(session));
 }
 
+// The account message ("Signed in.", "Sign-in failed: …") is shared, so it shows on whichever page shows
+// account messages, whichever copy of the hook happened to finish the sign-in.
+const messageListeners = new Set<(message: string | null) => void>();
+let currentMessage: string | null = null;
+
+function shareMessage(message: string | null) {
+  currentMessage = message;
+  messageListeners.forEach((listener) => listener(message));
+}
+
 /** Optional sign-in. Returns `configured: false` when the deployment has no cloud project. */
 export function useCloudAccount() {
   const [session, setSession] = useState<CloudSession | null>(currentSession);
   const [ready, setReady] = useState(resolved);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setLocalMessage] = useState<string | null>(currentMessage);
   const api = cloudClient();
 
   useEffect(() => {
     const listener = (next: CloudSession | null) => { setSession(next); setReady(true); };
     listeners.add(listener);
+    messageListeners.add(setLocalMessage);
     if (api && !initialised) {
       initialised = true;
       const hash = takePendingAuthRedirect();
       (async () => {
-        try {
-          if (hash) {
+        if (hash) {
+          try {
             const result = await api.consumeRedirect(hash);
-            if (result?.error) setMessage(`Sign-in failed: ${result.error}`);
-            if (result?.session) { publish(result.session); setMessage('Signed in.'); return; }
+            if (result?.error) shareMessage(`Sign-in failed: ${result.error}`);
+            if (result?.session) { publish(result.session); shareMessage('Signed in.'); return; }
+          } catch (error) {
+            shareMessage(`Sign-in failed: ${describeCloudError(error)}`);
           }
+        }
+        try {
           publish(await api.validSession());
-        } catch (error) {
-          setMessage(describeCloudError(error));
-          publish(currentSession);
+        } catch {
+          // The session could not be refreshed right now (offline, timeout, outage). Stay signed in with the
+          // stored session; the next cloud call refreshes it or reports the problem.
+          publish(api.loadSession());
         }
       })();
     }
-    return () => { listeners.delete(listener); };
+    return () => {
+      listeners.delete(listener);
+      messageListeners.delete(setLocalMessage);
+    };
   }, [api]);
 
   const signInWithEmail = useCallback(async (email: string) => {
     if (!api) return;
     setBusy(true);
-    setMessage(null);
+    shareMessage(null);
     try {
       await api.signInWithEmail(email, `${window.location.origin}/profile`);
-      setMessage(`Check ${email} for a sign-in link.`);
+      shareMessage(`Check ${email} for a sign-in link.`);
     } catch (error) {
-      setMessage(describeCloudError(error));
+      shareMessage(describeCloudError(error));
     } finally {
       setBusy(false);
     }
@@ -75,12 +94,17 @@ export function useCloudAccount() {
 
   const signOut = useCallback(async () => {
     if (!api) return;
-    await api.signOut();
+    // Signed out on this device at once; ending the session on the server can take a while on a slow network.
+    const ending = api.signOut();
     publish(null);
-    setMessage('Signed out. Your data on this device is unchanged.');
+    shareMessage('Signed out. Your data on this device is unchanged.');
+    await ending;
   }, [api]);
 
-  /** A fresh session for an API call, or null when signed out. */
+  /**
+   * A fresh session for an API call, or null when signed out. Throws, without signing out, when the session
+   * cannot be refreshed right now (offline, timeout, outage).
+   */
   const freshSession = useCallback(async () => {
     if (!api) return null;
     const valid = await api.validSession();
@@ -88,5 +112,5 @@ export function useCloudAccount() {
     return valid;
   }, [api]);
 
-  return { configured: Boolean(api), client: api, session, ready, busy, message, setMessage, signInWithEmail, signInWithGoogle, signOut, freshSession };
+  return { configured: Boolean(api), client: api, session, ready, busy, message, setMessage: shareMessage, signInWithEmail, signInWithGoogle, signOut, freshSession };
 }
