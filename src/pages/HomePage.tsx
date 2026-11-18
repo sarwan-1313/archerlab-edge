@@ -33,15 +33,16 @@ export function HomePage({ onStart, onVideo, onGuide, onProfile, onSample, onPri
   const setupItems = [
     { label: 'Set up your profile', complete: hasProfile, action: 'Open Profile', onClick: onProfile },
     { label: 'Prepare your camera', complete: false, action: 'Open Guide', onClick: onGuide },
-    { label: 'Run your first analysis', complete: hasTrainingHistory, action: 'Begin', onClick: onStart, ariaLabel: 'Start first analysis' },
+    { label: 'Run your first analysis', complete: hasTrainingHistory, action: 'Begin', onClick: onStart, ariaLabel: 'Begin first analysis' },
   ];
   const showGettingStarted = !hasProfile || !hasTrainingHistory;
-  const tiles: Array<{ icon: AppIconName; label: string; note: string; onClick?: () => void }> = [
+  const allTiles: Array<{ icon: AppIconName; label: string; note: string; onClick?: () => void }> = [
     { icon: 'target', label: 'Score a round', note: 'Ends, totals and a timer', onClick: onScoring },
     { icon: 'play-circle', label: 'Drills', note: 'Timed practice for each part of the shot', onClick: onDrills },
     { icon: 'calendar', label: 'Training log', note: 'Every session in one place', onClick: onTraining },
     { icon: 'map', label: 'Find a range', note: 'Archery ranges near you', onClick: onRanges },
-  ].filter((tile) => tile.onClick);
+  ];
+  const tiles = allTiles.filter((tile) => tile.onClick);
 
   return (
     <div className="landing landing--clean" data-phase="ready">
