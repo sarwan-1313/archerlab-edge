@@ -44,7 +44,11 @@ export type NavItem = {
   key: PageKey;
   label: string;
   icon: AppIconName;
+  /** Section heading the item sits under in the sidebar and the More menu. */
+  group?: NavGroup;
 };
+
+export type NavGroup = 'analyse' | 'practice' | 'progress' | 'explore' | 'help';
 
 export type Metric = {
   label: string;

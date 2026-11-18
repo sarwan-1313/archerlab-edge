@@ -4,6 +4,10 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ## Unreleased
 
+### Changed
+
+- **A cleaner, lighter app.** Home is now a short start screen (start, get started, more ways to train, how it works) instead of a nine-screen scrolling story. On phones, a **More** button on the bottom bar opens every other page in a few short groups, so Training, Scoring, Drills, Equipment, Ranges, Club and Community are one tap away. The desktop sidebar is grouped the same way, and the guest banner is a single short line.
+
 ### Fixed
 
 - **Phone layout.** Training, My club and Community no longer run to the edge of the screen; they have the same margins as every other page. The guest-mode banner is more compact, and small buttons and links (the guest banner, Privacy links, Protect storage, the range distance, settings checkboxes, the sample-session links) are easier to tap.

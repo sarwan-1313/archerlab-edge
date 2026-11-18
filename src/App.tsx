@@ -441,7 +441,7 @@ function App() {
 
   const currentPage = (() => {
     switch (activePage) {
-      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} />;
+      case 'home': return <HomePage onStart={() => beginTraining()} onVideo={() => requestNavigation('video-analysis')} onGuide={() => requestNavigation('user-guide')} onProfile={() => requestNavigation('profile')} hasProfile={Boolean(profile)} hasTrainingHistory={shots.some((shot) => !isSampleShot(shot))} onSample={loadSampleSession} onPrivacy={() => requestNavigation('privacy')} onTraining={() => requestNavigation('training')} onScoring={() => requestNavigation('scoring')} onDrills={() => requestNavigation('drills')} onRanges={() => requestNavigation('ranges')} />;
       case 'new-session': return <NewSessionPage initialConfiguration={sessionConfiguration} onGestureGuide={() => requestNavigation('gesture-guide')} onStart={beginTraining} />;
       case 'calibration': return <CalibrationPage handedness={sessionConfiguration.handedness} reference={reference} onReferenceChange={setReference} onComplete={() => beginTraining(sessionConfiguration, { preserveReference: true })} />;
       case 'live-analysis': return <LiveAnalysisPage key={trainingFlowKey} handedness={sessionConfiguration.handedness} cameraView={sessionConfiguration.cameraView} scoreEntryMethod={sessionConfiguration.scoreEntryMethod} autoReleaseDefault={sessionConfiguration.shotCaptureMethod === 'experimental-auto-confirm'} shots={shots} onShotCaptured={addShot} onAttachResult={attachResult} onAttachNotes={attachNotes} onUndoLastShot={() => setShots((current) => current.slice(0, -1))} onGestureGuide={() => requestNavigation('user-guide')} onCameraViewChange={(cameraView: CameraView) => setSessionConfiguration((current) => ({ ...current, cameraView }))} reference={reference} onSessionActiveChange={setSessionActive} navigationEndRequest={guardedExit?.id} onNavigationEndComplete={completeGuardedExit} onViewSessions={() => requestNavigation('saved-recordings')} onViewAnalytics={() => requestNavigation('dashboard')} onStartNewSession={() => beginTraining()} onHome={() => requestNavigation('home')} />;
@@ -512,7 +512,7 @@ function App() {
             </main>
           </div>
         </div>
-        <BottomNav items={mobileNavItems} active={navActive} onSelect={handleNavSelect} />
+        <BottomNav items={mobileNavItems} active={navActive} current={activePage} onSelect={handleNavSelect} />
         <UpdateToast />
         {vipCode ? <VipCodeDialog onClose={() => setVipCode(false)} onUnlocked={() => { setVipCode(false); requestNavigation('vip'); }} /> : null}
         <VipLogout onLoggedOut={() => requestNavigation('profile')} />
