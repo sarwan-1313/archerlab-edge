@@ -552,14 +552,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 18px;
+  min-height: 44px;
+  margin-top: 8px;
   color: var(--ath-gold, #ffc53d);
   font-size: 15px;
   font-weight: 600;
 }
 .landing-sample-link span { color: #8d9db0; font-weight: 500; }
 .landing-sample-link:hover { text-decoration: underline; text-underline-offset: 4px; }
-.landing-sample-link--center { justify-content: center; margin-top: 14px; }
+.landing-sample-link--center { justify-content: center; margin-top: 4px; }
 
 /* Target group labels: only the selected arrow is numbered to avoid clutter */
 .target-group__arrow text { opacity: 0; transition: opacity .15s ease; }
@@ -1368,7 +1369,9 @@ html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::
 
 /* ---------- Guest banner ---------- */
 .guest-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px; color: var(--ath-text); font-size: 14px; background: rgba(255, 176, 32, .1); border-bottom: 1px solid rgba(255, 176, 32, .35); }
-.guest-banner button { padding: 4px 12px; color: #04060a; font: 600 13px/1.4 var(--ath-body); background: var(--ath-warn); border: 0; border-radius: 14px; cursor: pointer; }
+.guest-banner__text { display: inline-flex; align-items: flex-start; gap: 8px; }
+.guest-banner__text > svg { flex: none; margin-top: 2px; }
+.guest-banner button { min-height: 40px; padding: 6px 14px; color: #04060a; font: 600 13px/1.4 var(--ath-body); background: var(--ath-warn); border: 0; border-radius: 14px; cursor: pointer; }
 
 /* ---------- VIP mode ---------- */
 :root[data-vip='on'] { --ath-volt: #ffc53d; --ath-volt-deep: #e0a21a; }
@@ -1426,3 +1429,6 @@ html[data-lite='on'] *, html[data-lite='on'] *::before, html[data-lite='on'] *::
 .breath__text span { font: 800 40px/1 var(--ath-display); color: #ffd23f; font-variant-numeric: tabular-nums; }
 .breath__text small { color: var(--ath-muted); }
 @media (prefers-reduced-motion: reduce) { .breath__stage[class*='breath__stage--'] .breath__circle { animation: none; } }
+
+/* Settings checkboxes: big enough to tap on a phone. */
+.app-shell input[type="checkbox"] { width: 20px; height: 20px; flex: none; accent-color: var(--ath-volt); }

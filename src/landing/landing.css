@@ -394,7 +394,7 @@
   font-size: 12px;
 }
 .landing-footer span { display: inline-flex; align-items: center; gap: 8px; }
-.landing-footer__link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.landing-footer__link { padding: 10px 2px; margin: -10px -2px; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .landing-footer__link:hover { color: #c7d3e0; }
 
 /* Reveal on scroll */

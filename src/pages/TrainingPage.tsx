@@ -246,7 +246,7 @@ export function TrainingPage({ onVideo, onScoring, onDrills, onEquipment }: { on
   const weeks = useMemo(() => weeklySeries(entries, CHART_WEEKS), [entries]);
 
   return (
-    <div className="training-page">
+    <div className="page-container page-container--wide training-page">
       <PageHeader
         title="Training"
         subtitle="Your practice log: live sessions and video analyses are added automatically, and you can log any other practice. Stored on this device."
