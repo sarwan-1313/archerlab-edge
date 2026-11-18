@@ -4,8 +4,13 @@ All notable changes to ArcherLab Edge. Versions follow [semantic versioning](htt
 
 ## Unreleased
 
+### Changed
+
+- **A cleaner, lighter app.** Home is now a short start screen (start, get started, more ways to train, how it works) instead of a nine-screen scrolling story. On phones, a **More** button on the bottom bar opens every other page in a few short groups, so Training, Scoring, Drills, Equipment, Ranges, Club and Community are one tap away. The desktop sidebar is grouped the same way, and the guest banner is a single short line.
+
 ### Fixed
 
+- **Phone layout.** Training, My club and Community no longer run to the edge of the screen; they have the same margins as every other page. The guest-mode banner is more compact, and small buttons and links (the guest banner, Privacy links, Protect storage, the range distance, settings checkboxes, the sample-session links) are easier to tap.
 - **Staying signed in.** A sign-in that could not be refreshed because of a bad connection, a timeout or an outage no longer looks like being signed out; you stay signed in and the screen says it could not reach the cloud. Pages that ask for a fresh sign-in at the same moment now share one refresh, so the second one is no longer refused and signs you out.
 - **Signing out** happens at once, even on a slow network, and also ends the session on the server when the sign-in had already expired.
 - **Sign-in links.** "Signed in." and sign-in errors now show wherever account messages are shown, and a sign-in link still works if the account lookup fails for a moment.

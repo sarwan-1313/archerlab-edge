@@ -8,9 +8,8 @@ export function GuestBanner({ onCreateProfile }: { onCreateProfile: () => void }
   if (!guest) return null;
   return (
     <div className="guest-banner" role="status">
-      <AppIcon name="user" size={16} />
-      <span><strong>Guest mode.</strong> Nothing is kept after you close ArcherLab.</span>
-      <button type="button" onClick={onCreateProfile}>Create a profile to keep your work</button>
+      <span className="guest-banner__text"><AppIcon name="user" size={16} /><span><strong>Guest mode.</strong> Nothing is saved after you close the app.</span></span>
+      <button type="button" onClick={onCreateProfile}>Save my work</button>
     </div>
   );
 }

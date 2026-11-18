@@ -43,7 +43,9 @@ describe('buildCocoZip', () => {
     const text = new TextDecoder('latin1').decode(zip);
     expect(text).toContain('images/a.jpg');
     const start = text.indexOf('labels.json') + 'labels.json'.length;
-    const json = JSON.parse(text.slice(start, text.lastIndexOf('}') + 1));
+    // Stop at the zip's central directory: its date and checksum bytes can contain a '}' too.
+    const end = text.indexOf('PK\u0001\u0002', start);
+    const json = JSON.parse(text.slice(start, text.lastIndexOf('}', end) + 1));
     expect(json.images[0].file_name).toBe('a.jpg');
     expect(json.annotations).toHaveLength(1);
   });

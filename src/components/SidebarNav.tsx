@@ -1,8 +1,10 @@
+import { Fragment } from 'react';
 import { AppIcon } from './AppIcon';
 import type { NavItem, PageKey } from '../types';
 import { ProfilePreview } from './ProfilePreview';
 import { useLanguage } from '../i18n/i18n';
 import { useVip } from '../vip/vip';
+import { navGroupLabels } from '../data/navigation';
 
 type SidebarNavProps = {
   items: NavItem[];
@@ -26,9 +28,10 @@ export function SidebarNav({ items, active, onSelect, onVipCode }: SidebarNavPro
       </button>
 
       <div className="sidebar-nav__items">
-        {items.map((item) => (
+        {items.map((item, index) => (
+          <Fragment key={item.key}>
+          {item.group && item.group !== items[index - 1]?.group ? <span className="sidebar-nav__group">{t(`navgroup.${item.group}`, navGroupLabels[item.group])}</span> : null}
           <button
-            key={item.key}
             type="button"
             onClick={() => onSelect(item.key)}
             className={[
@@ -42,6 +45,7 @@ export function SidebarNav({ items, active, onSelect, onVipCode }: SidebarNavPro
             <AppIcon name={item.icon} size={18} strokeWidth={1.8} />
             <span className="font-body-md text-body-md">{t(`nav.${item.key}`, item.label)}</span>
           </button>
+          </Fragment>
         ))}
         {vip ? (
           <button type="button" onClick={() => onSelect('vip')} className={['sidebar-nav__item', 'sidebar-nav__item--vip', active === 'vip' ? 'sidebar-nav__item--active' : ''].join(' ')} aria-current={active === 'vip' ? 'page' : undefined}>
