@@ -377,7 +377,7 @@ export function ClubPage({ onProfile, onPrivacy, onOpenReport }: ClubPageProps =
   const api = useMemo(() => (client ? { client, freshSession } : null), [client, freshSession]);
 
   return (
-    <div className="training-page club-page">
+    <div className="page-container page-container--wide training-page club-page">
       <PageHeader
         title="My club"
         subtitle="Join your coach’s club, or follow your athletes as a coach. Optional, and only with an account."

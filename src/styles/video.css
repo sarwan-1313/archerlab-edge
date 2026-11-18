@@ -378,7 +378,7 @@
 .privacy-section strong { color: var(--ath-text); }
 .privacy-section a { color: var(--ath-volt); }
 .privacy-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-.privacy-link { padding: 0; border: 0; background: none; color: var(--ath-volt); font: inherit; text-decoration: underline; cursor: pointer; }
+.privacy-link { padding: 10px 2px; margin: -10px -2px; border: 0; background: none; color: var(--ath-volt); font: inherit; text-decoration: underline; cursor: pointer; }
 .profile-privacy { margin-top: 16px; }
 .va-open-report { display: grid; justify-items: center; gap: 10px; }
 .va-open-report input { display: none; }
@@ -630,6 +630,7 @@
 .end-timer__read strong { font: 800 44px/1 var(--ath-display); font-variant-numeric: tabular-nums; color: var(--ath-text); }
 .end-timer__read span { color: var(--ath-muted); }
 .end-timer__sound { display: inline-flex; align-items: center; gap: 6px; color: var(--ath-muted); font-size: 14px; }
+.end-timer__sound select { min-height: 40px; padding: 0 8px; }
 @media (prefers-reduced-motion: reduce) { .end-timer__light { box-shadow: none !important; } }
 
 /* ---------- Ghost overlay and shot comparison ---------- */

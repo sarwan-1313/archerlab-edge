@@ -69,7 +69,7 @@ export function CommunityPage({ onProfile, onClub, onPrivacy }: CommunityPagePro
   const activeTab = visibleTabs.some((item) => item.key === tab) ? tab : 'chat';
 
   return (
-    <div className="training-page community-page">
+    <div className="page-container page-container--wide training-page community-page">
       <PageHeader
         title="Community"
         subtitle="Chat, forum, polls, predictions and a leaderboard, just for your club. Optional, and only with an account."
