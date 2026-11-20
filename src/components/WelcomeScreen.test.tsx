@@ -19,11 +19,11 @@ describe('welcome screen', () => {
     const onDone = vi.fn();
     render(<WelcomeScreen onDone={onDone} />);
     fireEvent.click(screen.getByRole('button', { name: /Create my profile/ }));
-    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Sarwan' } });
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Alex' } });
     fireEvent.click(screen.getByRole('button', { name: 'Left hand' }));
     fireEvent.click(screen.getByRole('button', { name: 'Save and start' }));
     await waitFor(() => expect(onDone).toHaveBeenCalled());
-    expect(runtime.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: 'Sarwan', handedness: 'left', bowType: 'recurve' }));
+    expect(runtime.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: 'Alex', handedness: 'left', bowType: 'recurve' }));
     expect(localStorage.getItem('archerlab-edge:welcome-choice')).toBe('profile');
     expect(localStorage.getItem('archerlab-edge:guest-mode')).toBeNull();
   });

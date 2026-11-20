@@ -115,7 +115,7 @@ export default function WelcomeScreen({ onDone, onOpenPrivacy }: { onDone: () =>
             <button type="button" className="welcome__back" onClick={() => setStep('start')} aria-label="Back"><AppIcon name="arrow-left" size={20} /></button>
             <h1 id="welcome-title" ref={headingRef} tabIndex={-1}>Create your profile</h1>
             <p className="welcome__lead">This sets up the analysis for you. It stays on this device, and you can change it any time.</p>
-            <label className="welcome__field"><span>Your name</span><input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Sarwan" /></label>
+            <label className="welcome__field"><span>Your name</span><input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Alex" /></label>
             <fieldset className="welcome__field">
               <legend>Which hand draws the string?</legend>
               <div className="welcome__segments">

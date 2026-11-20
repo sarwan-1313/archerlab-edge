@@ -49,14 +49,14 @@ describe('archery ranges', () => {
     expect(urls[0]).toContain('postalcode=94587');
     expect(urls[0]).toContain('countrycodes=us');
     expect(urls[1]).toContain('q=94587');
-    expect(geocodeUrls('Union City, CA', 'us')).toHaveLength(1);
+    expect(geocodeUrls('Springfield, IL', 'us')).toHaveLength(1);
     const asked: string[] = [];
     const found = await geocode('94587', 'us', (async (url: string) => {
       asked.push(url);
-      return new Response(JSON.stringify(url.includes('postalcode') ? [] : [{ lat: '37.59', lon: '-122.02', display_name: 'Union City, CA' }]));
+      return new Response(JSON.stringify(url.includes('postalcode') ? [] : [{ lat: '39.78', lon: '-89.65', display_name: 'Springfield, IL' }]));
     }) as unknown as typeof fetch);
     expect(asked).toHaveLength(2);
-    expect(found?.label).toBe('Union City, CA');
+    expect(found?.label).toBe('Springfield, IL');
     expect(await geocode('nowhere', 'us', (async () => new Response('[]')) as typeof fetch)).toBeNull();
   });
 
